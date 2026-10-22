@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Character, LogEntry, GameEvent, EventChoice, GameSpeed, ThemeMode } from '../types';
 import { GameEngine } from '../engine/gameEngine';
 import { EventLogPanel } from './EventLogPanel';
@@ -58,6 +58,14 @@ export const HistoryTome: React.FC<Props> = ({
   onSwitchTheme,
   theme
 }) => {
+  const [mobileTab, setMobileTab] = useState<'profile' | 'log'>('log');
+
+  useEffect(() => {
+    if (currentEvent) {
+      setMobileTab('log');
+    }
+  }, [currentEvent]);
+
   const lifespanProfile = useMemo(() => {
     return GameEngine.getCharacterLifespanProfile(character);
   }, [character.race, character.subRace, character.oripathy.crystallizationRate, character.oripathy.suppressantDoseLeft]);
@@ -125,10 +133,39 @@ export const HistoryTome: React.FC<Props> = ({
         </div>
       </header>
 
+      {/* Mobile Screen Tab Switcher */}
+      <div className="md:hidden flex border-b border-[#5c4033]/30 bg-[#ebdcb9] text-xs font-bold shrink-0">
+        <button
+          onClick={() => setMobileTab('log')}
+          className={`flex-1 py-2.5 text-center border-b-2 transition-all flex items-center justify-center space-x-1.5 ${
+            mobileTab === 'log'
+              ? 'border-[#8b1e1e] text-[#8b1e1e] bg-[#f4ebd0]'
+              : 'border-transparent text-[#5c4d47] hover:text-[#2c1810]'
+          }`}
+        >
+          <span>사서의 연대기 & 사건</span>
+          {currentEvent && (
+            <span className="px-1.5 py-0.2 rounded-full bg-red-600 text-white text-[9px] animate-pulse">!</span>
+          )}
+        </button>
+        <button
+          onClick={() => setMobileTab('profile')}
+          className={`flex-1 py-2.5 text-center border-b-2 transition-all flex items-center justify-center space-x-1.5 ${
+            mobileTab === 'profile'
+              ? 'border-[#8b1e1e] text-[#8b1e1e] bg-[#f4ebd0]'
+              : 'border-transparent text-[#5c4d47] hover:text-[#2c1810]'
+          }`}
+        >
+          <span>인물 약력 · 능력치</span>
+        </button>
+      </div>
+
       {/* Main Tome Body */}
       <main className="grow grid grid-cols-1 md:grid-cols-12 overflow-hidden bg-[#f4ebd0]">
         {/* Left Parchment: Character Bio (4 cols) */}
-        <aside className="md:col-span-4 border-r-2 border-[#5c4033]/30 bg-[#ebdcb9] p-5 flex flex-col overflow-y-auto space-y-4 shadow-inner">
+        <aside className={`md:col-span-4 border-r-2 border-[#5c4033]/30 bg-[#ebdcb9] p-5 flex-col overflow-y-auto space-y-4 shadow-inner ${
+          mobileTab === 'profile' ? 'flex' : 'hidden md:flex'
+        }`}>
           {/* Identity Scroll */}
           <div className="p-4 rounded-lg border border-[#5c4033]/40 bg-[#f4ebd0] shadow-sm">
             <span className="text-[10px] text-[#8b1e1e] font-bold block mb-1">
@@ -242,7 +279,9 @@ export const HistoryTome: React.FC<Props> = ({
         </aside>
 
         {/* Right Page: Journal Chronicles (8 cols) */}
-        <section className="md:col-span-8 flex flex-col h-full overflow-hidden bg-[#f4ebd0]">
+        <section className={`md:col-span-8 flex-col h-full overflow-hidden bg-[#f4ebd0] ${
+          mobileTab === 'log' ? 'flex' : 'hidden md:flex'
+        }`}>
           <EventLogPanel
             logs={logs}
             currentEvent={currentEvent}

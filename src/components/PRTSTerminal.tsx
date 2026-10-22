@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useMemo } from 'react';
+import React, { useRef, useEffect, useMemo, useState } from 'react';
 import { Character, LogEntry, GameEvent, EventChoice, GameSpeed, ThemeMode } from '../types';
 import { GameEngine } from '../engine/gameEngine';
 import { EventLogPanel } from './EventLogPanel';
@@ -104,6 +104,14 @@ export const PRTSTerminal: React.FC<Props> = ({
     render();
     return () => cancelAnimationFrame(animationId);
   }, [character.stats.health, character.isAlive]);
+
+  const [mobileTab, setMobileTab] = useState<'profile' | 'log'>('log');
+
+  useEffect(() => {
+    if (currentEvent) {
+      setMobileTab('log');
+    }
+  }, [currentEvent]);
 
   const lifespanProfile = useMemo(() => {
     return GameEngine.getCharacterLifespanProfile(character);
@@ -246,10 +254,39 @@ export const PRTSTerminal: React.FC<Props> = ({
         </div>
       </section>
 
+      {/* Mobile Screen Tab Switcher */}
+      <div className="md:hidden flex border-b border-cyan-500/20 bg-[#0e121a] text-xs font-bold shrink-0">
+        <button
+          onClick={() => setMobileTab('log')}
+          className={`flex-1 py-2.5 text-center border-b-2 transition-all flex items-center justify-center space-x-1.5 ${
+            mobileTab === 'log'
+              ? 'border-cyan-400 text-cyan-300 bg-cyan-950/40'
+              : 'border-transparent text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <span>사건 일지 & 선택</span>
+          {currentEvent && (
+            <span className="px-1.5 py-0.2 rounded-full bg-red-500 text-white text-[9px] animate-pulse">!</span>
+          )}
+        </button>
+        <button
+          onClick={() => setMobileTab('profile')}
+          className={`flex-1 py-2.5 text-center border-b-2 transition-all flex items-center justify-center space-x-1.5 ${
+            mobileTab === 'profile'
+              ? 'border-cyan-400 text-cyan-300 bg-cyan-950/40'
+              : 'border-transparent text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <span>인물 신상 · 스탯</span>
+        </button>
+      </div>
+
       {/* Main Grid: Left Profile & Right Logs */}
       <main className="grow grid grid-cols-1 md:grid-cols-12 overflow-hidden">
         {/* Left Column: Character Sheet (4 cols) */}
-        <aside className="md:col-span-4 border-r border-cyan-500/20 bg-[#0e1219] p-4 flex flex-col overflow-y-auto space-y-4">
+        <aside className={`md:col-span-4 border-r border-cyan-500/20 bg-[#0e1219] p-4 flex-col overflow-y-auto space-y-4 ${
+          mobileTab === 'profile' ? 'flex' : 'hidden md:flex'
+        }`}>
           {/* Identity Box */}
           <div className="p-3.5 rounded-lg border border-cyan-500/30 bg-slate-900/60 relative overflow-hidden">
             <div className="flex items-center justify-between mb-1">
@@ -348,7 +385,9 @@ export const PRTSTerminal: React.FC<Props> = ({
         </aside>
 
         {/* Right Column: Event Log Stream (8 cols) */}
-        <section className="md:col-span-8 flex flex-col h-full overflow-hidden bg-[#0b0d11]">
+        <section className={`md:col-span-8 flex-col h-full overflow-hidden bg-[#0b0d11] ${
+          mobileTab === 'log' ? 'flex' : 'hidden md:flex'
+        }`}>
           <EventLogPanel
             logs={logs}
             currentEvent={currentEvent}
