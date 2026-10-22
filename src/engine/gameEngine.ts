@@ -65,7 +65,7 @@ export class GameEngine {
     effectiveMaxLifespan: number;
     effectiveAgingStart: number;
   } {
-    const raceData = RACES_DATA.find(r => r.name === char.race) || RACES_DATA[0];
+    const raceData = RACES_DATA.find(r => r.name === char.race || char.race.includes(r.name) || r.name.includes(char.race)) || RACES_DATA[0];
     let base = raceData.lifespan.baseLifespan;
     let max = raceData.lifespan.maxLifespan;
     let agingStart = raceData.lifespan.agingStartAge;
