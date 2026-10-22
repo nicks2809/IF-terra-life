@@ -1,0 +1,95 @@
+// src/data/enemies.ts
+import { Enemy } from '../types';
+
+export const ENEMIES_DATA: Record<string, Enemy> = {
+  slug_swarm: {
+    id: 'slug_swarm',
+    name: '변이 오리지늄 슬러그 무리',
+    faction: '야생 생물',
+    hp: 120,
+    maxHp: 120,
+    atk: 18,
+    def: 5,
+    artsRes: 0,
+    specialSkillName: '산성 분비물',
+    specialSkillDesc: '부식성 산을 뱉어 방어력을 5 감소시킵니다.',
+    avatarIcon: 'bug',
+    rewardLmd: 180,
+    rewardExpStat: 'combat'
+  },
+  wasteland_bandit: {
+    id: 'wasteland_bandit',
+    name: '황야의 약탈자 두목',
+    faction: '노마드 약탈단',
+    hp: 220,
+    maxHp: 220,
+    atk: 28,
+    def: 12,
+    artsRes: 10,
+    specialSkillName: '기습 난도질',
+    specialSkillDesc: '연속 2회 베기 공격을 가합니다.',
+    avatarIcon: 'skull',
+    rewardLmd: 450,
+    rewardExpStat: 'combat'
+  },
+  reunion_vanguard: {
+    id: 'reunion_vanguard',
+    name: '리유니온 무장 돌격병',
+    faction: '리유니온 무브먼트',
+    hp: 320,
+    maxHp: 320,
+    atk: 36,
+    def: 22,
+    artsRes: 15,
+    specialSkillName: '감염자의 분노',
+    specialSkillDesc: '체력이 50% 이하가 되면 공격력이 50% 증가합니다.',
+    avatarIcon: 'shield-alert',
+    rewardLmd: 800,
+    rewardExpStat: 'combat'
+  },
+  sarkaz_centurion: {
+    id: 'sarkaz_centurion',
+    name: '살카즈 백부장 (Centurion)',
+    faction: '살카즈 군사위원회',
+    hp: 550,
+    maxHp: 550,
+    atk: 52,
+    def: 38,
+    artsRes: 40,
+    specialSkillName: '원초의 주술 방벽',
+    specialSkillDesc: '받는 물리 및 아츠 피해를 30% 흡수하는 실드를 전개합니다.',
+    avatarIcon: 'flame',
+    rewardLmd: 1800,
+    rewardExpStat: 'artsAptitude'
+  },
+  seaborne_predator: {
+    id: 'seaborne_predator',
+    name: '심해의 침식체 (Seaborne)',
+    faction: '심해의 교단',
+    hp: 700,
+    maxHp: 700,
+    atk: 60,
+    def: 30,
+    artsRes: 50,
+    specialSkillName: '신경 오염 파동',
+    specialSkillDesc: '플레이어의 체력과 이성(SAN)을 동시에 깎아먹습니다.',
+    avatarIcon: 'tentacle',
+    rewardLmd: 3200,
+    rewardExpStat: 'sanity'
+  },
+  londinium_steam_knight: {
+    id: 'londinium_steam_knight',
+    name: '폭주한 증기기사 (Steam Knight)',
+    faction: '빅토리아 고대 병기',
+    hp: 950,
+    maxHp: 950,
+    atk: 75,
+    def: 60,
+    artsRes: 25,
+    specialSkillName: '고압 증기 참격',
+    specialSkillDesc: '전방에 막대한 물리 충격파를 발사하여 기절시킵니다.',
+    avatarIcon: 'cpu',
+    rewardLmd: 5000,
+    rewardExpStat: 'combat'
+  }
+};

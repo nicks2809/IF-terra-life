@@ -1,0 +1,249 @@
+// src/types/index.ts
+
+export type ThemeMode = 'prts' | 'tome';
+
+export type GameSpeed = 1 | 2 | 4;
+
+export type Gender = '남성' | '여성';
+
+export interface RaceTrait {
+  id: string;
+  name: string;
+  description: string;
+  statBonus: Partial<CharacterStats>;
+  artsMultiplierBonus?: number;
+  oripathyRiskBonus?: number;
+}
+
+export interface RaceData {
+  id: string;
+  name: string;
+  nameEn: string;
+  subRaces?: string[];
+  description: string;
+  lore: string;
+  traits: RaceTrait[];
+  avatarIcon: string;
+  baseStats: CharacterStats;
+}
+
+export interface NationData {
+  id: string;
+  name: string;
+  nameEn: string;
+  description: string;
+  capital: string;
+  dominantRaces: string[];
+  factions: string[];
+  specialty: string;
+  riskLevel: '안전' | '경계' | '위험' | '극도로 위험';
+}
+
+export type EnvironmentType = 
+  | '이동도시 상류층'
+  | '일반 거주구'
+  | '슬럼가 및 암시장'
+  | '황야의 노마드 캠프'
+  | '이동기지 (로도스/블랙스틸)';
+
+export interface CharacterStats {
+  health: number;
+  maxHealth: number;
+  sanity: number;
+  maxSanity: number;
+  wealth: number;        // LMD
+  combat: number;        // 물리 전투 숙련
+  artsAptitude: number;  // 아츠 적성
+  intellect: number;     // 정세 감각 & 지략
+  luck: number;          // 행운
+}
+
+export type OripathyStage = 'Clean' | 'Early' | 'Mid' | 'Severe' | 'Terminal' | 'Crystallized';
+
+export type LesionSite = '없음' | '호흡기(폐)' | '신경계' | '혈관계' | '사지 골격' | '체표 피부';
+
+export interface OripathyStatus {
+  isInfected: boolean;
+  crystallizationRate: number;       // 0.0% ~ 100.0%
+  originiumBloodDensity: number;     // 0.05 ~ 1.20+ u/L
+  stage: OripathyStage;
+  lesionSite: LesionSite;
+  activeArtsMultiplier: number;      // 1.0x ~ 3.5x
+  suppressantDoseLeft: number;       // 억제 효과 남은 연수
+}
+
+export interface Equipment {
+  weapon?: Item;
+  armor?: Item;
+  accessory?: Item;
+}
+
+export interface Item {
+  id: string;
+  name: string;
+  type: 'weapon' | 'armor' | 'accessory' | 'medicine' | 'consumable' | 'catalyst';
+  description: string;
+  price: number;
+  rarity: 1 | 2 | 3 | 4 | 5 | 6;
+  atkBonus?: number;
+  defBonus?: number;
+  artsBonus?: number;
+  healthBonus?: number;
+  effectType?: 'heal_hp' | 'heal_san' | 'suppress_oripathy' | 'boost_arts' | 'cure_hazard';
+  effectValue?: number;
+}
+
+export interface InventorySlot {
+  item: Item;
+  count: number;
+}
+
+export interface Character {
+  id: string;
+  name: string;
+  gender: Gender;
+  race: string;
+  subRace?: string;
+  nation: string;
+  environment: EnvironmentType;
+  age: number;
+  year: number; // 테라력 (예: 1085 ~)
+  stats: CharacterStats;
+  oripathy: OripathyStatus;
+  factions: Record<string, number>; // 진영별 평판 (-100 ~ 100)
+  career: string;
+  careerRank: string;
+  titles: string[];
+  equipment: Equipment;
+  inventory: InventorySlot[];
+  actionPoints: number; // 연간 활동 포인트 (기본 1~2)
+  isAlive: boolean;
+  deathRecord?: DeathRecord;
+}
+
+export interface DiceCheck {
+  stat: keyof CharacterStats;
+  difficulty: number; // DC (1~100)
+}
+
+export interface OutcomeResult {
+  text: string;
+  statEffects?: Partial<CharacterStats>;
+  crystallizationDelta?: number;
+  bloodDensityDelta?: number;
+  reputationDelta?: Record<string, number>;
+  gainItemIds?: string[];
+  gainTitles?: string[];
+  deathReason?: string;
+}
+
+export interface EventChoice {
+  id: string;
+  label: string;
+  description: string;
+  requirements?: {
+    minStat?: { stat: keyof CharacterStats; value: number };
+    itemCost?: { itemId: string; count: number };
+    lmdCost?: number;
+    isInfected?: boolean;
+    race?: string[];
+  };
+  diceCheck?: DiceCheck;
+  outcomes: {
+    criticalSuccess?: OutcomeResult;
+    success: OutcomeResult;
+    failure?: OutcomeResult;
+    criticalFailure?: OutcomeResult;
+  };
+  triggerBattleEnemyId?: string;
+}
+
+export interface GameEvent {
+  id: string;
+  title: string;
+  description: string;
+  category: 'life' | 'oripathy' | 'world_news' | 'combat' | 'fateful' | 'career';
+  minAge: number;
+  maxAge: number;
+  conditions?: {
+    isInfected?: boolean;
+    race?: string[];
+    nation?: string[];
+    minCombat?: number;
+    minArts?: number;
+    specificYear?: number;
+  };
+  choices: EventChoice[];
+}
+
+export interface WorldTimelineEvent {
+  year: number;
+  title: string;
+  region: string;
+  broadcastText: string;
+  inGameEffectText: string;
+  triggerEventId?: string;
+}
+
+export interface Enemy {
+  id: string;
+  name: string;
+  faction: string;
+  hp: number;
+  maxHp: number;
+  atk: number;
+  def: number;
+  artsRes: number;
+  specialSkillName: string;
+  specialSkillDesc: string;
+  avatarIcon: string;
+  rewardLmd: number;
+  rewardExpStat: keyof CharacterStats;
+}
+
+export interface BattleState {
+  isActive: boolean;
+  enemy: Enemy;
+  turn: number;
+  log: string[];
+  isPlayerTurn: boolean;
+  playerShield: number;
+  enemyShield: number;
+  result?: 'victory' | 'defeat' | 'fled';
+}
+
+export interface LogEntry {
+  id: string;
+  year: number;
+  age: number;
+  title: string;
+  text: string;
+  type: 'general' | 'critical' | 'hazard' | 'news' | 'battle' | 'oripathy';
+  rollDetails?: {
+    stat: keyof CharacterStats;
+    roll: number;
+    total: number;
+    dc: number;
+    result: '대성공' | '성공' | '실패' | '대참사';
+  };
+  timestamp: string;
+}
+
+export interface DeathRecord {
+  yearOfDeath: number;
+  ageAtDeath: number;
+  cause: string;
+  detailedCause: string;
+  finalRank: 'S' | 'A' | 'B' | 'C' | 'D' | 'F';
+  lastWords: string;
+  notableAchievements: string[];
+  statsSummary: {
+    combat: number;
+    arts: number;
+    wealth: number;
+    crystallizationRate: number;
+  };
+  characterName: string;
+  race: string;
+  nation: string;
+}
