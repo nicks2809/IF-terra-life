@@ -7,7 +7,7 @@ export const RACES_DATA: RaceData[] = [
     name: '살카즈',
     nameEn: 'Sarkaz',
     subRaces: ['웬디고', '뱀파이어', '나흐체러', '밴시', '가고일', '골리앗', '아난타'],
-    description: '고대 마족의 후예. 테라 전역에서 박해와 편견을 받지만, 원초의 아츠 친화력과 질긴 생명력을 지녔습니다.',
+    description: '고대 마족의 후예. 테라 전역에서 박해와 편견을 받지만, 원초의 아츠 친화력과 질긴 생명력을 지녔습니다. 웬디고, 뱀파이어 등 특수 혈통은 수백 년의 수명을 자랑합니다.',
     lore: '카즈델의 불타는 폐허에서 태어난 이들은 태생적으로 오리지늄에 강하게 공명하지만, 그만큼 광석병의 저주에 쉽게 노출됩니다.',
     avatarIcon: 'horns',
     baseStats: {
@@ -25,12 +25,27 @@ export const RACES_DATA: RaceData[] = [
       {
         id: 'sarkaz_blood',
         name: '원초의 혈맥',
-        description: '오리지늄 아츠 친화력 대폭 증가, 전투 시 아츠 위력 1.3배',
+        description: '오리지늄 아츠 친화력 대폭 증가, 전투 시 아츠 위력 1.3배, 수명 기대치 대폭 연장',
         statBonus: { artsAptitude: 15, combat: 5 },
         artsMultiplierBonus: 0.3,
         oripathyRiskBonus: 0.25,
       }
-    ]
+    ],
+    lifespan: {
+      baseLifespan: 160,
+      maxLifespan: 240,
+      agingStartAge: 100,
+      agingRate: 0.5,
+      subRaceLifespans: {
+        '웬디고': { baseLifespan: 500, maxLifespan: 1200, agingStartAge: 350, agingRate: 0.1 },
+        '뱀파이어': { baseLifespan: 400, maxLifespan: 900, agingStartAge: 250, agingRate: 0.15 },
+        '나흐체러': { baseLifespan: 350, maxLifespan: 800, agingStartAge: 220, agingRate: 0.2 },
+        '밴시': { baseLifespan: 300, maxLifespan: 700, agingStartAge: 200, agingRate: 0.2 },
+        '가고일': { baseLifespan: 400, maxLifespan: 950, agingStartAge: 250, agingRate: 0.15 },
+        '골리앗': { baseLifespan: 120, maxLifespan: 170, agingStartAge: 80, agingRate: 0.6 },
+        '아난타': { baseLifespan: 150, maxLifespan: 220, agingStartAge: 95, agingRate: 0.5 },
+      }
+    }
   },
   {
     id: 'sankta',
@@ -58,7 +73,13 @@ export const RACES_DATA: RaceData[] = [
         description: '이성 최대치 증가, 수호총 사용 가능, 산크타 동족 처치 시 타락 위험',
         statBonus: { sanity: 15, intellect: 10 },
       }
-    ]
+    ],
+    lifespan: {
+      baseLifespan: 82,
+      maxLifespan: 98,
+      agingStartAge: 62,
+      agingRate: 0.95
+    }
   },
   {
     id: 'kuranta',
@@ -86,7 +107,13 @@ export const RACES_DATA: RaceData[] = [
         description: '전투 회피율 및 기동 판정 주사위 +10 보너스',
         statBonus: { combat: 10, health: 5 },
       }
-    ]
+    ],
+    lifespan: {
+      baseLifespan: 78,
+      maxLifespan: 92,
+      agingStartAge: 56,
+      agingRate: 1.0
+    }
   },
   {
     id: 'lupo',
@@ -114,7 +141,13 @@ export const RACES_DATA: RaceData[] = [
         description: '치명타 확률 +15%, 암살 및 기습 주사위 판정 보정',
         statBonus: { combat: 10, luck: 5 },
       }
-    ]
+    ],
+    lifespan: {
+      baseLifespan: 74,
+      maxLifespan: 88,
+      agingStartAge: 54,
+      agingRate: 1.05
+    }
   },
   {
     id: 'feline',
@@ -142,14 +175,20 @@ export const RACES_DATA: RaceData[] = [
         description: '위기 도주 판정 성공률 +20%, 도심 밀수 및 정보 수집 보너스',
         statBonus: { intellect: 5, luck: 10 },
       }
-    ]
+    ],
+    lifespan: {
+      baseLifespan: 76,
+      maxLifespan: 90,
+      agingStartAge: 55,
+      agingRate: 1.0
+    }
   },
   {
     id: 'aegir',
     name: '에기르',
     nameEn: 'Aegir',
     subRaces: ['심해 기술자', '해안 거주민'],
-    description: '초고대 해양 문명에서 유래한 종족. 경이로운 신체 능력과 질병 저항력을 지니고 있으나, 오리지늄 아츠를 쓰지 못합니다.',
+    description: '초고대 해양 문명에서 유래한 종족. 경이로운 신체 세포 재생력과 긴 수명, 질병 저항력을 지니고 있으나 오리지늄 아츠를 쓰지 못합니다.',
     lore: '광석병에 거의 걸리지 않는 완벽에 가까운 생체 구조를 지녔지만, 바다 저편의 시본(해사)의 부름에 정신을 위협받습니다.',
     avatarIcon: 'fish',
     baseStats: {
@@ -159,7 +198,7 @@ export const RACES_DATA: RaceData[] = [
       maxSanity: 55,
       wealth: 1000,
       combat: 80,
-      artsAptitude: 0, // 아츠 불모지
+      artsAptitude: 0,
       intellect: 70,
       luck: 40,
     },
@@ -167,11 +206,21 @@ export const RACES_DATA: RaceData[] = [
       {
         id: 'aegir_body',
         name: '초월적 신체',
-        description: '전투력 +20, 매 턴 체력 자연 회복, 단 아츠 적성 0 고정',
+        description: '전투력 +20, 기대 수명 대폭 연장, 매 턴 체력 자연 회복, 단 아츠 적성 0 고정',
         statBonus: { combat: 20, health: 15 },
         oripathyRiskBonus: -0.5,
       }
-    ]
+    ],
+    lifespan: {
+      baseLifespan: 140,
+      maxLifespan: 200,
+      agingStartAge: 95,
+      agingRate: 0.4,
+      subRaceLifespans: {
+        '심해 기술자': { baseLifespan: 150, maxLifespan: 220, agingStartAge: 100, agingRate: 0.35 },
+        '해안 거주민': { baseLifespan: 120, maxLifespan: 170, agingStartAge: 85, agingRate: 0.5 },
+      }
+    }
   },
   {
     id: 'ursus',
@@ -199,7 +248,13 @@ export const RACES_DATA: RaceData[] = [
         description: '최대 체력 +25%, 물리 타격 저항 및 혹한 내성',
         statBonus: { health: 20, combat: 10 },
       }
-    ]
+    ],
+    lifespan: {
+      baseLifespan: 80,
+      maxLifespan: 100,
+      agingStartAge: 60,
+      agingRate: 0.95
+    }
   },
   {
     id: 'liberi',
@@ -227,7 +282,13 @@ export const RACES_DATA: RaceData[] = [
         description: '원거리 명중률 +20%, 선제 공격권 획득 확률 증가',
         statBonus: { combat: 5, intellect: 10 },
       }
-    ]
+    ],
+    lifespan: {
+      baseLifespan: 72,
+      maxLifespan: 88,
+      agingStartAge: 52,
+      agingRate: 1.1
+    }
   },
   {
     id: 'forte',
@@ -255,7 +316,13 @@ export const RACES_DATA: RaceData[] = [
         description: '받는 물리 피해 20% 감소, 기절 및 넉백 저항',
         statBonus: { health: 15, combat: 5 },
       }
-    ]
+    ],
+    lifespan: {
+      baseLifespan: 85,
+      maxLifespan: 105,
+      agingStartAge: 65,
+      agingRate: 0.9
+    }
   },
   {
     id: 'caprinae',
@@ -283,7 +350,13 @@ export const RACES_DATA: RaceData[] = [
         description: '아츠 공격력 +20%, 복합 주문 영창 속도 증가',
         statBonus: { artsAptitude: 20, intellect: 10 },
       }
-    ]
+    ],
+    lifespan: {
+      baseLifespan: 76,
+      maxLifespan: 92,
+      agingStartAge: 56,
+      agingRate: 1.0
+    }
   },
   {
     id: 'elafia',
@@ -311,7 +384,13 @@ export const RACES_DATA: RaceData[] = [
         description: '이성 회복력 증가, 재앙 조우 회피 주사위 +15 보정',
         statBonus: { sanity: 15, luck: 10 },
       }
-    ]
+    ],
+    lifespan: {
+      baseLifespan: 80,
+      maxLifespan: 95,
+      agingStartAge: 60,
+      agingRate: 1.0
+    }
   },
   {
     id: 'vulpo',
@@ -339,14 +418,89 @@ export const RACES_DATA: RaceData[] = [
         description: '사기 및 위기 모면 확률 대폭 상승, LMD 획득량 20% 증가',
         statBonus: { intellect: 15, luck: 15 },
       }
-    ]
+    ],
+    lifespan: {
+      baseLifespan: 76,
+      maxLifespan: 92,
+      agingStartAge: 55,
+      agingRate: 1.0
+    }
+  },
+  {
+    id: 'durin',
+    name: '두린',
+    nameEn: 'Durin',
+    subRaces: ['지하 대도시 장인', '방랑 건축가'],
+    description: '작은 체구와 낙천적인 성격, 정밀 공학의 대가들. 지하 세계에서 오랫동안 번영해온 드워프 종족입니다.',
+    lore: '고도의 지하 토목 기술과 건축술을 자랑하며, 지상의 번잡한 분쟁에 얽매이지 않고 긴 천수를 누립니다.',
+    avatarIcon: 'wrench',
+    baseStats: {
+      health: 65,
+      maxHealth: 65,
+      sanity: 85,
+      maxSanity: 85,
+      wealth: 900,
+      combat: 50,
+      artsAptitude: 65,
+      intellect: 80,
+      luck: 70,
+    },
+    traits: [
+      {
+        id: 'durin_engineering',
+        name: '정밀 공학과 낙천성',
+        description: '지략 및 행운 판정 보너스, 정신적 스트레스 및 공포 내성',
+        statBonus: { intellect: 15, luck: 10 },
+      }
+    ],
+    lifespan: {
+      baseLifespan: 95,
+      maxLifespan: 125,
+      agingStartAge: 70,
+      agingRate: 0.8
+    }
+  },
+  {
+    id: 'cautus',
+    name: '카우투스',
+    nameEn: 'Cautus',
+    subRaces: ['림 빌리톤 광부 혈통', '황야 카우투스'],
+    description: '토끼 종족. 온화하고 감수성이 풍부하며 기민한 청각을 지녔으나, 광산 노동과 황야 환경으로 인해 광석병 위험에 취약합니다.',
+    lore: '림 빌리톤의 거대한 오리지늄 채굴선에서 태어나 자라며, 가족과 동료를 지키기 위해 강한 연대감을 발휘합니다.',
+    avatarIcon: 'rabbit',
+    baseStats: {
+      health: 65,
+      maxHealth: 65,
+      sanity: 75,
+      maxSanity: 75,
+      wealth: 650,
+      combat: 55,
+      artsAptitude: 60,
+      intellect: 60,
+      luck: 65,
+    },
+    traits: [
+      {
+        id: 'cautus_vigilance',
+        name: '예민한 청각과 공감',
+        description: '위험 감지 주사위 +10 보너스, 동료 회복 및 지원 효과 상승',
+        statBonus: { sanity: 10, luck: 10 },
+        oripathyRiskBonus: 0.15,
+      }
+    ],
+    lifespan: {
+      baseLifespan: 72,
+      maxLifespan: 86,
+      agingStartAge: 50,
+      agingRate: 1.1
+    }
   },
   {
     id: 'draco',
     name: '드라코 (고대종)',
     nameEn: 'Draco',
     subRaces: ['빅토리아 정통 왕권'],
-    description: '불꽃을 다루는 전설의 고대 용 종족. 출생 확률 0.5%의 극희귀 혈통입니다.',
+    description: '불꽃을 다루는 전설의 고대 용 종족. 출생 확률 0.5%의 극희귀 혈통으로 초인적인 생명력과 수명을 품고 있습니다.',
     lore: '신화 속 정통 군주의 피를 이어받아, 파괴적인 화염 아츠와 만인을 압도하는 패왕의 기백을 품고 있습니다.',
     avatarIcon: 'dragon',
     baseStats: {
@@ -364,18 +518,24 @@ export const RACES_DATA: RaceData[] = [
       {
         id: 'draco_flame',
         name: '제왕의 용염',
-        description: '모든 아츠 공격이 화염 속성으로 강화, 아츠 대미지 1.5배',
+        description: '모든 아츠 공격이 화염 속성으로 강화, 아츠 대미지 1.5배, 긴 수명',
         statBonus: { combat: 15, artsAptitude: 20 },
         artsMultiplierBonus: 0.5,
       }
-    ]
+    ],
+    lifespan: {
+      baseLifespan: 180,
+      maxLifespan: 300,
+      agingStartAge: 120,
+      agingRate: 0.3
+    }
   },
   {
     id: 'aslan',
     name: '아슬란 (고대종)',
     nameEn: 'Aslan',
     subRaces: ['황실 사자 혈통'],
-    description: '빅토리아 황실을 지배하는 황금 사자 종족. 출생 확률 0.5%의 극희귀 혈통입니다.',
+    description: '빅토리아 황실을 지배하는 황금 사자 종족. 출생 확률 0.5%의 극희귀 혈통으로 강력한 육체와 긴 수명을 누립니다.',
     lore: '위엄 있는 포효와 무쌍의 무예, 그리고 제국의 기사단을 호령하는 천부적인 통솔력을 타고납니다.',
     avatarIcon: 'lion',
     baseStats: {
@@ -396,6 +556,12 @@ export const RACES_DATA: RaceData[] = [
         description: '적 기절 확률 25%, 모든 전투 판정 주사위 +15 보정',
         statBonus: { combat: 20, health: 15 },
       }
-    ]
+    ],
+    lifespan: {
+      baseLifespan: 120,
+      maxLifespan: 180,
+      agingStartAge: 85,
+      agingRate: 0.55
+    }
   }
 ];

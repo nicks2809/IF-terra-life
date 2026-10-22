@@ -1020,7 +1020,7 @@ export const GAME_EVENTS: GameEvent[] = [
     description: '황혼의 나이에 다다른 살카즈인 당신. 핏줄 속에서 카즈델의 원초적 아츠가 고동치며 먼 옛날 바벨 함선의 검은 관(Black Coffin)과 테레시아의 노래가 귓가에 울려 퍼집니다.',
     category: 'fateful',
     minAge: 50,
-    maxAge: 90,
+    maxAge: 999,
     conditions: { race: ['살카즈'] },
     choices: [
       {
@@ -1044,6 +1044,461 @@ export const GAME_EVENTS: GameEvent[] = [
           failure: {
             text: '고대의 기억이 너무 무거워 눈물을 흘렸습니다.',
             statEffects: { sanity: -20 }
+          }
+        }
+      }
+    ]
+  },
+
+  // ==========================================
+  // 기이한 조우 및 특수 사건 (Bizarre & Special Encounters)
+  // ==========================================
+  {
+    id: 'bizarre_sami_mushrooms',
+    title: '사미 설원의 무지갯빛 발광 버섯',
+    description: '극북 사미의 울창한 침엽수림 속에서 영롱한 무지갯빛 형광을 내뿜는 버섯 군락을 발견했습니다. 설원의 전설에 따르면 영적 계시를 준다고 합니다.',
+    category: 'life',
+    minAge: 12,
+    maxAge: 999,
+    choices: [
+      {
+        id: 'c_eat_sami_mushroom',
+        label: '호기심을 이기지 못하고 버섯을 한 입 베어 문다',
+        description: '버섯의 맛을 보고 영적 환각을 체험합니다.',
+        outcomes: {
+          success: {
+            text: '눈앞에 온갖 무지갯빛 슬러그와 우주 고래가 춤을 추는 기묘한 환각을 목격했습니다! 머릿속이 몽롱하지만 잊을 수 없는 경험입니다.',
+            statEffects: { sanity: -10, intellect: 6, luck: 8 },
+            unlockAchievementId: 'common_sami_mushroom_trip',
+            gainTitles: ['설원의 몽상가']
+          }
+        }
+      },
+      {
+        id: 'c_sample_sami_mushroom',
+        label: '조심스럽게 약초 채집용 유리병에 표본을 담는다',
+        description: '학술적 가치를 지닌 희귀 균류로 보존합니다.',
+        outcomes: {
+          success: {
+            text: '손상 없이 온전한 표본을 채집하여 학술원에 고가에 납품했습니다.',
+            statEffects: { intellect: 5, wealth: 350 }
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'bizarre_siracusa_opera',
+    title: '볼시니 오페라 극장의 비극과 희극',
+    description: '시라쿠사 볼시니의 대극장에서 오늘 밤 마피아 가문의 복수극을 다룬 신작 오페라가 막을 올렸습니다. 무대 뒤편에서는 배우들이 긴장하고 있습니다.',
+    category: 'life',
+    minAge: 16,
+    maxAge: 999,
+    choices: [
+      {
+        id: 'c_laugh_at_siracusa_comedy',
+        label: '풍자와 블랙코미디가 가미된 희극 연극을 관람한다',
+        description: '배꼽 빠지는 시라쿠사식 풍자극을 즐깁니다.',
+        outcomes: {
+          success: {
+            text: '배우들의 능청스러운 연기와 마피아 풍자에 숨이 넘어갈 정도로 웃었습니다! 눈물이 찔끔 날 정도의 유쾌한 밤이었습니다.',
+            statEffects: { sanity: 25, health: 5 },
+            unlockAchievementId: 'common_siracusa_fatal_comedy'
+          }
+        }
+      },
+      {
+        id: 'c_opera_box_whisper',
+        label: '2층 귀빈실에서 패밀리 간부들과 밀담을 나눈다',
+        description: '시라쿠사 밤의 권력자들과 정보 거래를 틉니다.',
+        diceCheck: { stat: 'intellect', difficulty: 60 },
+        outcomes: {
+          criticalSuccess: {
+            text: '화려한 언변으로 패밀리 간부들의 호감을 사며 거액의 스폰서십을 약조받았습니다!',
+            statEffects: { wealth: 1200, intellect: 8 },
+            gainTitles: ['오페라의 귀빈']
+          },
+          success: {
+            text: '쏠쏠한 뒷골목 정보를 얻고 소정의 수고비를 챙겼습니다.',
+            statEffects: { wealth: 400, intellect: 4 }
+          },
+          failure: {
+            text: '무례한 태도로 패밀리의 눈 밖에 날 뻔했습니다.',
+            statEffects: { sanity: -15 }
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'bizarre_columbia_lab_zap',
+    title: '트리몬트 연구소의 고전압 누전 사고',
+    description: '컬럼비아 과학 연구소 견학 중 배전반이 폭발하며 굵은 스파크 전선이 허공에서 춤을 춥니다! 주변 연구원들이 비명을 지릅니다.',
+    category: 'life',
+    minAge: 15,
+    maxAge: 999,
+    choices: [
+      {
+        id: 'c_touch_zap_wire',
+        label: '번쩍이는 전선에 호기심으로 손을 뻗어본다',
+        description: '파지직! 순식간에 강력한 고전압 전류가 전신을 관통합니다.',
+        outcomes: {
+          success: {
+            text: '파지직!! 전신에 번개가 치며 머리카락이 고슴도치처럼 솟구쳤습니다! 기적적으로 살아남았으나 한동안 혀끝이 얼얼합니다.',
+            statEffects: { health: -15, sanity: 5, artsAptitude: 4 },
+            unlockAchievementId: 'common_columbia_lab_zap'
+          }
+        }
+      },
+      {
+        id: 'c_safely_insulate_circuit',
+        label: '절연 막대를 들고 메인 차단기를 내린다',
+        description: '기민하게 화재를 예방하고 사람들을 구합니다.',
+        diceCheck: { stat: 'intellect', difficulty: 55 },
+        outcomes: {
+          success: {
+            text: '신속한 판단으로 2차 폭발을 막아내 연구원들의 뜨거운 감사를 받았습니다.',
+            statEffects: { intellect: 8, wealth: 500 }
+          },
+          failure: {
+            text: '차단기를 내리는 과정에서 가벼운 감전 화상을 입었습니다.',
+            statEffects: { health: -10 }
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'bizarre_ursus_blizzard_vodka',
+    title: '영하 40도 북방 툰드라의 혹한과 보드카',
+    description: '우르수스 극북 설원의 밤. 체감 온도가 영하 40도까지 곤두박질치며 눈보라가 텐트를 찢을 듯이 몰아칩니다. 코끝이 딱딱하게 얼어붙기 시작합니다.',
+    category: 'life',
+    minAge: 18,
+    maxAge: 999,
+    choices: [
+      {
+        id: 'c_drink_nordic_vodka',
+        label: '우르수스 불곰 전사들이 건넨 70도 독주 보드카를 병째 마신다',
+        description: '목구멍을 태우는 화염 같은 알코올로 체온을 끌어올립니다.',
+        outcomes: {
+          success: {
+            text: '목구멍부터 위장까지 불길이 타오르는 듯한 열기가 전신으로 퍼지며 동상이 기적처럼 녹아내렸습니다! 우르수스 전사들이 호탕하게 웃으며 등을 두드립니다.',
+            statEffects: { health: 10, sanity: 15, combat: 5 },
+            unlockAchievementId: 'common_ursus_frostbite'
+          }
+        }
+      },
+      {
+        id: 'c_huddle_by_fire',
+        label: '모닥불 곁에서 털가죽 담요를 겹겹이 두르고 버틴다',
+        description: '안전하게 체온을 보존하며 새벽을 기다립니다.',
+        outcomes: {
+          success: {
+            text: '동틀 무렵 눈보라가 멎었습니다. 무사히 혹한의 밤을 넘겼습니다.',
+            statEffects: { health: 5, sanity: 5 }
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'catastrophe_originium_lightning',
+    title: '재앙 구름의 폭주: 흑자색 오리지늄 벼락',
+    description: '황야를 이동하던 중 갑작스러운 재앙 구름이 하늘을 뒤덮더니, 흑자색 오리지늄 번개가 대지를 뒤흔들며 바로 눈앞으로 내리꽂힙니다!',
+    category: 'fateful',
+    minAge: 16,
+    maxAge: 999,
+    choices: [
+      {
+        id: 'c_dodge_lightning',
+        label: '아츠 유닛과 무기를 역방향으로 휘두르며 벼락의 낙하 궤적을 쳐낸다',
+        description: '경이로운 반사신경으로 벼락을 흘려보냅니다.',
+        diceCheck: { stat: 'combat', difficulty: 75 },
+        outcomes: {
+          criticalSuccess: {
+            text: '기적과도 같은 신기(神技)! 벼락의 전하를 칼끝으로 흩뿌려버리며 한 점의 부상도 없이 대재앙을 비웃었습니다!',
+            statEffects: { combat: 15, artsAptitude: 12, sanity: 20 },
+            gainTitles: ['벼락을 베어낸 자'],
+            unlockAchievementId: 'rare_originium_lightning_strike'
+          },
+          success: {
+            text: '벼락의 파편에 겉옷이 불탔지만 치명상을 피하고 살아남았습니다.',
+            statEffects: { health: -20, sanity: 10 },
+            unlockAchievementId: 'rare_originium_lightning_strike'
+          },
+          failure: {
+            text: '충격파에 튕겨 날아가 깊은 내상을 입었습니다.',
+            statEffects: { health: -45, sanity: -20 }
+          }
+        }
+      },
+      {
+        id: 'c_shelter_bunker',
+        label: '암반 동굴 속으로 몸을 던져 피신한다',
+        description: '대피소에 숨어 번개가 지나가길 기다립니다.',
+        outcomes: {
+          success: {
+            text: '거센 천둥소리 속에서 동굴 천장이 흔들렸으나 다행히 무사히 피신했습니다.',
+            statEffects: { sanity: 5 }
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'rim_billiton_mega_drill_event',
+    title: '림 빌리톤 채굴선: 초대형 거대 굴착기',
+    description: '림 빌리톤의 거대한 이동 광산선 지하 심도 800미터. 고순도 오리지늄 광맥을 향해 전진하는 직경 20미터의 초대형 굴착기의 조종수가 급환으로 쓰러졌습니다!',
+    category: 'career',
+    minAge: 18,
+    maxAge: 999,
+    choices: [
+      {
+        id: 'c_drive_mega_drill',
+        label: '조종석에 올라타 굴착기의 회전 토크를 제어한다',
+        description: '지하 암반의 진동을 감각으로 읽으며 전진합니다.',
+        diceCheck: { stat: 'intellect', difficulty: 68 },
+        outcomes: {
+          criticalSuccess: {
+            text: '완벽한 각도 제어로 전설적인 고순도 광맥 코어를 채굴선 도크로 끌어올렸습니다! 광산 감독관이 찬사를 보냅니다!',
+            statEffects: { wealth: 3500, intellect: 10, combat: 8 },
+            gainTitles: ['대심도 채굴 기사'],
+            unlockAchievementId: 'rare_rim_billiton_mega_drill'
+          },
+          success: {
+            text: '거대 드릴의 균형을 되찾고 안전하게 암반을 돌파했습니다.',
+            statEffects: { wealth: 1500, intellect: 5 },
+            unlockAchievementId: 'rare_rim_billiton_mega_drill'
+          },
+          failure: {
+            text: '드릴 날이 과열되어 긴급 정지했습니다. 수리비가 청구됩니다.',
+            statEffects: { wealth: -300, sanity: -10 }
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'minos_athletic_triumph',
+    title: '미노스 전사 제전: 판크라티온 결투',
+    description: '자유와 체육의 나라 미노스. 고대 원형 경기장에서 수천 명의 군중이 환호하는 가운데 최고의 전사를 가리는 제전이 열렸습니다.',
+    category: 'combat',
+    minAge: 18,
+    maxAge: 999,
+    choices: [
+      {
+        id: 'c_enter_minos_arena',
+        label: '투기장에 입장하여 무패의 미노스 챔피언에게 도전한다',
+        description: '순수한 완력과 격투 기술로 승부를 겨룹니다.',
+        diceCheck: { stat: 'combat', difficulty: 72 },
+        outcomes: {
+          criticalSuccess: {
+            text: '경기장을 뒤흔드는 깔끔한 메치기로 챔피언을 제압했습니다! 군중들이 당신의 머리 위에 황금 월계관을 씌워줍니다!',
+            statEffects: { combat: 15, sanity: 25, wealth: 2500 },
+            gainTitles: ['미노스의 투기영웅'],
+            unlockAchievementId: 'rare_minos_golden_laurel'
+          },
+          success: {
+            text: '치열한 공방 끝에 판정승을 거두고 관중들의 박수갈채를 받았습니다.',
+            statEffects: { combat: 8, sanity: 15, wealth: 1000 },
+            unlockAchievementId: 'rare_minos_golden_laurel'
+          },
+          failure: {
+            text: '챔피언의 거센 돌진에 밀려 모래바닥에 쓰러졌습니다.',
+            statEffects: { health: -20, sanity: -10 }
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'priestess_black_box_discovery',
+    title: '【고대 인류의 메아리】 보존자의 비밀 블랙박스',
+    description: '지하 깊은 유적의 봉인된 냉각 챔버. 테라의 그 어떤 종족의 언어도 아닌, 만 년 전 고대 인류의 통신 규약으로 암호화된 블랙박스가 푸른빛을 점멸하고 있습니다.',
+    category: 'fateful',
+    minAge: 25,
+    maxAge: 999,
+    choices: [
+      {
+        id: 'c_decode_priestess_box',
+        label: '아츠 연산 유닛을 극대화하여 통신 암호 규약을 복원한다',
+        description: '고대 인류의 기록과 프리스티스의 마지막 육성을 재생합니다.',
+        diceCheck: { stat: 'intellect', difficulty: 85 },
+        outcomes: {
+          criticalSuccess: {
+            text: '기밀 프로토콜이 해제되며 부드럽고 서글픈 여인의 음성이 울려 퍼집니다. "...우리의 눈길이 다시 교차할 때까지, 부디 나를 잊지 말아줘." 테라 이전 인류의 궁극의 비밀을 목도했습니다!',
+            statEffects: { intellect: 30, sanity: 30 },
+            gainTitles: ['기원을 엿본 자'],
+            unlockAchievementId: 'legend_priestess_black_box',
+            setSecretFlag: 'witnessed_pre_terra_voice'
+          },
+          success: {
+            text: '데이터의 일부분을 복원하여 테라의 하늘 너머 별들에 관한 기록을 열람했습니다.',
+            statEffects: { intellect: 18, sanity: 15 },
+            unlockAchievementId: 'legend_priestess_black_box'
+          },
+          failure: {
+            text: '데이터 보호 시스템이 작동하여 코드가 영구 잠금 상태로 전환되었습니다.',
+            statEffects: { sanity: -15 }
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'cautus_warm_carrot_stew',
+    title: '카우투스 마을의 저녁: 따뜻한 당근 스튜',
+    description: '황야 여행 중 들른 작은 카우투스 정착지. 쌀쌀한 밤바람을 피해 들어간 작은 오두막에서 푸근한 인상의 어머니가 김이 모락모락 나는 당근과 감자 스튜를 한 그릇 내어줍니다.',
+    category: 'life',
+    minAge: 5,
+    maxAge: 999,
+    choices: [
+      {
+        id: 'c_enjoy_cautus_stew',
+        label: '따뜻한 스튜 한 그릇을 감사히 비우고 온기를 나눈다',
+        description: '소박하지만 진심 어린 환대에 마음이 녹아내립니다.',
+        outcomes: {
+          success: {
+            text: '진하고 달콤한 국물이 지친 몸과 마음을 치유해 주었습니다. 오랜만에 깊고 편안한 잠을 청했습니다.',
+            statEffects: { health: 20, sanity: 25 },
+            unlockAchievementId: 'common_cautus_carrot_stew'
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'durin_underground_retreat',
+    title: '지하 두린 대도시의 초대: 달콤한 낮잠',
+    description: '지하 거대 공동에 자리 잡은 두린들의 도시 쩨르노. 지상의 오리지늄 분진과 전쟁의 위협이 전혀 닿지 않는 아늑한 온천 여관에 투숙하게 되었습니다.',
+    category: 'life',
+    minAge: 15,
+    maxAge: 999,
+    choices: [
+      {
+        id: 'c_sleep_durin_nap',
+        label: '푹신한 버섯 매트리스 위에서 알람 없이 12시간 꿀잠을 잔다',
+        description: '두린 종족의 여유로운 수면 철학을 만끽합니다.',
+        outcomes: {
+          success: {
+            text: '세상의 모든 피로가 씻은 듯이 사라졌습니다! 눈을 뜨니 상쾌한 아침 햇살 대신 아늑한 발광석 등불이 반겨줍니다.',
+            statEffects: { sanity: 35, health: 15 },
+            unlockAchievementId: 'common_durin_nap_master'
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'nomad_campfire_night',
+    title: '황야 노마드 캠프의 밤: 모닥불과 노래',
+    description: '이동도시의 차가운 강철벽을 떠나 황야의 유랑민들과 캠프를 차렸습니다. 딱딱거리는 모닥불 가에 모인 방랑자들이 옛 노래를 흥얼거립니다.',
+    category: 'life',
+    minAge: 10,
+    maxAge: 999,
+    choices: [
+      {
+        id: 'c_join_nomad_song',
+        label: '모닥불 곁에 앉아 낡은 현악기를 뜯으며 함께 노래한다',
+        description: '대지의 방랑자들과 교감을 나눕니다.',
+        outcomes: {
+          success: {
+            text: '모닥불 불꽃이 밤하늘로 날아오르고, 유랑민들의 합창이 황야의 침묵을 따뜻하게 물들였습니다.',
+            statEffects: { sanity: 20, luck: 5 },
+            unlockAchievementId: 'common_nomad_campfire'
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'slum_street_smart_encounter',
+    title: '슬럼가 골목길의 소매치기',
+    description: '어두운 슬럼가 골목을 지나던 중, 한 아이가 지나치는 척하며 당신의 주머니 속 지갑을 날렵하게 털어가려 합니다!',
+    category: 'life',
+    minAge: 8,
+    maxAge: 999,
+    choices: [
+      {
+        id: 'c_catch_pickpocket',
+        label: '반사적으로 소매치기의 손목을 비틀어 쥐어챈다',
+        description: '도심 뒷골목의 생존 본능을 발휘합니다.',
+        diceCheck: { stat: 'luck', difficulty: 45 },
+        outcomes: {
+          success: {
+            text: '소매치기의 손목을 붙잡고 지갑을 사수했습니다! 아이는 깜짝 놀라 혀를 내두르며 사과하고 달아났습니다.',
+            statEffects: { combat: 4, luck: 6 },
+            unlockAchievementId: 'common_slum_street_smart'
+          },
+          failure: {
+            text: '기민한 꼬마의 손놀림을 놓쳐 지갑에서 약간의 동전을 털렸습니다.',
+            statEffects: { wealth: -80, sanity: -5 }
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'kazdel_royal_court_assembly',
+    title: '【카즈델 왕정】 섭정왕 어전 회의의 밀서',
+    description: '카즈델 군사위원회가 전 대륙의 전쟁을 획책하는 비밀 왕정 회의실. 섭정왕 테레시스와 군단장들의 작전 지도가 놓여 있습니다.',
+    category: 'fateful',
+    minAge: 25,
+    maxAge: 999,
+    choices: [
+      {
+        id: 'c_infiltrate_kazdel_court',
+        label: '어둠 속에 몸을 숨겨 왕정 위원회의 비밀 군사 배치도를 필사한다',
+        description: '발각되면 즉각 참수당하는 극도의 첩보 작전입니다.',
+        diceCheck: { stat: 'intellect', difficulty: 78 },
+        outcomes: {
+          criticalSuccess: {
+            text: '그림자조차 눈치채지 못하게 왕정의 극비 작전 문서를 완벽히 탈취했습니다! 이 정보는 런디니움과 로도스의 운명을 바꿀 것입니다!',
+            statEffects: { intellect: 25, sanity: 20 },
+            gainTitles: ['밤을 훔친 자'],
+            unlockAchievementId: 'unique_kazdel_court_infiltrator'
+          },
+          success: {
+            text: '간발의 차로 핵심 전술 지도 일부를 확보하고 탈출했습니다.',
+            statEffects: { intellect: 15, sanity: 10 },
+            unlockAchievementId: 'unique_kazdel_court_infiltrator'
+          },
+          failure: {
+            text: '순찰병에게 발각되어 혈투 끝에 부상을 입고 간신히 도주했습니다.',
+            statEffects: { health: -40, sanity: -25 }
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'sargon_pharaoh_tomb_expedition',
+    title: '사르곤 황금 사막: 전설의 파디샤 능묘',
+    description: '모래바람이 불어 닥친 사르곤 깊은 황무지에서 천 년 전 파디샤의 황금 묘역 입구가 지표면으로 드러났습니다.',
+    category: 'fateful',
+    minAge: 25,
+    maxAge: 999,
+    choices: [
+      {
+        id: 'c_enter_pharaoh_tomb',
+        label: '고대 주술 함정을 해제하고 황금 묘역 중심부로 진입한다',
+        description: '전설의 파디샤 옥좌와 보물을 탐색합니다.',
+        diceCheck: { stat: 'intellect', difficulty: 75 },
+        outcomes: {
+          criticalSuccess: {
+            text: '주술 함정을 완벽히 파훼하고 고대 파디샤의 황금 단검과 5,000 LMD 상당의 보석을 획득했습니다!',
+            statEffects: { wealth: 5000, intellect: 15, sanity: 20 },
+            gainTitles: ['사막의 발굴왕'],
+            unlockAchievementId: 'mystic_sargon_pharaoh_tomb'
+          },
+          success: {
+            text: '함정을 피해 황금 보물 일부를 챙겨 무사히 귀환했습니다.',
+            statEffects: { wealth: 2000, intellect: 8 },
+            unlockAchievementId: 'mystic_sargon_pharaoh_tomb'
+          },
+          failure: {
+            text: '독화살 함정이 작동하여 어깨에 부상을 입고 후퇴했습니다.',
+            statEffects: { health: -30, sanity: -15 }
           }
         }
       }

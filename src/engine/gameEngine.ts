@@ -56,6 +56,65 @@ export class GameEngine {
     }
   }
 
+  // 종족별 수명 및 노화 프로필 계산
+  public static getCharacterLifespanProfile(char: Character): {
+    baseLifespan: number;
+    maxLifespan: number;
+    agingStartAge: number;
+    agingRate: number;
+    effectiveMaxLifespan: number;
+    effectiveAgingStart: number;
+  } {
+    const raceData = RACES_DATA.find(r => r.name === char.race) || RACES_DATA[0];
+    let base = raceData.lifespan.baseLifespan;
+    let max = raceData.lifespan.maxLifespan;
+    let agingStart = raceData.lifespan.agingStartAge;
+    let rate = raceData.lifespan.agingRate;
+
+    if (char.subRace && raceData.lifespan.subRaceLifespans?.[char.subRace]) {
+      const sub = raceData.lifespan.subRaceLifespans[char.subRace];
+      base = sub.baseLifespan;
+      max = sub.maxLifespan;
+      agingStart = sub.agingStartAge;
+      rate = sub.agingRate;
+    }
+
+    // 광석병 결정화율 및 병변 부위에 따른 수명 단축 계산
+    let effectiveMax = max;
+    let effectiveAging = agingStart;
+
+    if (char.oripathy.isInfected) {
+      // 결정화율 0% ~ 100%에 비례하여 최대 수명 단축 (최대 65% 단축)
+      let penaltyRatio = (char.oripathy.crystallizationRate / 100) * 0.65;
+
+      // 치명적 장기 병변 부위 (폐, 혈관계, 신경계)는 추가 부담
+      if (char.oripathy.lesionSite === '호흡기(폐)' || char.oripathy.lesionSite === '혈관계') {
+        penaltyRatio += 0.12;
+      } else if (char.oripathy.lesionSite === '신경계') {
+        penaltyRatio += 0.10;
+      }
+
+      // 억제제 복용 중이면 수명 감퇴 50% 완화
+      if (char.oripathy.suppressantDoseLeft > 0) {
+        penaltyRatio *= 0.5;
+      }
+
+      penaltyRatio = Math.min(0.85, penaltyRatio);
+
+      effectiveMax = Math.max(22, Math.round(max * (1 - penaltyRatio)));
+      effectiveAging = Math.max(16, Math.round(agingStart * (1 - penaltyRatio * 0.6)));
+    }
+
+    return {
+      baseLifespan: base,
+      maxLifespan: max,
+      agingStartAge: agingStart,
+      agingRate: rate,
+      effectiveMaxLifespan: effectiveMax,
+      effectiveAgingStart: effectiveAging
+    };
+  }
+
   // 캐릭터 무작위 생성 (출생)
   public static createRandomCharacter(): Character {
     // 0.5% 확률로 희귀 고대종(드라코, 아슬란)
@@ -107,6 +166,7 @@ export class GameEngine {
     let initialInfection = false;
     let baseInfectionChance = 0.15;
     if (race.id === 'sarkaz') baseInfectionChance += 0.25;
+    if (race.id === 'cautus') baseInfectionChance += 0.15;
     if (environment === '슬럼가 및 암시장' || environment === '황야의 노마드 캠프') baseInfectionChance += 0.15;
     if (race.id === 'aegir') baseInfectionChance = 0.01; // 에기르는 극저확률
 
@@ -178,23 +238,84 @@ export class GameEngine {
     char.year += 1;
     char.actionPoints = char.stats.intellect >= 70 ? 2 : 1;
 
-    // --- 나이 및 스탯 마일스톤 업적 검사 ---
+    // --- 나이 및 생존 마일스톤 업적 ---
     if (char.age >= 1) this.triggerAchievement(char, 'common_first_breath', addLog);
     if (char.age >= 15) this.triggerAchievement(char, 'common_coming_of_age', addLog);
     if (char.age >= 30) this.triggerAchievement(char, 'common_survive_30', addLog);
     if (char.age >= 50) this.triggerAchievement(char, 'rare_survive_50', addLog);
     if (char.age >= 70) this.triggerAchievement(char, 'mystic_longevity_70', addLog);
+    if (char.age >= 100) this.triggerAchievement(char, 'mystic_centenarian_100', addLog);
+    
+    // 종족별 초장수 업적
+    if (char.race.includes('살카즈') && char.age >= 150) {
+      this.triggerAchievement(char, 'unique_sarkaz_elder_150', addLog);
+    }
+    if (char.race.includes('살카즈') && char.age >= 200) {
+      this.triggerAchievement(char, 'legend_sarkaz_two_centuries', addLog);
+    }
+    if (char.race.includes('에기르') && char.age >= 120) {
+      this.triggerAchievement(char, 'unique_aegir_deep_longevity', addLog);
+    }
 
+    // 완전 비감염 60세 생존
+    if (!char.oripathy.isInfected && char.age >= 60) {
+      this.triggerAchievement(char, 'rare_pure_blood_60', addLog);
+    }
+
+    // 말기 광석병(결정화율 70% 이상) 상태에서 장기 생존
+    if (char.oripathy.isInfected && char.oripathy.crystallizationRate >= 70 && char.age >= 35) {
+      this.triggerAchievement(char, 'unique_crystallized_will', addLog);
+    }
+
+    // 청빈한 은둔자 (50세 이상, 자산 200 이하)
+    if (char.age >= 50 && char.stats.wealth <= 200) {
+      this.triggerAchievement(char, 'rare_ascetic_hermit', addLog);
+    }
+
+    // 불운 속 생존 (행운 <= 15로 40세 생존)
+    if (char.stats.luck <= 15 && char.age >= 40) {
+      this.triggerAchievement(char, 'rare_miraculous_misfortune', addLog);
+    }
+
+    // --- 자산 마일스톤 ---
     if (char.stats.wealth >= 1000) this.triggerAchievement(char, 'common_wealth_1k', addLog);
     if (char.stats.wealth >= 30000) this.triggerAchievement(char, 'unique_lmd_tycoon_max', addLog);
+    if (char.stats.wealth >= 50000) this.triggerAchievement(char, 'unique_wealth_50k', addLog);
+    if (char.stats.wealth >= 100000) this.triggerAchievement(char, 'legend_columbia_bank_sovereign', addLog);
 
+    // --- 스탯 극대화 마일스톤 ---
     if (char.stats.artsAptitude >= 90) this.triggerAchievement(char, 'rare_arts_mastery', addLog);
     if (char.stats.combat >= 90) this.triggerAchievement(char, 'rare_iron_warlord', addLog);
     if (char.stats.intellect >= 90) this.triggerAchievement(char, 'rare_grand_intellect', addLog);
+    if (char.stats.luck >= 90) this.triggerAchievement(char, 'rare_destiny_favored', addLog);
 
+    if (char.stats.combat >= 100) this.triggerAchievement(char, 'unique_combat_apex', addLog);
+    if (char.stats.artsAptitude >= 100) this.triggerAchievement(char, 'unique_arts_apex', addLog);
+    if (char.stats.intellect >= 100) this.triggerAchievement(char, 'unique_intellect_apex', addLog);
+
+    // 종족별 특화 스탯 업적
+    if (char.race.includes('드라코') && char.stats.artsAptitude >= 95) {
+      this.triggerAchievement(char, 'legend_draco_apocalypse', addLog);
+    }
+    if (char.race.includes('아슬란') && char.stats.combat >= 95) {
+      this.triggerAchievement(char, 'legend_aslan_empire_conqueror', addLog);
+    }
+    if (char.race.includes('살카즈') && char.stats.artsAptitude >= 85 && char.oripathy.activeArtsMultiplier >= 2.0) {
+      this.triggerAchievement(char, 'mystic_sarkaz_blood_surge', addLog);
+    }
+    if (char.race.includes('산크타') && char.stats.sanity >= 95) {
+      this.triggerAchievement(char, 'mystic_sankta_pure_halo', addLog);
+    }
+    if (char.race.includes('에기르') && char.stats.health >= 95 && char.stats.combat >= 90) {
+      this.triggerAchievement(char, 'mystic_aegir_prime_physique', addLog);
+    }
+
+    // --- 진영 평판 마일스톤 ---
     if ((char.factions['로도스 아일랜드'] || 0) >= 60) this.triggerAchievement(char, 'rare_rhodes_specialist', addLog);
     if ((char.factions['용문 근위국'] || 0) >= 50) this.triggerAchievement(char, 'rare_lungmen_captain', addLog);
     if ((char.factions['블랙스틸'] || 0) >= 50) this.triggerAchievement(char, 'rare_blacksteel_contract', addLog);
+    if ((char.factions['쉐라그'] || 0) >= 50) this.triggerAchievement(char, 'rare_karlan_trust', addLog);
+    if ((char.factions['쉐라그'] || 0) >= 70) this.triggerAchievement(char, 'mystic_silverash_confidant', addLog);
 
     // 1. 테라 대사건 타임라인 속보 체크
     const worldNews = WORLD_TIMELINE.find(t => t.year === char.year);
@@ -235,6 +356,7 @@ export class GameEngine {
           type: 'hazard'
         });
         sound.playHazardAlarm();
+        this.triggerAchievement(char, 'common_suppressant_shortage', addLog);
       }
 
       const rate = char.oripathy.crystallizationRate;
@@ -287,6 +409,10 @@ export class GameEngine {
       }
     }
 
+    if (char.stats.wealth <= 0) {
+      this.triggerAchievement(char, 'rare_bankruptcy_ruin', addLog);
+    }
+
     // 3. 체력/이성 고갈 판정
     if (char.stats.health <= 0) {
       char.isAlive = false;
@@ -312,15 +438,59 @@ export class GameEngine {
       char.stats.sanity = 15;
     }
 
-    // 4. 노환 판정 (65세 이상 매년 생존 주사위)
-    if (char.age >= 65) {
-      if (Math.random() < (char.age - 60) * 0.05) {
+    // 4. 종족별 노화 및 자연 수명 판정
+    const profile = this.getCharacterLifespanProfile(char);
+
+    // 노화 판정 및 점진적 신체 감퇴/지혜 성장
+    if (char.age >= profile.effectiveAgingStart) {
+      const agingCycle = Math.max(3, Math.round(5 * profile.agingRate));
+      const isAgingTurn = (char.age - profile.effectiveAgingStart) % agingCycle === 0;
+
+      if (isAgingTurn) {
+        const combatLoss = Math.random() < 0.6 ? 1 : 0;
+        const healthLoss = Math.random() < 0.6 ? 2 : 1;
+        char.stats.combat = Math.max(10, char.stats.combat - combatLoss);
+        char.stats.health = Math.max(15, char.stats.health - healthLoss);
+        char.stats.maxHealth = Math.max(30, char.stats.maxHealth - 1);
+        
+        if (Math.random() < 0.5) {
+          char.stats.intellect += 1;
+        }
+
+        if (char.age % 10 === 0) {
+          addLog({
+            year: char.year,
+            age: char.age,
+            title: `【세월의 흔적】 ${char.race}의 신체 변화`,
+            text: `향년 ${char.age}세. ${char.race}${char.subRace ? `(${char.subRace})` : ''}의 생애 주기에 따라 세월의 무게가 깃듭니다. 반응 속도가 다소 둔화되었으나 노련한 지략이 깊어집니다.`,
+            type: 'general'
+          });
+        }
+      }
+    }
+
+    // 자연 수명 사망 판정
+    if (char.age >= profile.baseLifespan || char.age >= profile.effectiveMaxLifespan) {
+      const excess = char.age - profile.baseLifespan;
+      const span = Math.max(4, profile.effectiveMaxLifespan - profile.baseLifespan);
+      const progress = Math.max(0, excess / span);
+      
+      let deathChance = Math.min(0.95, Math.pow(progress, 1.7) * 0.28 + 0.04);
+      if (char.oripathy.isInfected) {
+        deathChance += (char.oripathy.crystallizationRate / 100) * 0.15;
+      }
+
+      if (char.age >= profile.effectiveMaxLifespan || Math.random() < deathChance) {
         char.isAlive = false;
+        const isLongLived = char.age >= 100;
+        const raceEpitaph = isLongLived
+          ? `수세기에 걸친 테라의 격변과 방랑을 뒤로하고, 향년 ${char.age}세의 나이로 영면에 들었습니다.`
+          : `${char.race} 종족의 기대 수명(${profile.baseLifespan}세)을 채우고 향년 ${char.age}세에 평온하게 숨을 거두었습니다.`;
         char.deathRecord = this.generateDeathRecord(
           char,
           'OldAge',
-          `가혹한 테라에서 ${char.age}세의 나이로 천수를 누리고 영면`,
-          '평화롭게 지난 생애의 기억을 회상하며 숨을 거두었습니다.'
+          `${char.race} 종족의 기대 수명(${profile.baseLifespan}세)을 넘어 향년 ${char.age}세로 천수를 누리고 영면`,
+          raceEpitaph
         );
         sound.playFlatline();
         return { updatedChar: char };
@@ -652,7 +822,8 @@ export class GameEngine {
       log: [`적 [${enemyTemplate.name}]과(와) 조우했습니다! 전투 태세를 갖추십시오.`],
       isPlayerTurn: true,
       playerShield: 0,
-      enemyShield: 0
+      enemyShield: 0,
+      damageTaken: 0
     };
   }
 
@@ -672,6 +843,13 @@ export class GameEngine {
 
     if (!b.isActive) return { updatedChar: char, updatedBattle: b };
 
+    const grantAch = (achId: string) => {
+      if (!char.unlockedAchievements.includes(achId)) {
+        char.unlockedAchievements.push(achId);
+        storage.saveUnlockedAchievement(achId, char.name, char.year);
+      }
+    };
+
     switch (command) {
       case 'attack': {
         sound.playSlash();
@@ -681,6 +859,9 @@ export class GameEngine {
         const effectiveDmg = Math.max(5, rawDmg - b.enemy.def);
         b.enemy.hp = Math.max(0, b.enemy.hp - effectiveDmg);
         b.log.unshift(`> 당신의 물리 공격! [${b.enemy.name}]에게 ${effectiveDmg}의 물리 피해를 입혔습니다.`);
+        if (char.race.includes('루포') && effectiveDmg >= 45) {
+          grantAch('rare_lupo_crimson_fangs');
+        }
         break;
       }
       case 'arts': {
@@ -691,12 +872,18 @@ export class GameEngine {
         b.enemy.hp = Math.max(0, b.enemy.hp - effectiveDmg);
         char.stats.sanity = Math.max(0, char.stats.sanity - 8);
         b.log.unshift(`> 오리지늄 아츠 영창! (증폭: ${artsAmp}x) [${b.enemy.name}]에게 ${effectiveDmg}의 아츠 피해! (이성 -8)`);
+        if (char.race.includes('카프리니') && effectiveDmg >= 55) {
+          grantAch('rare_caprinae_golden_melody');
+        }
         break;
       }
       case 'defend': {
         sound.playBeep(500, 0.1, 'triangle');
         b.playerShield = 40;
         b.log.unshift(`> 전술 방어 태세를 취했습니다. (방어 실드 40 전개)`);
+        if (char.race.includes('포르테')) {
+          grantAch('rare_forte_unshakable_bastion');
+        }
         break;
       }
       case 'item': {
@@ -726,6 +913,9 @@ export class GameEngine {
           b.isActive = false;
           b.result = 'fled';
           b.log.unshift(`> 연막을 뿌리고 전장에서 무사히 탈출했습니다!`);
+          if (char.race.includes('쿠란타')) {
+            grantAch('rare_kuranta_unstoppable_gallop');
+          }
           return { updatedChar: char, updatedBattle: b };
         } else {
           b.log.unshift(`> 탈출 실패! 적의 포위망에 가로막혔습니다.`);
@@ -742,11 +932,40 @@ export class GameEngine {
       char.stats[b.enemy.rewardExpStat] = (char.stats[b.enemy.rewardExpStat] || 0) + 4;
       b.log.unshift(`★ 승리! [${b.enemy.name}]을(를) 물리치고 ${b.enemy.rewardLmd} LMD와 경험치를 획득했습니다!`);
       
-      // 전투 승리 업적
-      if (!char.unlockedAchievements.includes('common_first_victory')) {
-        char.unlockedAchievements.push('common_first_victory');
-        storage.saveUnlockedAchievement('common_first_victory', char.name, char.year);
+      // 전투 승리 업적들
+      grantAch('common_first_victory');
+
+      if ((b.damageTaken || 0) === 0) {
+        grantAch('rare_flawless_duel');
       }
+
+      if (!char.equipment.weapon && !char.equipment.armor) {
+        grantAch('rare_barehand_brawler');
+      }
+
+      if (char.race.includes('펠린') && char.stats.health <= 5) {
+        grantAch('rare_feline_nine_lives');
+      }
+
+      if (char.race.includes('우르수스') && char.stats.health <= 20) {
+        grantAch('rare_ursus_unbreakable_rage');
+      }
+
+      if (char.race.includes('리베리')) {
+        grantAch('rare_liberi_stratosphere_flight');
+      }
+
+      // 보스 처치 업적
+      if (b.enemy.id === 'emperors_blade' || b.enemy.name.includes('황제의 검')) {
+        grantAch('unique_slay_emperors_blade');
+      }
+      if (b.enemy.id === 'seaborne_predator' || b.enemy.name.includes('심해')) {
+        grantAch('unique_slay_abyssal_cult');
+      }
+      if (b.enemy.id === 'londinium_steam_knight' || b.enemy.name.includes('증기기사')) {
+        grantAch('unique_slay_steam_goliath');
+      }
+
       return { updatedChar: char, updatedBattle: b };
     }
 
@@ -767,6 +986,7 @@ export class GameEngine {
     if (netDmg > 0) {
       sound.playBeep(220, 0.15, 'sawtooth');
       char.stats.health = Math.max(0, char.stats.health - netDmg);
+      b.damageTaken = (b.damageTaken || 0) + netDmg;
       b.log.unshift(`! [${b.enemy.name}]의 반격! ${netDmg}의 피해를 입었습니다. (잔여 체력: ${char.stats.health})`);
     } else {
       b.log.unshift(`! 적의 공격을 방어 실드로 완벽히 차단했습니다!`);
@@ -847,6 +1067,11 @@ export class GameEngine {
     // 신화적 업적 달성 검사
     if (totalScore >= 8000) {
       storage.saveUnlockedAchievement('legend_living_myth', char.name, char.year);
+    }
+
+    // 짧고 찬란했던 청춘 전사 업적
+    if (char.age <= 25 && char.stats.combat >= 80) {
+      storage.saveUnlockedAchievement('rare_youth_warrior_blaze', char.name, char.year);
     }
 
     return {

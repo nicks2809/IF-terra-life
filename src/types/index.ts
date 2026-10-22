@@ -15,6 +15,21 @@ export interface RaceTrait {
   oripathyRiskBonus?: number;
 }
 
+export interface SubRaceLifespan {
+  baseLifespan: number;
+  maxLifespan: number;
+  agingStartAge: number;
+  agingRate: number;
+}
+
+export interface RaceLifespanConfig {
+  baseLifespan: number;        // 평균 자연 수명 (노화 사망 시작 연령)
+  maxLifespan: number;         // 절대 최대 수명
+  agingStartAge: number;       // 신체 노화 시작 나이 (스탯 감퇴 등)
+  agingRate: number;           // 노화 진행 계수 (1.0 = 표준, 0.2~0.5 = 장수종)
+  subRaceLifespans?: Record<string, SubRaceLifespan>;
+}
+
 export interface RaceData {
   id: string;
   name: string;
@@ -25,6 +40,7 @@ export interface RaceData {
   traits: RaceTrait[];
   avatarIcon: string;
   baseStats: CharacterStats;
+  lifespan: RaceLifespanConfig;
 }
 
 export interface NationData {
@@ -111,6 +127,7 @@ export interface Achievement {
   points: number;
   category: AchievementCategory;
   icon?: string;
+  hint?: string;
 }
 
 export interface UnlockedAchievement {
@@ -273,6 +290,7 @@ export interface BattleState {
   isPlayerTurn: boolean;
   playerShield: number;
   enemyShield: number;
+  damageTaken?: number;
   result?: 'victory' | 'defeat' | 'fled';
 }
 

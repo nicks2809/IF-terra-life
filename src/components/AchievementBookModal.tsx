@@ -5,15 +5,12 @@ import { ACHIEVEMENTS_DATA, TIER_COLORS, TIER_SCORES } from '../data/achievement
 import { storage } from '../services/storage';
 import { 
   Trophy, 
-  Award, 
-  Sparkles, 
   X, 
   Lock, 
   CheckCircle2, 
-  Flame, 
-  Star, 
-  ShieldCheck,
-  Search
+  Search,
+  HelpCircle,
+  Sparkles
 } from 'lucide-react';
 
 interface Props {
@@ -29,6 +26,7 @@ export const AchievementBookModal: React.FC<Props> = ({
 }) => {
   const [selectedTier, setSelectedTier] = useState<AchievementTier | 'ALL'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
 
   const isPrts = theme === 'prts';
 
@@ -57,7 +55,8 @@ export const AchievementBookModal: React.FC<Props> = ({
         const q = searchQuery.toLowerCase();
         const matchTitle = ach.title.toLowerCase().includes(q);
         const matchDesc = ach.description.toLowerCase().includes(q);
-        return matchTitle || matchDesc;
+        const matchHint = ach.hint ? ach.hint.toLowerCase().includes(q) : false;
+        return matchTitle || matchDesc || matchHint;
       }
       return true;
     });
@@ -73,6 +72,10 @@ export const AchievementBookModal: React.FC<Props> = ({
     { key: 'Rare', label: '레어 (Rare)', score: TIER_SCORES.Rare },
     { key: 'Common', label: '커먼 (Common)', score: TIER_SCORES.Common },
   ];
+
+  const handleCardClick = (achId: string) => {
+    setSelectedCardId(prev => prev === achId ? null : achId);
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-3 sm:p-6 overflow-y-auto">
@@ -109,7 +112,7 @@ export const AchievementBookModal: React.FC<Props> = ({
                 </span>
               </div>
               <p className="text-xs opacity-70 mt-0.5">
-                여러 회차를 거치며 테라의 대지에 새긴 위대한 발자취들을 수집하고 보존합니다.
+                여러 회차를 거치며 테라의 대지에 새긴 위대한 발자취들을 수집하고 보존합니다. (미해금 업적을 누르면 힌트가 표시됩니다)
               </p>
             </div>
           </div>
@@ -163,7 +166,7 @@ export const AchievementBookModal: React.FC<Props> = ({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="업적 이름 또는 설명 검색..."
+              placeholder="업적 이름 또는 힌트 검색..."
               className={`w-full pl-8 pr-3 py-1.5 rounded-lg text-xs outline-none border transition-all ${
                 isPrts 
                   ? 'bg-black/50 border-cyan-500/30 text-slate-200 focus:border-cyan-400' 
@@ -218,16 +221,18 @@ export const AchievementBookModal: React.FC<Props> = ({
               {filteredAchievements.map((ach) => {
                 const unlocked = unlockedMap[ach.id];
                 const tierStyle = TIER_COLORS[ach.tier];
+                const isSelected = selectedCardId === ach.id;
 
                 return (
                   <div
                     key={ach.id}
-                    className={`rounded-xl border p-4 relative overflow-hidden transition-all flex flex-col justify-between ${
+                    onClick={() => handleCardClick(ach.id)}
+                    className={`rounded-xl border p-4 relative overflow-hidden transition-all flex flex-col justify-between cursor-pointer select-none ${
                       unlocked 
-                        ? `${tierStyle.bg} ${tierStyle.border} ${isPrts ? 'shadow-lg shadow-black/40' : 'shadow-md'}` 
+                        ? `${tierStyle.bg} ${tierStyle.border} ${isPrts ? 'shadow-lg shadow-black/40 hover:border-cyan-400' : 'shadow-md hover:border-[#8b1e1e]'}` 
                         : isPrts 
-                          ? 'bg-black/40 border-slate-800/80 opacity-60' 
-                          : 'bg-[#ebdcb4]/60 border-[#5c4033]/30 opacity-65'
+                          ? `bg-black/40 border-slate-800/80 hover:bg-slate-900/60 hover:border-cyan-500/50 ${isSelected ? 'border-cyan-400/80 ring-1 ring-cyan-400/30' : 'opacity-75'}` 
+                          : `bg-[#ebdcb4]/60 border-[#5c4033]/30 hover:bg-[#e6d3a6] hover:border-[#8b1e1e]/60 ${isSelected ? 'border-[#8b1e1e] ring-1 ring-[#8b1e1e]/40' : 'opacity-80'}`
                     }`}
                   >
                     {/* Top Row: Tier badge & Points */}
@@ -247,9 +252,9 @@ export const AchievementBookModal: React.FC<Props> = ({
                           <span className="text-[10px]">해금 완료</span>
                         </div>
                       ) : (
-                        <div className="flex items-center space-x-1 text-slate-400 text-xs">
+                        <div className="flex items-center space-x-1 text-amber-400/90 text-xs font-semibold">
                           <Lock className="w-3.5 h-3.5" />
-                          <span className="text-[10px]">미해금</span>
+                          <span className="text-[10px]">{isSelected ? '힌트 표시 중' : '미해금 (클릭 시 힌트)'}</span>
                         </div>
                       )}
                     </div>
@@ -257,7 +262,7 @@ export const AchievementBookModal: React.FC<Props> = ({
                     {/* Title & Description */}
                     <div>
                       <h3 className={`text-base font-extrabold tracking-wide mb-1 flex items-center space-x-1.5 ${
-                        unlocked ? tierStyle.text : 'text-slate-400'
+                        unlocked ? tierStyle.text : 'text-slate-300'
                       }`}>
                         <span>{ach.title}</span>
                       </h3>
@@ -276,6 +281,34 @@ export const AchievementBookModal: React.FC<Props> = ({
                         </div>
                       )}
                     </div>
+
+                    {/* Subtle Hint Section for unearned achievement */}
+                    {!unlocked && (
+                      <div className="mt-3 pt-2 border-t border-white/10">
+                        {isSelected ? (
+                          <div className={`text-xs p-2.5 rounded-lg flex items-start space-x-2 transition-all ${
+                            isPrts 
+                              ? 'bg-cyan-950/50 border border-cyan-500/30 text-cyan-200' 
+                              : 'bg-[#8b1e1e]/10 border border-[#8b1e1e]/30 text-[#8b1e1e]'
+                          }`}>
+                            <HelpCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
+                            <div className="leading-relaxed">
+                              <span className="text-[10px] font-bold block uppercase tracking-wider opacity-70">
+                                {isPrts ? 'PRTS HINT // 달성 단서' : '테라 사서의 기록 단서'}
+                              </span>
+                              <span className="text-xs font-medium">
+                                {ach.hint || '특수 사건이나 행동을 통해 이 업적의 단서를 발견할 수 있습니다.'}
+                              </span>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center space-x-1.5 text-[11px] opacity-60 hover:opacity-100 transition-opacity text-amber-400/90">
+                            <Sparkles className="w-3.5 h-3.5" />
+                            <span>카드를 클릭하여 잠금 해제 힌트 확인</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {/* Footer: Unlock Record */}
                     {unlocked && (

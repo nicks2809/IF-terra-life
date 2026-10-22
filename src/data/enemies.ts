@@ -91,5 +91,20 @@ export const ENEMIES_DATA: Record<string, Enemy> = {
     avatarIcon: 'cpu',
     rewardLmd: 5000,
     rewardExpStat: 'combat'
+  },
+  emperors_blade: {
+    id: 'emperors_blade',
+    name: '황제의 검: 검은 안개의 추종자',
+    faction: '우르수스 황실 내위',
+    hp: 880,
+    maxHp: 880,
+    atk: 70,
+    def: 55,
+    artsRes: 45,
+    specialSkillName: '붕괴 도메인 전개',
+    specialSkillDesc: '검은 안개를 뿜어내며 플레이어의 모든 공격을 억압합니다.',
+    avatarIcon: 'skull',
+    rewardLmd: 4500,
+    rewardExpStat: 'combat'
   }
 };

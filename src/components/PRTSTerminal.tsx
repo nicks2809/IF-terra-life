@@ -1,6 +1,6 @@
-// src/components/PRTSTerminal.tsx
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useMemo } from 'react';
 import { Character, LogEntry, GameEvent, EventChoice, GameSpeed, ThemeMode } from '../types';
+import { GameEngine } from '../engine/gameEngine';
 import { EventLogPanel } from './EventLogPanel';
 import { 
   Heart, 
@@ -104,6 +104,10 @@ export const PRTSTerminal: React.FC<Props> = ({
     render();
     return () => cancelAnimationFrame(animationId);
   }, [character.stats.health, character.isAlive]);
+
+  const lifespanProfile = useMemo(() => {
+    return GameEngine.getCharacterLifespanProfile(character);
+  }, [character.race, character.subRace, character.oripathy.crystallizationRate, character.oripathy.suppressantDoseLeft]);
 
   const oripathyBadge = {
     Clean: { label: '비감염 (CLEAN)', color: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' },
@@ -268,6 +272,12 @@ export const PRTSTerminal: React.FC<Props> = ({
             </div>
             <div className="text-xs text-slate-400">
               현재 직업: <span className="text-cyan-300">{character.career}</span>
+            </div>
+            <div className="text-xs text-slate-400 mt-1 flex items-center justify-between border-t border-cyan-500/20 pt-1.5">
+              <span>기대 수명: <span className="text-cyan-300 font-bold">{lifespanProfile.baseLifespan}세</span> (한계 {lifespanProfile.effectiveMaxLifespan}세)</span>
+              {character.oripathy.isInfected && (
+                <span className="text-[10px] text-amber-400">광석병 감퇴 적용</span>
+              )}
             </div>
 
             {/* Titles */}

@@ -1,6 +1,6 @@
-// src/components/HistoryTome.tsx
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Character, LogEntry, GameEvent, EventChoice, GameSpeed, ThemeMode } from '../types';
+import { GameEngine } from '../engine/gameEngine';
 import { EventLogPanel } from './EventLogPanel';
 import { 
   Heart, 
@@ -58,6 +58,10 @@ export const HistoryTome: React.FC<Props> = ({
   onSwitchTheme,
   theme
 }) => {
+  const lifespanProfile = useMemo(() => {
+    return GameEngine.getCharacterLifespanProfile(character);
+  }, [character.race, character.subRace, character.oripathy.crystallizationRate, character.oripathy.suppressantDoseLeft]);
+
   return (
     <div className="flex flex-col h-screen bg-[#e8dcbe] text-[#1a1412] font-serif select-none overflow-hidden">
       {/* Antique Header */}
@@ -141,6 +145,12 @@ export const HistoryTome: React.FC<Props> = ({
             </div>
             <div className="text-xs font-bold text-[#8b1e1e] mt-1">
               직업: {character.career}
+            </div>
+            <div className="text-[11px] text-[#5c4d47] mt-1 pt-1 border-t border-[#5c4033]/20 flex items-center justify-between">
+              <span>기대 수명: <span className="font-bold text-[#8b1e1e]">{lifespanProfile.baseLifespan}세</span> (최대 {lifespanProfile.effectiveMaxLifespan}세)</span>
+              {character.oripathy.isInfected && (
+                <span className="text-[10px] text-red-700 font-semibold">[광석병 감퇴]</span>
+              )}
             </div>
 
             {character.titles.length > 0 && (
