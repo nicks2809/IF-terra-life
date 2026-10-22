@@ -1,12 +1,15 @@
 // src/services/storage.ts
-import { Character, DeathRecord, LogEntry, ThemeMode } from '../types';
+import { Character, DeathRecord, LogEntry, ThemeMode, UnlockedAchievement } from '../types';
+import { ACHIEVEMENTS_DATA } from '../data/achievements';
 
 const STORAGE_KEYS = {
   ACTIVE_CHAR: 'terra_life_active_character',
   ACTIVE_LOGS: 'terra_life_active_logs',
   HALL_OF_FAME: 'terra_life_hall_of_fame',
   THEME: 'terra_life_theme_mode',
-  MUTED: 'terra_life_audio_muted'
+  MUTED: 'terra_life_audio_muted',
+  ACHIEVEMENTS: 'terra_life_achievements_v2',
+  DISCOVERED_ENDINGS: 'terra_life_discovered_endings_v2'
 };
 
 export const storage = {
@@ -57,6 +60,9 @@ export const storage = {
         records.unshift(record);
         localStorage.setItem(STORAGE_KEYS.HALL_OF_FAME, JSON.stringify(records));
       }
+      if (record.endingId) {
+        this.saveDiscoveredEnding(record.endingId);
+      }
     } catch {
       // ignore
     }
@@ -101,6 +107,78 @@ export const storage = {
       return localStorage.getItem(STORAGE_KEYS.MUTED) === 'true';
     } catch {
       return false;
+    }
+  },
+
+  // --- 다회차 누적 업적 도감 관리 (Cross-run Achievement Collection Book) ---
+  loadUnlockedAchievements(): Record<string, UnlockedAchievement> {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.ACHIEVEMENTS);
+      return data ? JSON.parse(data) : {};
+    } catch {
+      return {};
+    }
+  },
+
+  saveUnlockedAchievement(achievementId: string, charName: string, year: number): boolean {
+    try {
+      const unlockedMap = this.loadUnlockedAchievements();
+      if (!unlockedMap[achievementId]) {
+        unlockedMap[achievementId] = {
+          id: achievementId,
+          unlockedAt: new Date().toISOString(),
+          characterName: charName,
+          year: year
+        };
+        localStorage.setItem(STORAGE_KEYS.ACHIEVEMENTS, JSON.stringify(unlockedMap));
+        return true; // Newly unlocked!
+      }
+      return false; // Already unlocked
+    } catch {
+      return false;
+    }
+  },
+
+  isAchievementUnlocked(achievementId: string): boolean {
+    const unlockedMap = this.loadUnlockedAchievements();
+    return !!unlockedMap[achievementId];
+  },
+
+  getAchievementCollectionStats(): { unlockedCount: number; totalCount: number; totalPoints: number } {
+    const unlockedMap = this.loadUnlockedAchievements();
+    const totalCount = ACHIEVEMENTS_DATA.length;
+    let unlockedCount = 0;
+    let totalPoints = 0;
+
+    for (const ach of ACHIEVEMENTS_DATA) {
+      if (unlockedMap[ach.id]) {
+        unlockedCount++;
+        totalPoints += ach.points;
+      }
+    }
+
+    return { unlockedCount, totalCount, totalPoints };
+  },
+
+  // --- 발견한 엔딩 도감 관리 ---
+  loadDiscoveredEndings(): Record<string, string> {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.DISCOVERED_ENDINGS);
+      return data ? JSON.parse(data) : {};
+    } catch {
+      return {};
+    }
+  },
+
+  saveDiscoveredEnding(endingId: string) {
+    try {
+      const map = this.loadDiscoveredEndings();
+      if (!map[endingId]) {
+        map[endingId] = new Date().toISOString();
+        localStorage.setItem(STORAGE_KEYS.DISCOVERED_ENDINGS, JSON.stringify(map));
+      }
+    } catch {
+      // ignore
     }
   }
 };

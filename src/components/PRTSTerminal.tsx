@@ -16,6 +16,7 @@ import {
   VolumeX, 
   BookOpen, 
   Award, 
+  Trophy,
   RotateCcw,
   Activity
 } from 'lucide-react';
@@ -32,6 +33,7 @@ interface Props {
   onNextYear: () => void;
   onOpenActions: () => void;
   onOpenHallOfFame: () => void;
+  onOpenAchievementBook?: () => void;
   onRestart: () => void;
   isMuted: boolean;
   onToggleMute: () => void;
@@ -51,6 +53,7 @@ export const PRTSTerminal: React.FC<Props> = ({
   onNextYear,
   onOpenActions,
   onOpenHallOfFame,
+  onOpenAchievementBook,
   onRestart,
   isMuted,
   onToggleMute,
@@ -143,6 +146,17 @@ export const PRTSTerminal: React.FC<Props> = ({
             <BookOpen className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">역사서 뷰</span>
           </button>
+
+          {onOpenAchievementBook && (
+            <button
+              onClick={onOpenAchievementBook}
+              className="flex items-center space-x-1 px-2.5 py-1 rounded text-xs bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 transition-all"
+              title="테라 업적 도감"
+            >
+              <Trophy className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">업적 도감</span>
+            </button>
+          )}
 
           <button
             onClick={onOpenHallOfFame}

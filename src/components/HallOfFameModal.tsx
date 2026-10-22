@@ -120,12 +120,22 @@ export const HallOfFameModal: React.FC<Props> = ({ isOpen, onClose, records, the
               >
                 <div className="flex items-start justify-between gap-3 mb-2">
                   <div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center flex-wrap gap-2">
                       <h3 className="font-bold text-sm">{r.characterName}</h3>
                       <span className="text-xs opacity-60">({r.race} · {r.nation})</span>
                       <span className={`text-[10px] px-2 py-0.5 rounded border font-bold ${rankBadgeColors[r.finalRank]}`}>
                         RANK {r.finalRank}
                       </span>
+                      {r.endingTitle && (
+                        <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 font-medium">
+                          ✦ {r.endingTitle}
+                        </span>
+                      )}
+                      {r.totalScore !== undefined && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono">
+                          {r.totalScore.toLocaleString()}점
+                        </span>
+                      )}
                     </div>
                     <div className="text-xs text-red-400/90 mt-1">
                       향년 {r.ageAtDeath}세 (테라력 {r.yearOfDeath}년) - {r.detailedCause}

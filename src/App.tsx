@@ -10,6 +10,7 @@ import { AnnualActionsModal } from './components/AnnualActionsModal';
 import { CombatModal } from './components/CombatModal';
 import { MemorialModal } from './components/MemorialModal';
 import { HallOfFameModal } from './components/HallOfFameModal';
+import { AchievementBookModal } from './components/AchievementBookModal';
 
 export const App: React.FC = () => {
   // --- 상태 관리 ---
@@ -41,6 +42,7 @@ export const App: React.FC = () => {
   // 모달 제어
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const [isHallOfFameOpen, setIsHallOfFameOpen] = useState(false);
+  const [isAchievementBookOpen, setIsAchievementBookOpen] = useState(false);
 
   // 시간 및 설정
   const [isPlaying, setIsPlaying] = useState(false);
@@ -188,6 +190,7 @@ export const App: React.FC = () => {
           onNextYear={handleAdvanceYear}
           onOpenActions={() => setIsActionsOpen(true)}
           onOpenHallOfFame={() => setIsHallOfFameOpen(true)}
+          onOpenAchievementBook={() => setIsAchievementBookOpen(true)}
           onRestart={handleRestart}
           isMuted={isMuted}
           onToggleMute={handleToggleMute}
@@ -207,6 +210,7 @@ export const App: React.FC = () => {
           onNextYear={handleAdvanceYear}
           onOpenActions={() => setIsActionsOpen(true)}
           onOpenHallOfFame={() => setIsHallOfFameOpen(true)}
+          onOpenAchievementBook={() => setIsAchievementBookOpen(true)}
           onRestart={handleRestart}
           isMuted={isMuted}
           onToggleMute={handleToggleMute}
@@ -243,6 +247,7 @@ export const App: React.FC = () => {
           isOpen={!character.isAlive}
           onRestart={handleRestart}
           onOpenHallOfFame={() => setIsHallOfFameOpen(true)}
+          onOpenAchievementBook={() => setIsAchievementBookOpen(true)}
           theme={theme}
         />
       )}
@@ -252,6 +257,13 @@ export const App: React.FC = () => {
         isOpen={isHallOfFameOpen}
         onClose={() => setIsHallOfFameOpen(false)}
         records={storage.loadHallOfFame()}
+        theme={theme}
+      />
+
+      {/* Achievement Collection Book Modal */}
+      <AchievementBookModal
+        isOpen={isAchievementBookOpen}
+        onClose={() => setIsAchievementBookOpen(false)}
         theme={theme}
       />
     </div>

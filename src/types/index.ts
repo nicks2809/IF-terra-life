@@ -98,6 +98,56 @@ export interface InventorySlot {
   count: number;
 }
 
+// --- 업적 시스템 (Achievement System) ---
+export type AchievementTier = 'Common' | 'Rare' | 'Mystic' | 'Unique' | 'Legendary';
+export type AchievementCategory = 'career' | 'story' | 'survival' | 'combat' | 'secret';
+
+export interface Achievement {
+  id: string;
+  title: string;
+  description: string;
+  loreQuote?: string;
+  tier: AchievementTier;
+  points: number;
+  category: AchievementCategory;
+  icon?: string;
+}
+
+export interface UnlockedAchievement {
+  id: string;
+  unlockedAt: string;
+  characterName: string;
+  year: number;
+}
+
+// --- 엔딩 시스템 (Ending System) ---
+export type EndingRarity = 'Common' | 'Rare' | 'Mystic' | 'Unique' | 'Legendary';
+
+export interface EndingData {
+  id: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  epitaph: string;
+  rarity: EndingRarity;
+  scoreBonus: number;
+}
+
+// --- 특수 직군 (Specialized Careers) ---
+export interface SpecialCareer {
+  id: string;
+  name: string;
+  rank: string;
+  description: string;
+  loreSecret: string;
+  category: 'combat' | 'arts' | 'intellect' | 'special';
+  allowedRaces?: string[];
+  allowedNations?: string[];
+  reqMinStats?: Partial<CharacterStats>;
+  reqMinReputation?: Record<string, number>;
+  reqInfected?: boolean;
+}
+
 export interface Character {
   id: string;
   name: string;
@@ -113,12 +163,15 @@ export interface Character {
   factions: Record<string, number>; // 진영별 평판 (-100 ~ 100)
   career: string;
   careerRank: string;
+  specialCareerId?: string;
   titles: string[];
   equipment: Equipment;
   inventory: InventorySlot[];
   actionPoints: number; // 연간 활동 포인트 (기본 1~2)
   isAlive: boolean;
   deathRecord?: DeathRecord;
+  secretFlags: Record<string, boolean>;
+  unlockedAchievements: string[];
 }
 
 export interface DiceCheck {
@@ -135,6 +188,11 @@ export interface OutcomeResult {
   gainItemIds?: string[];
   gainTitles?: string[];
   deathReason?: string;
+  specialCareerGain?: { id: string; name: string; rank: string };
+  unlockAchievementId?: string;
+  setSecretFlag?: string;
+  setSecretFlag2?: string;
+  setSecretFlags?: string[];
 }
 
 export interface EventChoice {
@@ -147,6 +205,10 @@ export interface EventChoice {
     lmdCost?: number;
     isInfected?: boolean;
     race?: string[];
+    nation?: string[];
+    requiredItem?: string;
+    requiredCareer?: string;
+    requiredFlag?: string;
   };
   diceCheck?: DiceCheck;
   outcomes: {
@@ -172,6 +234,8 @@ export interface GameEvent {
     minCombat?: number;
     minArts?: number;
     specificYear?: number;
+    requiredFlag?: string;
+    requiredCareer?: string;
   };
   choices: EventChoice[];
 }
@@ -229,6 +293,15 @@ export interface LogEntry {
   timestamp: string;
 }
 
+export interface ScoreBreakdown {
+  achievements: number;
+  stats: number;
+  wealth: number;
+  reputation: number;
+  lifespan: number;
+  endingBonus: number;
+}
+
 export interface DeathRecord {
   yearOfDeath: number;
   ageAtDeath: number;
@@ -246,4 +319,12 @@ export interface DeathRecord {
   characterName: string;
   race: string;
   nation: string;
+  endingId?: string;
+  endingTitle?: string;
+  endingSubtitle?: string;
+  endingRarity?: EndingRarity;
+  endingEpitaph?: string;
+  totalScore: number;
+  scoreBreakdown: ScoreBreakdown;
+  unlockedAchievementsInRun: string[];
 }

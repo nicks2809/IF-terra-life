@@ -13,6 +13,7 @@ import {
   VolumeX, 
   Monitor, 
   Award, 
+  Trophy,
   RotateCcw,
   Feather,
   Flame
@@ -30,6 +31,7 @@ interface Props {
   onNextYear: () => void;
   onOpenActions: () => void;
   onOpenHallOfFame: () => void;
+  onOpenAchievementBook?: () => void;
   onRestart: () => void;
   isMuted: boolean;
   onToggleMute: () => void;
@@ -49,6 +51,7 @@ export const HistoryTome: React.FC<Props> = ({
   onNextYear,
   onOpenActions,
   onOpenHallOfFame,
+  onOpenAchievementBook,
   onRestart,
   isMuted,
   onToggleMute,
@@ -88,6 +91,17 @@ export const HistoryTome: React.FC<Props> = ({
             <Monitor className="w-3.5 h-3.5" />
             <span className="hidden sm:inline font-mono">PRTS HUD</span>
           </button>
+
+          {onOpenAchievementBook && (
+            <button
+              onClick={onOpenAchievementBook}
+              className="flex items-center space-x-1 px-3 py-1.5 rounded text-xs bg-[#c99732] text-black font-bold hover:bg-[#dba83f] transition-all shadow"
+              title="테라 업적 도감"
+            >
+              <Trophy className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">업적 도감</span>
+            </button>
+          )}
 
           <button
             onClick={onOpenHallOfFame}

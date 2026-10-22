@@ -3,14 +3,13 @@ import {
   Character, 
   CharacterStats, 
   OripathyStatus, 
-  OripathyStage, 
-  LesionSite, 
   EnvironmentType, 
   LogEntry, 
   GameEvent, 
   EventChoice, 
   BattleState, 
-  DeathRecord 
+  DeathRecord,
+  ScoreBreakdown
 } from '../types';
 import { RACES_DATA } from '../data/races';
 import { NATIONS_DATA } from '../data/nations';
@@ -18,6 +17,9 @@ import { WORLD_TIMELINE } from '../data/timeline';
 import { ITEMS_DATA } from '../data/items';
 import { ENEMIES_DATA } from '../data/enemies';
 import { GAME_EVENTS } from '../data/events';
+import { ACHIEVEMENTS_DATA } from '../data/achievements';
+import { determineEnding } from '../data/endings';
+import { storage } from '../services/storage';
 import { sound } from '../services/sound';
 
 const FIRST_NAMES = [
@@ -27,6 +29,33 @@ const FIRST_NAMES = [
 ];
 
 export class GameEngine {
+  // 업적 해금 헬퍼
+  public static triggerAchievement(
+    char: Character,
+    achievementId: string,
+    addLog: (entry: Omit<LogEntry, 'id' | 'timestamp'>) => void
+  ) {
+    if (!char.unlockedAchievements) {
+      char.unlockedAchievements = [];
+    }
+
+    if (!char.unlockedAchievements.includes(achievementId)) {
+      char.unlockedAchievements.push(achievementId);
+      const isNewGlobal = storage.saveUnlockedAchievement(achievementId, char.name, char.year);
+      const ach = ACHIEVEMENTS_DATA.find(a => a.id === achievementId);
+      if (ach) {
+        sound.playSuccess();
+        addLog({
+          year: char.year,
+          age: char.age,
+          title: `🏆 【업적 달성: ${ach.tier}】 ${ach.title}`,
+          text: `${ach.description} (+${ach.points} Pts)${isNewGlobal ? ' [도감 최초 등록!]' : ''}`,
+          type: 'critical'
+        });
+      }
+    }
+  }
+
   // 캐릭터 무작위 생성 (출생)
   public static createRandomCharacter(): Character {
     // 0.5% 확률로 희귀 고대종(드라코, 아슬란)
@@ -85,7 +114,7 @@ export class GameEngine {
       initialInfection = true;
     }
 
-    const lesionSites: LesionSite[] = ['체표 피부', '호흡기(폐)', '신경계', '혈관계', '사지 골격'];
+    const lesionSites = ['체표 피부', '호흡기(폐)', '신경계', '혈관계', '사지 골격'] as const;
     const chosenLesion = initialInfection ? lesionSites[Math.floor(Math.random() * lesionSites.length)] : '없음';
 
     const oripathy: OripathyStatus = {
@@ -100,7 +129,6 @@ export class GameEngine {
 
     // 초기 지급 아이템
     const initialSpray = ITEMS_DATA.find(i => i.id === 'med_emergency_spray')!;
-
     const startYear = 1075 + Math.floor(Math.random() * 15); // 1075 ~ 1090년 사이 출생
 
     return {
@@ -130,7 +158,9 @@ export class GameEngine {
         { item: initialSpray, count: 2 }
       ],
       actionPoints: 1,
-      isAlive: true
+      isAlive: true,
+      secretFlags: {},
+      unlockedAchievements: []
     };
   }
 
@@ -139,10 +169,32 @@ export class GameEngine {
     character: Character, 
     addLog: (entry: Omit<LogEntry, 'id' | 'timestamp'>) => void
   ): { updatedChar: Character; triggeredEvent?: GameEvent } {
-    const char = { ...character };
+    const char = { 
+      ...character,
+      secretFlags: { ...character.secretFlags },
+      unlockedAchievements: [...(character.unlockedAchievements || [])]
+    };
     char.age += 1;
     char.year += 1;
     char.actionPoints = char.stats.intellect >= 70 ? 2 : 1;
+
+    // --- 나이 및 스탯 마일스톤 업적 검사 ---
+    if (char.age >= 1) this.triggerAchievement(char, 'common_first_breath', addLog);
+    if (char.age >= 15) this.triggerAchievement(char, 'common_coming_of_age', addLog);
+    if (char.age >= 30) this.triggerAchievement(char, 'common_survive_30', addLog);
+    if (char.age >= 50) this.triggerAchievement(char, 'rare_survive_50', addLog);
+    if (char.age >= 70) this.triggerAchievement(char, 'mystic_longevity_70', addLog);
+
+    if (char.stats.wealth >= 1000) this.triggerAchievement(char, 'common_wealth_1k', addLog);
+    if (char.stats.wealth >= 30000) this.triggerAchievement(char, 'unique_lmd_tycoon_max', addLog);
+
+    if (char.stats.artsAptitude >= 90) this.triggerAchievement(char, 'rare_arts_mastery', addLog);
+    if (char.stats.combat >= 90) this.triggerAchievement(char, 'rare_iron_warlord', addLog);
+    if (char.stats.intellect >= 90) this.triggerAchievement(char, 'rare_grand_intellect', addLog);
+
+    if ((char.factions['로도스 아일랜드'] || 0) >= 60) this.triggerAchievement(char, 'rare_rhodes_specialist', addLog);
+    if ((char.factions['용문 근위국'] || 0) >= 50) this.triggerAchievement(char, 'rare_lungmen_captain', addLog);
+    if ((char.factions['블랙스틸'] || 0) >= 50) this.triggerAchievement(char, 'rare_blacksteel_contract', addLog);
 
     // 1. 테라 대사건 타임라인 속보 체크
     const worldNews = WORLD_TIMELINE.find(t => t.year === char.year);
@@ -161,7 +213,6 @@ export class GameEngine {
     if (char.oripathy.isInfected) {
       if (char.oripathy.suppressantDoseLeft > 0) {
         char.oripathy.suppressantDoseLeft -= 1;
-        // 억제제 복용 중: 미세한 침식
         char.oripathy.crystallizationRate = Number((char.oripathy.crystallizationRate + 0.2).toFixed(1));
         addLog({
           year: char.year,
@@ -171,12 +222,9 @@ export class GameEngine {
           type: 'oripathy'
         });
       } else {
-        // 무방비 상태: 결정화율 급증
         const increase = Number((1.2 + Math.random() * 2.2).toFixed(1));
         char.oripathy.crystallizationRate = Number((char.oripathy.crystallizationRate + increase).toFixed(1));
         char.oripathy.originiumBloodDensity = Number((char.oripathy.originiumBloodDensity + 0.02).toFixed(2));
-        
-        // 이성 소모
         char.stats.sanity = Math.max(0, char.stats.sanity - 4);
 
         addLog({
@@ -189,7 +237,6 @@ export class GameEngine {
         sound.playHazardAlarm();
       }
 
-      // 병기 판정 및 아츠 증폭 계산
       const rate = char.oripathy.crystallizationRate;
       if (rate >= 100) {
         char.oripathy.stage = 'Crystallized';
@@ -216,9 +263,8 @@ export class GameEngine {
         char.oripathy.activeArtsMultiplier = 1.25;
       }
     } else {
-      // 비감염자: 자연 감염 확률 체크 (황야/슬럼가는 위험)
       let infectionRoll = Math.random();
-      let riskThreshold = 0.02; // 기본 2%
+      let riskThreshold = 0.02;
       if (char.environment === '슬럼가 및 암시장' || char.environment === '황야의 노마드 캠프') {
         riskThreshold = 0.06;
       }
@@ -263,12 +309,12 @@ export class GameEngine {
         type: 'hazard'
       });
       char.stats.health = Math.max(1, char.stats.health - 20);
-      char.stats.sanity = 15; // 최소치로 회복
+      char.stats.sanity = 15;
     }
 
     // 4. 노환 판정 (65세 이상 매년 생존 주사위)
     if (char.age >= 65) {
-      if (Math.random() < (char.age - 60) * 0.06) {
+      if (Math.random() < (char.age - 60) * 0.05) {
         char.isAlive = false;
         char.deathRecord = this.generateDeathRecord(
           char,
@@ -285,6 +331,10 @@ export class GameEngine {
     const eligibleEvents = GAME_EVENTS.filter(e => {
       if (char.age < e.minAge || char.age > e.maxAge) return false;
       if (e.conditions?.isInfected !== undefined && e.conditions.isInfected !== char.oripathy.isInfected) return false;
+      if (e.conditions?.race && !e.conditions.race.some(r => char.race.includes(r))) return false;
+      if (e.conditions?.nation && !e.conditions.nation.some(n => char.nation.includes(n))) return false;
+      if (e.conditions?.requiredFlag && !char.secretFlags[e.conditions.requiredFlag]) return false;
+      if (e.conditions?.requiredCareer && char.specialCareerId !== e.conditions.requiredCareer) return false;
       return true;
     });
 
@@ -301,12 +351,15 @@ export class GameEngine {
     choice: EventChoice,
     addLog: (entry: Omit<LogEntry, 'id' | 'timestamp'>) => void
   ): { updatedChar: Character; battleEnemy?: string } {
-    const char = { ...character };
+    const char = { 
+      ...character,
+      secretFlags: { ...character.secretFlags },
+      unlockedAchievements: [...(character.unlockedAchievements || [])]
+    };
 
-    // 주사위 롤 판정
     if (choice.diceCheck) {
       sound.playDiceRoll();
-      const rawRoll = Math.floor(Math.random() * 100) + 1; // 1 ~ 100
+      const rawRoll = Math.floor(Math.random() * 100) + 1;
       const statVal = char.stats[choice.diceCheck.stat] || 50;
       const statBonus = Math.floor(statVal / 5);
       const total = rawRoll + statBonus;
@@ -333,7 +386,6 @@ export class GameEngine {
         sound.playBeep(350, 0.12, 'sawtooth');
       }
 
-      // 판정 로그 기록
       addLog({
         year: char.year,
         age: char.age,
@@ -349,8 +401,7 @@ export class GameEngine {
         }
       });
 
-      // 스탯 및 효과 적용
-      this.applyOutcomeEffects(char, outcomeData);
+      this.applyOutcomeEffects(char, outcomeData, addLog);
 
       if (outcomeData.deathReason) {
         char.isAlive = false;
@@ -363,7 +414,6 @@ export class GameEngine {
         battleEnemy: choice.triggerBattleEnemyId 
       };
     } else {
-      // 주사위 없는 일반 선택지
       const outcomeData = choice.outcomes.success;
       sound.playBeep(600, 0.05, 'sine');
       addLog({
@@ -373,7 +423,7 @@ export class GameEngine {
         text: outcomeData.text,
         type: 'general'
       });
-      this.applyOutcomeEffects(char, outcomeData);
+      this.applyOutcomeEffects(char, outcomeData, addLog);
 
       return { 
         updatedChar: char, 
@@ -383,13 +433,21 @@ export class GameEngine {
   }
 
   // 효과 반영 보조 함수
-  private static applyOutcomeEffects(char: Character, outcome: { 
-    statEffects?: Partial<CharacterStats>; 
-    crystallizationDelta?: number; 
-    bloodDensityDelta?: number; 
-    reputationDelta?: Record<string, number>; 
-    gainTitles?: string[]; 
-  }) {
+  private static applyOutcomeEffects(
+    char: Character, 
+    outcome: { 
+      statEffects?: Partial<CharacterStats>; 
+      crystallizationDelta?: number; 
+      bloodDensityDelta?: number; 
+      reputationDelta?: Record<string, number>; 
+      gainTitles?: string[]; 
+      specialCareerGain?: { id: string; name: string; rank: string };
+      unlockAchievementId?: string;
+      setSecretFlag?: string;
+      setSecretFlag2?: string;
+    },
+    addLog: (entry: Omit<LogEntry, 'id' | 'timestamp'>) => void
+  ) {
     if (outcome.statEffects) {
       for (const [k, v] of Object.entries(outcome.statEffects)) {
         const key = k as keyof CharacterStats;
@@ -429,6 +487,31 @@ export class GameEngine {
         }
       }
     }
+
+    if (outcome.specialCareerGain) {
+      char.specialCareerId = outcome.specialCareerGain.id;
+      char.career = outcome.specialCareerGain.name;
+      char.careerRank = outcome.specialCareerGain.rank;
+      sound.playSuccess();
+      addLog({
+        year: char.year,
+        age: char.age,
+        title: `🎖️ 【특수 직군 승급】 ${char.career}`,
+        text: `명예로운 [${char.careerRank}] 직무를 부여받았습니다. 능력치가 대폭 개편됩니다!`,
+        type: 'critical'
+      });
+    }
+
+    if (outcome.setSecretFlag) {
+      char.secretFlags[outcome.setSecretFlag] = true;
+    }
+    if (outcome.setSecretFlag2) {
+      char.secretFlags[outcome.setSecretFlag2] = true;
+    }
+
+    if (outcome.unlockAchievementId) {
+      this.triggerAchievement(char, outcome.unlockAchievementId, addLog);
+    }
   }
 
   // 연간 자율 활동 (아츠 수련, 파밍, 의뢰, 치료, 휴양)
@@ -438,7 +521,11 @@ export class GameEngine {
     addLog: (entry: Omit<LogEntry, 'id' | 'timestamp'>) => void
   ): Character {
     if (character.actionPoints <= 0) return character;
-    const char = { ...character };
+    const char = { 
+      ...character,
+      secretFlags: { ...character.secretFlags },
+      unlockedAchievements: [...(character.unlockedAchievements || [])]
+    };
     char.actionPoints -= 1;
 
     switch (actionType) {
@@ -471,13 +558,13 @@ export class GameEngine {
         break;
       }
       case 'take_suppressant': {
-        // 로도스 억제제 소모
         const slot = char.inventory.find(s => s.item.id === 'med_rhodes_suppressant');
         if (slot && slot.count > 0) {
           slot.count -= 1;
           char.oripathy.suppressantDoseLeft += 3;
           char.oripathy.crystallizationRate = Math.max(0, Number((char.oripathy.crystallizationRate - 0.5).toFixed(1)));
           sound.playSuccess();
+          this.triggerAchievement(char, 'common_rhodes_medicine', addLog);
           addLog({
             year: char.year,
             age: char.age,
@@ -490,6 +577,7 @@ export class GameEngine {
           char.oripathy.suppressantDoseLeft += 3;
           char.oripathy.crystallizationRate = Math.max(0, Number((char.oripathy.crystallizationRate - 0.5).toFixed(1)));
           sound.playSuccess();
+          this.triggerAchievement(char, 'common_rhodes_medicine', addLog);
           addLog({
             year: char.year,
             age: char.age,
@@ -505,7 +593,7 @@ export class GameEngine {
             text: 'LMD가 부족하여 억제제를 구매하지 못했습니다. (800 LMD 필요)',
             type: 'hazard'
           });
-          char.actionPoints += 1; // 포인트 환불
+          char.actionPoints += 1;
         }
         break;
       }
@@ -575,12 +663,15 @@ export class GameEngine {
     command: 'attack' | 'arts' | 'defend' | 'item' | 'flee',
     itemId?: string
   ): { updatedChar: Character; updatedBattle: BattleState } {
-    const char = { ...character };
+    const char = { 
+      ...character,
+      secretFlags: { ...character.secretFlags },
+      unlockedAchievements: [...(character.unlockedAchievements || [])]
+    };
     const b = { ...battle, log: [...battle.log] };
 
     if (!b.isActive) return { updatedChar: char, updatedBattle: b };
 
-    // --- 플레이어 턴 ---
     switch (command) {
       case 'attack': {
         sound.playSlash();
@@ -643,7 +734,6 @@ export class GameEngine {
       }
     }
 
-    // 적 격퇴 확인
     if (b.enemy.hp <= 0) {
       sound.playSuccess();
       b.isActive = false;
@@ -651,10 +741,15 @@ export class GameEngine {
       char.stats.wealth += b.enemy.rewardLmd;
       char.stats[b.enemy.rewardExpStat] = (char.stats[b.enemy.rewardExpStat] || 0) + 4;
       b.log.unshift(`★ 승리! [${b.enemy.name}]을(를) 물리치고 ${b.enemy.rewardLmd} LMD와 경험치를 획득했습니다!`);
+      
+      // 전투 승리 업적
+      if (!char.unlockedAchievements.includes('common_first_victory')) {
+        char.unlockedAchievements.push('common_first_victory');
+        storage.saveUnlockedAchievement('common_first_victory', char.name, char.year);
+      }
       return { updatedChar: char, updatedBattle: b };
     }
 
-    // --- 적 턴 반격 ---
     b.turn += 1;
     const enemyDmgRaw = Math.floor(b.enemy.atk * (0.8 + Math.random() * 0.4));
     let netDmg = Math.max(5, enemyDmgRaw - (char.equipment.armor?.defBonus || 0));
@@ -677,7 +772,6 @@ export class GameEngine {
       b.log.unshift(`! 적의 공격을 방어 실드로 완벽히 차단했습니다!`);
     }
 
-    // 플레이어 사망 확인
     if (char.stats.health <= 0) {
       sound.playFlatline();
       b.isActive = false;
@@ -695,22 +789,65 @@ export class GameEngine {
     return { updatedChar: char, updatedBattle: b };
   }
 
-  // 최종 사망 기록 생성 (PRTS 바이탈 리포트)
+  // 최종 사망/영면 기록 생성 (종합 점수제 및 엔딩 결정)
   public static generateDeathRecord(
     char: Character,
     _causeCode: string,
     detailedCause: string,
     lastWords: string
   ): DeathRecord {
-    let rank: 'S' | 'A' | 'B' | 'C' | 'D' | 'F' = 'C';
-    const totalScore = char.stats.combat + char.stats.artsAptitude + Math.floor(char.stats.wealth / 100) + char.age * 2;
+    const ending = determineEnding(char, detailedCause);
 
-    if (totalScore >= 350 || char.titles.length >= 4) rank = 'S';
-    else if (totalScore >= 250) rank = 'A';
-    else if (totalScore >= 180) rank = 'B';
-    else if (totalScore >= 120) rank = 'C';
-    else if (totalScore >= 70) rank = 'D';
+    // 1. 업적 점수 계산
+    let achPoints = 0;
+    const runAchs = char.unlockedAchievements || [];
+    for (const id of runAchs) {
+      const ach = ACHIEVEMENTS_DATA.find(a => a.id === id);
+      if (ach) achPoints += ach.points;
+    }
+
+    // 2. 스탯 점수
+    const statsPoints = (char.stats.combat + char.stats.artsAptitude + char.stats.intellect + char.stats.luck) * 2;
+
+    // 3. 자산 점수
+    const wealthPoints = Math.floor(char.stats.wealth / 50);
+
+    // 4. 주변 관계 및 평판 점수
+    let repPoints = 0;
+    for (const val of Object.values(char.factions)) {
+      if (val > 0) repPoints += val * 5;
+    }
+
+    // 5. 생애 수명 점수
+    const lifespanPoints = char.age * 15;
+
+    // 6. 엔딩 희귀도 보너스
+    const endingBonus = ending.scoreBonus;
+
+    const totalScore = achPoints + statsPoints + wealthPoints + repPoints + lifespanPoints + endingBonus;
+
+    const scoreBreakdown: ScoreBreakdown = {
+      achievements: achPoints,
+      stats: statsPoints,
+      wealth: wealthPoints,
+      reputation: repPoints,
+      lifespan: lifespanPoints,
+      endingBonus: endingBonus
+    };
+
+    // 등급 산출
+    let rank: 'S' | 'A' | 'B' | 'C' | 'D' | 'F' = 'C';
+    if (totalScore >= 6000) rank = 'S';
+    else if (totalScore >= 4000) rank = 'A';
+    else if (totalScore >= 2500) rank = 'B';
+    else if (totalScore >= 1500) rank = 'C';
+    else if (totalScore >= 800) rank = 'D';
     else rank = 'F';
+
+    // 신화적 업적 달성 검사
+    if (totalScore >= 8000) {
+      storage.saveUnlockedAchievement('legend_living_myth', char.name, char.year);
+    }
 
     return {
       characterName: char.name,
@@ -721,19 +858,28 @@ export class GameEngine {
       cause: detailedCause,
       detailedCause,
       finalRank: rank,
-      lastWords,
+      lastWords: ending.epitaph || lastWords,
       notableAchievements: [
         `테라력 ${char.year}년까지 생존 (향년 ${char.age}세)`,
-        `최종 직업: ${char.career}`,
+        `최종 직업: ${char.career} (${char.careerRank})`,
+        `도달 엔딩: "${ending.title}" (${ending.subtitle})`,
         `획득 칭호: ${char.titles.length > 0 ? char.titles.join(', ') : '이름 없는 방랑자'}`,
-        `최종 결정화율: ${char.oripathy.crystallizationRate}%`
+        `최종 종합 점수: ${totalScore.toLocaleString()}점 (등급: ${rank})`
       ],
       statsSummary: {
         combat: char.stats.combat,
         arts: char.stats.artsAptitude,
         wealth: char.stats.wealth,
         crystallizationRate: char.oripathy.crystallizationRate
-      }
+      },
+      endingId: ending.id,
+      endingTitle: ending.title,
+      endingSubtitle: ending.subtitle,
+      endingRarity: ending.rarity,
+      endingEpitaph: ending.epitaph,
+      totalScore,
+      scoreBreakdown,
+      unlockedAchievementsInRun: runAchs
     };
   }
 }
