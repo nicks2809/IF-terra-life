@@ -2,7 +2,7 @@
 
 export type ThemeMode = 'prts' | 'tome';
 
-export type GameSpeed = 1 | 2 | 4 | 8;
+export type GameSpeed = 1 | 2 | 4 | 8 | 16 | 32 | 64;
 
 export type Gender = '남성' | '여성';
 

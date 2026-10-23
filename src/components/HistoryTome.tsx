@@ -357,16 +357,16 @@ export const HistoryTome: React.FC<Props> = ({
           </button>
 
           <div className="flex items-center bg-[#ebdcb9] rounded-lg p-0.5 border border-[#5c4033]/40">
-            {([1, 2, 4, 8] as GameSpeed[]).map((s) => (
+            {([1, 2, 4, 8, 16, 32, 64] as GameSpeed[]).map((s) => (
               <button
                 key={s}
                 onClick={() => onChangeSpeed(s)}
-                className={`px-1.5 sm:px-2 py-0.5 rounded text-[11px] font-bold transition-all ${
+                className={`px-1 sm:px-1.5 py-0.5 rounded text-[10px] sm:text-[11px] font-bold transition-all shrink-0 ${
                   speed === s
                     ? 'bg-[#8b1e1e] text-white shadow font-extrabold'
                     : 'text-[#5c4d47] hover:text-[#2c1810]'
                 }`}
-                title={`배속 설정: ${s}배속 (단축키: ${s})`}
+                title={`배속 설정: ${s}배속`}
               >
                 {s}x
               </button>
