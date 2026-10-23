@@ -403,6 +403,10 @@ export const PRTSTerminal: React.FC<Props> = ({
             character={character}
             onSelectChoice={onSelectChoice}
             autoChoicePendingId={autoChoicePendingId}
+            isPlaying={isPlaying}
+            onNextYear={onNextYear}
+            onSkipToNextEvent={onSkipToNextEvent}
+            onTogglePlay={onTogglePlay}
             theme={theme}
           />
         </section>
@@ -463,18 +467,18 @@ export const PRTSTerminal: React.FC<Props> = ({
             )}
           </button>
 
-          {/* Speed Buttons (1x, 2x, 4x, 8x, 16x, 32x, 64x) */}
+          {/* Speed Buttons (1x, 2x, 4x, 8x, 16x) */}
           <div className="flex items-center bg-black/40 rounded-lg p-0.5 border border-cyan-500/20">
-            {([1, 2, 4, 8, 16, 32, 64] as GameSpeed[]).map((s) => (
+            {([1, 2, 4, 8, 16] as GameSpeed[]).map((s) => (
               <button
                 key={s}
                 onClick={() => onChangeSpeed(s)}
-                className={`px-1 sm:px-1.5 py-0.5 rounded text-[10px] sm:text-[11px] font-bold transition-all shrink-0 ${
+                className={`px-1.5 sm:px-2 py-0.5 rounded text-[11px] font-bold transition-all ${
                   speed === s
                     ? 'bg-cyan-500 text-black shadow font-extrabold'
                     : 'text-slate-400 hover:text-white'
                 }`}
-                title={`배속 설정: ${s}배속`}
+                title={`배속 설정: ${s}배속 (단축키: ${s})`}
               >
                 {s}x
               </button>

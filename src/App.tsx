@@ -45,7 +45,7 @@ export const App: React.FC = () => {
   const [isAchievementBookOpen, setIsAchievementBookOpen] = useState(false);
 
   // 시간 및 설정
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(true);
   const [speed, setSpeed] = useState<GameSpeed>(1);
   const [isAutoChoiceEnabled, setIsAutoChoiceEnabled] = useState<boolean>(() => storage.loadAutoChoice());
   const [autoChoicePendingId, setAutoChoicePendingId] = useState<string | null>(null);
@@ -138,13 +138,11 @@ export const App: React.FC = () => {
   useEffect(() => {
     if (isPlaying && character.isAlive && !currentEvent && !battleState?.isActive) {
       const speedIntervalMap: Record<GameSpeed, number> = {
-        1: 900,  // 1x: 0.9초에 1년
+        1: 900,  // 1x: 0.9초에 1년 (기존 16초에서 현실적인 템포로 대폭 개선)
         2: 450,  // 2x: 0.45초에 1년
         4: 200,  // 4x: 0.2초에 1년
         8: 80,   // 8x: 0.08초에 1년
-        16: 40,  // 16x: 0.04초에 1년
-        32: 20,  // 32x: 0.02초에 1년
-        64: 10,  // 64x: 0.01초에 1년 (초광속 스킵)
+        16: 35,  // 16x: 0.035초에 1년 (초광속 시뮬레이션)
       };
       const intervalMs = speedIntervalMap[speed] || 450;
       timerRef.current = setInterval(() => {
@@ -169,9 +167,7 @@ export const App: React.FC = () => {
         2: 450,
         4: 200,
         8: 80,
-        16: 40,
-        32: 20,
-        64: 10
+        16: 35
       };
       const delay = speedDelay[speed] || 450;
 
@@ -207,9 +203,7 @@ export const App: React.FC = () => {
           2: 400,
           4: 180,
           8: 70,
-          16: 35,
-          32: 18,
-          64: 10
+          16: 30
         };
         const delay = speedDelay[speed] || 400;
 
@@ -245,6 +239,8 @@ export const App: React.FC = () => {
         setSpeed(4);
       } else if (e.key === '8') {
         setSpeed(8);
+      } else if (e.key === '6' || e.key === '0') {
+        setSpeed(16);
       }
     };
 
@@ -290,7 +286,7 @@ export const App: React.FC = () => {
     setCurrentEvent(undefined);
     setAutoChoicePendingId(null);
     setBattleState(undefined);
-    setIsPlaying(false);
+    setIsPlaying(true);
     const initialLog: LogEntry = {
       id: 'init_' + Date.now(),
       year: newChar.year,

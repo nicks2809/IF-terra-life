@@ -1,7 +1,7 @@
 // src/components/EventLogPanel.tsx
 import React, { useRef, useEffect } from 'react';
 import { LogEntry, GameEvent, EventChoice, Character, ThemeMode } from '../types';
-import { Radio, AlertTriangle, Sparkles, Sword, Dices, ChevronRight, Bot } from 'lucide-react';
+import { Radio, AlertTriangle, Sparkles, Sword, Dices, ChevronRight, Bot, Play, FastForward, Pause } from 'lucide-react';
 
 interface Props {
   logs: LogEntry[];
@@ -9,6 +9,10 @@ interface Props {
   character: Character;
   onSelectChoice: (choice: EventChoice) => void;
   autoChoicePendingId?: string | null;
+  isPlaying?: boolean;
+  onNextYear?: () => void;
+  onSkipToNextEvent?: () => void;
+  onTogglePlay?: () => void;
   theme: ThemeMode;
 }
 
@@ -18,6 +22,10 @@ export const EventLogPanel: React.FC<Props> = ({
   character,
   onSelectChoice,
   autoChoicePendingId,
+  isPlaying,
+  onNextYear,
+  onSkipToNextEvent,
+  onTogglePlay,
   theme
 }) => {
   const logContainerRef = useRef<HTMLDivElement>(null);
@@ -190,6 +198,75 @@ export const EventLogPanel: React.FC<Props> = ({
                 </button>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Manual Progress Prompt Banner when Paused */}
+      {!currentEvent && character.isAlive && !isPlaying && (
+        <div className={`shrink-0 p-3.5 border-t flex flex-wrap items-center justify-between gap-2.5 transition-all ${
+          isPrts 
+            ? 'bg-[#0d1017]/95 border-cyan-500/30 text-slate-100 shadow-[0_-5px_15px_rgba(0,0,0,0.4)]' 
+            : 'bg-[#ebdcb9] border-[#5c4033]/40 text-[#1a1412] shadow-md'
+        }`}>
+          <div className="flex items-center space-x-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping"></span>
+            <div>
+              <div className="text-xs font-bold flex items-center space-x-1.5">
+                <span className="text-amber-400">【일시정지됨】</span>
+                <span>테라력 {character.year}년 · {character.age}세</span>
+              </div>
+              <p className="text-[11px] opacity-70">
+                시간이 멈춰 있습니다. 다음 해로 진행하거나 자동진행을 시작하세요.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-2 w-full sm:w-auto justify-end">
+            {onTogglePlay && (
+              <button
+                onClick={onTogglePlay}
+                className={`flex-1 sm:flex-none flex items-center justify-center space-x-1 px-3.5 py-2 rounded-lg text-xs font-bold transition-all shadow ${
+                  isPrts 
+                    ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/30' 
+                    : 'bg-[#2d5a27] hover:bg-[#386d30] text-white'
+                }`}
+                title="자동 진행 재개 (Space)"
+              >
+                <Play className="w-3.5 h-3.5 fill-current" />
+                <span>자동진행 시작</span>
+              </button>
+            )}
+
+            {onNextYear && (
+              <button
+                onClick={onNextYear}
+                className={`flex-1 sm:flex-none flex items-center justify-center space-x-1 px-3.5 py-2 rounded-lg text-xs font-bold transition-all border shadow ${
+                  isPrts 
+                    ? 'bg-slate-800 hover:bg-slate-700 border-cyan-500/50 text-cyan-300' 
+                    : 'bg-[#f4ebd0] hover:bg-[#faeed2] border-[#5c4033] text-[#2c1810]'
+                }`}
+                title="다음 해로 1년 진행 (N)"
+              >
+                <span>+1년 진행</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            )}
+
+            {onSkipToNextEvent && (
+              <button
+                onClick={onSkipToNextEvent}
+                className={`flex-1 sm:flex-none flex items-center justify-center space-x-1 px-3.5 py-2 rounded-lg text-xs font-bold transition-all border shadow ${
+                  isPrts 
+                    ? 'bg-indigo-950/90 hover:bg-indigo-900 border-indigo-500/60 text-indigo-300' 
+                    : 'bg-[#c99732] hover:bg-[#dba83f] border-[#5c4033] text-black'
+                }`}
+                title="다음 사건이나 선택지가 나올 때까지 직행 (S)"
+              >
+                <FastForward className="w-3.5 h-3.5" />
+                <span>사건까지 스킵</span>
+              </button>
+            )}
           </div>
         </div>
       )}
