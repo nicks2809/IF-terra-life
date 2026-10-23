@@ -93,11 +93,47 @@ export const App: React.FC = () => {
     }
   }, [character, currentEvent, battleState, addLog]);
 
+  // 다음 선택지(사건)가 발생할 때까지 즉시 건너뛰기
+  const handleSkipToNextEvent = useCallback(() => {
+    if (!character.isAlive || currentEvent || battleState?.isActive) return;
+
+    sound.playVitalPulse();
+    let currentChar = character;
+    let foundEvent: GameEvent | undefined = undefined;
+
+    // 최대 40년 또는 사건/전투/사망 발생 시까지 루프로 고속 진행
+    for (let i = 0; i < 40; i++) {
+      const result = GameEngine.advanceOneYear(currentChar, addLog);
+      currentChar = result.updatedChar;
+
+      if (!currentChar.isAlive) {
+        break;
+      }
+
+      if (result.triggeredEvent) {
+        foundEvent = result.triggeredEvent;
+        break;
+      }
+    }
+
+    setCharacter(currentChar);
+    if (foundEvent) {
+      setCurrentEvent(foundEvent);
+      setIsPlaying(false);
+    }
+  }, [character, currentEvent, battleState, addLog]);
+
   // 자동 진행 타이머
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   useEffect(() => {
     if (isPlaying && character.isAlive && !currentEvent && !battleState?.isActive) {
-      const intervalMs = Math.max(1500, Math.floor(16000 / speed));
+      const speedIntervalMap: Record<GameSpeed, number> = {
+        1: 900,  // 1x: 0.9초에 1년 (기존 16초에서 현실적인 템포로 대폭 개선)
+        2: 450,  // 2x: 0.45초에 1년
+        4: 200,  // 4x: 0.2초에 1년
+        8: 80,   // 8x: 0.08초에 1년 (초고속 스킵)
+      };
+      const intervalMs = speedIntervalMap[speed] || 450;
       timerRef.current = setInterval(() => {
         handleAdvanceYear();
       }, intervalMs);
@@ -108,6 +144,35 @@ export const App: React.FC = () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [isPlaying, speed, character.isAlive, currentEvent, battleState, handleAdvanceYear]);
+
+  // 키보드 단축키 (Space: 일시정지/재생, N: 다음 해, S: 사건까지 건너뛰기, 1/2/4/8: 배속)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) return;
+
+      if (e.code === 'Space') {
+        e.preventDefault();
+        if (character.isAlive && !currentEvent && !battleState?.isActive) {
+          setIsPlaying(prev => !prev);
+        }
+      } else if (e.key === 'n' || e.key === 'N') {
+        handleAdvanceYear();
+      } else if (e.key === 's' || e.key === 'S') {
+        handleSkipToNextEvent();
+      } else if (e.key === '1') {
+        setSpeed(1);
+      } else if (e.key === '2') {
+        setSpeed(2);
+      } else if (e.key === '4') {
+        setSpeed(4);
+      } else if (e.key === '8') {
+        setSpeed(8);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [character.isAlive, currentEvent, battleState, handleAdvanceYear, handleSkipToNextEvent]);
 
   // 선택지 선택
   const handleSelectChoice = (choice: EventChoice) => {
@@ -188,6 +253,7 @@ export const App: React.FC = () => {
           speed={speed}
           onChangeSpeed={setSpeed}
           onNextYear={handleAdvanceYear}
+          onSkipToNextEvent={handleSkipToNextEvent}
           onOpenActions={() => setIsActionsOpen(true)}
           onOpenHallOfFame={() => setIsHallOfFameOpen(true)}
           onOpenAchievementBook={() => setIsAchievementBookOpen(true)}
@@ -208,6 +274,7 @@ export const App: React.FC = () => {
           speed={speed}
           onChangeSpeed={setSpeed}
           onNextYear={handleAdvanceYear}
+          onSkipToNextEvent={handleSkipToNextEvent}
           onOpenActions={() => setIsActionsOpen(true)}
           onOpenHallOfFame={() => setIsHallOfFameOpen(true)}
           onOpenAchievementBook={() => setIsAchievementBookOpen(true)}

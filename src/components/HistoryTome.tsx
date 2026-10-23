@@ -8,6 +8,7 @@ import {
   Coins, 
   Play, 
   Pause, 
+  FastForward,
   SkipForward, 
   Volume2, 
   VolumeX, 
@@ -29,6 +30,7 @@ interface Props {
   speed: GameSpeed;
   onChangeSpeed: (speed: GameSpeed) => void;
   onNextYear: () => void;
+  onSkipToNextEvent?: () => void;
   onOpenActions: () => void;
   onOpenHallOfFame: () => void;
   onOpenAchievementBook?: () => void;
@@ -49,6 +51,7 @@ export const HistoryTome: React.FC<Props> = ({
   speed,
   onChangeSpeed,
   onNextYear,
+  onSkipToNextEvent,
   onOpenActions,
   onOpenHallOfFame,
   onOpenAchievementBook,
@@ -293,48 +296,79 @@ export const HistoryTome: React.FC<Props> = ({
       </main>
 
       {/* Tome Bottom Dock */}
-      <footer className="h-14 border-t-2 border-[#5c4033] bg-[#d9c79f] px-6 flex items-center justify-between shrink-0 shadow-md">
+      <footer className="h-14 border-t-2 border-[#5c4033] bg-[#d9c79f] px-3 sm:px-6 flex items-center justify-between shrink-0 shadow-md gap-2 overflow-x-auto">
         <button
           onClick={onOpenActions}
-          className="flex items-center space-x-2 px-4 py-1.5 rounded-lg bg-[#8b1e1e] hover:bg-[#a32828] text-white text-xs font-bold shadow transition-all"
+          className="flex items-center space-x-1.5 px-3 sm:px-4 py-1.5 rounded-lg bg-[#8b1e1e] hover:bg-[#a32828] text-white text-xs font-bold shadow transition-all shrink-0"
         >
-          <Feather className="w-4 h-4" />
-          <span>올해의 자율 행동</span>
+          <Feather className="w-4 h-4 shrink-0" />
+          <span className="hidden xs:inline">자율 행동</span>
           <span className="px-1.5 py-0.2 bg-white text-black text-[10px] rounded font-black">
             {character.actionPoints} AP
           </span>
         </button>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
           <button
             onClick={onTogglePlay}
-            className="p-2 rounded-lg bg-[#5c4033] hover:bg-[#432d24] text-white transition-all shadow"
-            title={isPlaying ? '일시정지' : '자동 진행'}
+            className={`flex items-center space-x-1 px-2.5 py-1.5 rounded-lg text-xs font-bold shadow transition-all ${
+              isPlaying 
+                ? 'bg-[#8b1e1e] text-white' 
+                : 'bg-[#5c4033] hover:bg-[#432d24] text-amber-200'
+            }`}
+            title={isPlaying ? '일시정지 (Space)' : '자동 진행 (Space)'}
           >
-            {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+            {isPlaying ? (
+              <>
+                <Pause className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">일시정지</span>
+              </>
+            ) : (
+              <>
+                <Play className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">자동진행</span>
+              </>
+            )}
           </button>
 
-          {([1, 2, 4] as GameSpeed[]).map((s) => (
-            <button
-              key={s}
-              onClick={() => onChangeSpeed(s)}
-              className={`px-2.5 py-1 rounded text-xs font-bold border transition-all ${
-                speed === s
-                  ? 'bg-[#8b1e1e] text-white border-[#8b1e1e]'
-                  : 'bg-[#ebdcb9] border-[#5c4033]/40 text-[#5c4d47] hover:bg-[#dfceaa]'
-              }`}
-            >
-              {s}x
-            </button>
-          ))}
+          <div className="flex items-center bg-[#ebdcb9] rounded-lg p-0.5 border border-[#5c4033]/40">
+            {([1, 2, 4, 8] as GameSpeed[]).map((s) => (
+              <button
+                key={s}
+                onClick={() => onChangeSpeed(s)}
+                className={`px-1.5 sm:px-2 py-0.5 rounded text-[11px] font-bold transition-all ${
+                  speed === s
+                    ? 'bg-[#8b1e1e] text-white shadow font-extrabold'
+                    : 'text-[#5c4d47] hover:text-[#2c1810]'
+                }`}
+                title={`배속 설정: ${s}배속 (단축키: ${s})`}
+              >
+                {s}x
+              </button>
+            ))}
+          </div>
 
           <button
             onClick={onNextYear}
-            className="flex items-center space-x-1.5 px-4 py-1.5 rounded-lg bg-[#5c4033] hover:bg-[#432d24] text-white text-xs font-bold transition-all ml-2 shadow"
+            className="flex items-center space-x-1 px-2.5 sm:px-3 py-1.5 rounded-lg bg-[#5c4033] hover:bg-[#432d24] text-white text-xs font-bold transition-all shadow"
+            title="다음 해로 1년 넘기기 (단축키: N)"
           >
-            <span>다음 해로</span>
+            <span className="hidden sm:inline">다음 해</span>
+            <span className="sm:hidden">+1년</span>
             <SkipForward className="w-3.5 h-3.5" />
           </button>
+
+          {onSkipToNextEvent && (
+            <button
+              onClick={onSkipToNextEvent}
+              className="flex items-center space-x-1 px-2.5 sm:px-3 py-1.5 rounded-lg bg-[#c99732] hover:bg-[#dba83f] text-black text-xs font-bold transition-all shadow"
+              title="다음 선택지나 사건이 발생할 때까지 건너뛰기 (단축키: S)"
+            >
+              <FastForward className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">사건까지 스킵</span>
+              <span className="sm:hidden">스킵</span>
+            </button>
+          )}
         </div>
       </footer>
     </div>

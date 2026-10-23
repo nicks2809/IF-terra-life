@@ -31,6 +31,7 @@ interface Props {
   speed: GameSpeed;
   onChangeSpeed: (speed: GameSpeed) => void;
   onNextYear: () => void;
+  onSkipToNextEvent?: () => void;
   onOpenActions: () => void;
   onOpenHallOfFame: () => void;
   onOpenAchievementBook?: () => void;
@@ -51,6 +52,7 @@ export const PRTSTerminal: React.FC<Props> = ({
   speed,
   onChangeSpeed,
   onNextYear,
+  onSkipToNextEvent,
   onOpenActions,
   onOpenHallOfFame,
   onOpenAchievementBook,
@@ -399,58 +401,85 @@ export const PRTSTerminal: React.FC<Props> = ({
       </main>
 
       {/* Bottom Control Deck */}
-      <footer className="h-14 border-t border-cyan-500/30 bg-[#0f131a] px-4 flex items-center justify-between shrink-0">
+      <footer className="h-14 border-t border-cyan-500/30 bg-[#0f131a] px-3 sm:px-4 flex items-center justify-between shrink-0 gap-2 overflow-x-auto">
         {/* Action Points Button */}
         <button
           onClick={onOpenActions}
-          className="flex items-center space-x-2 px-3.5 py-1.5 rounded-lg bg-cyan-600/30 hover:bg-cyan-500/40 border border-cyan-400/50 text-cyan-300 transition-all font-bold text-xs"
+          className="flex items-center space-x-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-lg bg-cyan-600/30 hover:bg-cyan-500/40 border border-cyan-400/50 text-cyan-300 transition-all font-bold text-xs shrink-0"
         >
-          <Sparkles className="w-4 h-4 text-cyan-400" />
-          <span>연간 자율 활동</span>
+          <Sparkles className="w-4 h-4 text-cyan-400 shrink-0" />
+          <span className="hidden xs:inline">자율 활동</span>
           <span className="px-1.5 py-0.2 bg-cyan-400 text-black text-[10px] rounded font-black">
             {character.actionPoints} AP
           </span>
         </button>
 
         {/* Time Control Group */}
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
           {/* Play/Pause */}
           <button
             onClick={onTogglePlay}
-            className={`p-2 rounded-lg border transition-all ${
+            className={`flex items-center space-x-1 px-2.5 py-1.5 rounded-lg border text-xs font-bold transition-all ${
               isPlaying 
-                ? 'bg-amber-500/20 border-amber-500/40 text-amber-400 hover:bg-amber-500/30' 
-                : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/30'
+                ? 'bg-amber-500/20 border-amber-500/50 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.2)]' 
+                : 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300 hover:bg-emerald-500/30'
             }`}
-            title={isPlaying ? '일시정지' : '자동 진행 시작'}
+            title={isPlaying ? '일시정지 (Space)' : '자동 진행 시작 (Space)'}
           >
-            {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+            {isPlaying ? (
+              <>
+                <Pause className="w-3.5 h-3.5 text-amber-400" />
+                <span className="hidden sm:inline">일시정지</span>
+              </>
+            ) : (
+              <>
+                <Play className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="hidden sm:inline">자동진행</span>
+              </>
+            )}
           </button>
 
-          {/* Speed Buttons */}
-          {([1, 2, 4] as GameSpeed[]).map((s) => (
-            <button
-              key={s}
-              onClick={() => onChangeSpeed(s)}
-              className={`px-2 py-1 rounded text-xs border font-bold transition-all ${
-                speed === s
-                  ? 'bg-cyan-500 text-black border-cyan-400'
-                  : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white'
-              }`}
-            >
-              {s}x
-            </button>
-          ))}
+          {/* Speed Buttons (1x, 2x, 4x, 8x) */}
+          <div className="flex items-center bg-black/40 rounded-lg p-0.5 border border-cyan-500/20">
+            {([1, 2, 4, 8] as GameSpeed[]).map((s) => (
+              <button
+                key={s}
+                onClick={() => onChangeSpeed(s)}
+                className={`px-1.5 sm:px-2 py-0.5 rounded text-[11px] font-bold transition-all ${
+                  speed === s
+                    ? 'bg-cyan-500 text-black shadow font-extrabold'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+                title={`배속 설정: ${s}배속 (단축키: ${s})`}
+              >
+                {s}x
+              </button>
+            ))}
+          </div>
 
-          {/* Manual Turn Skip Button */}
+          {/* Manual Turn Skip Button (+1 Year) */}
           <button
             onClick={onNextYear}
-            className="flex items-center space-x-1 px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 text-xs font-bold transition-all ml-2"
-            title="다음 해로 즉시 넘기기"
+            className="flex items-center space-x-1 px-2.5 sm:px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 text-xs font-bold transition-all"
+            title="다음 해로 1년 넘기기 (단축키: N)"
           >
-            <span>다음 해</span>
-            <SkipForward className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">다음 해</span>
+            <span className="sm:hidden">+1년</span>
+            <SkipForward className="w-3.5 h-3.5 text-cyan-400" />
           </button>
+
+          {/* Skip to Next Choice/Event Button */}
+          {onSkipToNextEvent && (
+            <button
+              onClick={onSkipToNextEvent}
+              className="flex items-center space-x-1 px-2.5 sm:px-3 py-1.5 rounded-lg bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-500/50 text-indigo-300 hover:text-indigo-200 text-xs font-bold transition-all shadow-[0_0_8px_rgba(99,102,241,0.2)]"
+              title="다음 선택지나 사건이 나타날 때까지 즉시 건너뛰기 (단축키: S)"
+            >
+              <FastForward className="w-3.5 h-3.5 text-indigo-400 animate-pulse" />
+              <span className="hidden sm:inline">사건까지 스킵</span>
+              <span className="sm:hidden">스킵</span>
+            </button>
+          )}
         </div>
       </footer>
     </div>
