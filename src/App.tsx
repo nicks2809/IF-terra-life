@@ -47,8 +47,16 @@ export const App: React.FC = () => {
   // 시간 및 설정
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeed] = useState<GameSpeed>(1);
+  const [isAutoChoiceEnabled, setIsAutoChoiceEnabled] = useState<boolean>(() => storage.loadAutoChoice());
+  const [autoChoicePendingId, setAutoChoicePendingId] = useState<string | null>(null);
   const [theme, setTheme] = useState<ThemeMode>(() => storage.loadTheme());
   const [isMuted, setIsMuted] = useState<boolean>(() => storage.loadMuted());
+
+  const handleToggleAutoChoice = () => {
+    const next = !isAutoChoiceEnabled;
+    setIsAutoChoiceEnabled(next);
+    storage.saveAutoChoice(next);
+  };
 
   // 사운드 초기 설정
   useEffect(() => {
@@ -89,9 +97,11 @@ export const App: React.FC = () => {
 
     if (result.triggeredEvent) {
       setCurrentEvent(result.triggeredEvent);
-      setIsPlaying(false); // 이벤트 발생 시 일시정지하여 유저 선택 대기
+      if (!isAutoChoiceEnabled) {
+        setIsPlaying(false); // 사건 자동 선택이 꺼져있을 때만 일시정지
+      }
     }
-  }, [character, currentEvent, battleState, addLog]);
+  }, [character, currentEvent, battleState, addLog, isAutoChoiceEnabled]);
 
   // 다음 선택지(사건)가 발생할 때까지 즉시 건너뛰기
   const handleSkipToNextEvent = useCallback(() => {
@@ -119,7 +129,7 @@ export const App: React.FC = () => {
     setCharacter(currentChar);
     if (foundEvent) {
       setCurrentEvent(foundEvent);
-      setIsPlaying(false);
+      setIsPlaying(false); // 건너뛰기는 항상 수동 선택을 위해 일시정지
     }
   }, [character, currentEvent, battleState, addLog]);
 
@@ -144,6 +154,65 @@ export const App: React.FC = () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [isPlaying, speed, character.isAlive, currentEvent, battleState, handleAdvanceYear]);
+
+  // 자동 진행 시 스토리 사건 자동 선택
+  useEffect(() => {
+    if (isPlaying && currentEvent && character.isAlive && isAutoChoiceEnabled) {
+      const chosen = GameEngine.selectAutoChoice(character, currentEvent);
+      setAutoChoicePendingId(chosen.id);
+
+      const speedDelay: Record<GameSpeed, number> = {
+        1: 900,
+        2: 450,
+        4: 200,
+        8: 80
+      };
+      const delay = speedDelay[speed] || 450;
+
+      const eventTimer = setTimeout(() => {
+        handleSelectChoice(chosen);
+        setAutoChoicePendingId(null);
+      }, delay);
+
+      return () => {
+        clearTimeout(eventTimer);
+        setAutoChoicePendingId(null);
+      };
+    } else {
+      setAutoChoicePendingId(null);
+    }
+  }, [isPlaying, currentEvent, character, speed, isAutoChoiceEnabled]);
+
+  // 자동 진행 시 턴제 전투 자동 진행
+  useEffect(() => {
+    if (isPlaying && battleState && character.isAlive && isAutoChoiceEnabled) {
+      // 전투가 끝난 상태면 잠시 후 닫기
+      if (battleState.result) {
+        const closeTimer = setTimeout(() => {
+          setBattleState(undefined);
+        }, Math.max(200, Math.floor(600 / speed)));
+        return () => clearTimeout(closeTimer);
+      }
+
+      // 전투 진행 중이면 커맨드 자동 실행
+      if (battleState.isActive && battleState.isPlayerTurn) {
+        const speedDelay: Record<GameSpeed, number> = {
+          1: 800,
+          2: 400,
+          4: 180,
+          8: 70
+        };
+        const delay = speedDelay[speed] || 400;
+
+        const battleTimer = setTimeout(() => {
+          const { command, itemId } = GameEngine.selectAutoBattleCommand(character, battleState);
+          handleBattleCommand(command, itemId);
+        }, delay);
+
+        return () => clearTimeout(battleTimer);
+      }
+    }
+  }, [isPlaying, battleState, character, speed, isAutoChoiceEnabled]);
 
   // 키보드 단축키 (Space: 일시정지/재생, N: 다음 해, S: 사건까지 건너뛰기, 1/2/4/8: 배속)
   useEffect(() => {
@@ -179,11 +248,14 @@ export const App: React.FC = () => {
     const result = GameEngine.resolveChoice(character, choice, addLog);
     setCharacter(result.updatedChar);
     setCurrentEvent(undefined);
+    setAutoChoicePendingId(null);
 
     if (result.battleEnemy) {
       const newBattle = GameEngine.startBattle(result.battleEnemy);
       setBattleState(newBattle);
-      setIsPlaying(false);
+      if (!isAutoChoiceEnabled) {
+        setIsPlaying(false);
+      }
     }
   };
 
@@ -207,6 +279,7 @@ export const App: React.FC = () => {
     const newChar = GameEngine.createRandomCharacter();
     setCharacter(newChar);
     setCurrentEvent(undefined);
+    setAutoChoicePendingId(null);
     setBattleState(undefined);
     setIsPlaying(false);
     const initialLog: LogEntry = {
@@ -254,6 +327,9 @@ export const App: React.FC = () => {
           onChangeSpeed={setSpeed}
           onNextYear={handleAdvanceYear}
           onSkipToNextEvent={handleSkipToNextEvent}
+          isAutoChoiceEnabled={isAutoChoiceEnabled}
+          onToggleAutoChoice={handleToggleAutoChoice}
+          autoChoicePendingId={autoChoicePendingId}
           onOpenActions={() => setIsActionsOpen(true)}
           onOpenHallOfFame={() => setIsHallOfFameOpen(true)}
           onOpenAchievementBook={() => setIsAchievementBookOpen(true)}
@@ -275,6 +351,9 @@ export const App: React.FC = () => {
           onChangeSpeed={setSpeed}
           onNextYear={handleAdvanceYear}
           onSkipToNextEvent={handleSkipToNextEvent}
+          isAutoChoiceEnabled={isAutoChoiceEnabled}
+          onToggleAutoChoice={handleToggleAutoChoice}
+          autoChoicePendingId={autoChoicePendingId}
           onOpenActions={() => setIsActionsOpen(true)}
           onOpenHallOfFame={() => setIsHallOfFameOpen(true)}
           onOpenAchievementBook={() => setIsAchievementBookOpen(true)}

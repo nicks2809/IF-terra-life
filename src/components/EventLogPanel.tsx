@@ -1,13 +1,14 @@
 // src/components/EventLogPanel.tsx
 import React, { useRef, useEffect } from 'react';
 import { LogEntry, GameEvent, EventChoice, Character, ThemeMode } from '../types';
-import { Radio, AlertTriangle, Sparkles, Sword, Dices, ChevronRight } from 'lucide-react';
+import { Radio, AlertTriangle, Sparkles, Sword, Dices, ChevronRight, Bot } from 'lucide-react';
 
 interface Props {
   logs: LogEntry[];
   currentEvent?: GameEvent;
   character: Character;
   onSelectChoice: (choice: EventChoice) => void;
+  autoChoicePendingId?: string | null;
   theme: ThemeMode;
 }
 
@@ -16,6 +17,7 @@ export const EventLogPanel: React.FC<Props> = ({
   currentEvent,
   character,
   onSelectChoice,
+  autoChoicePendingId,
   theme
 }) => {
   const logContainerRef = useRef<HTMLDivElement>(null);
@@ -141,38 +143,53 @@ export const EventLogPanel: React.FC<Props> = ({
 
           {/* Choices Deck */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-            {currentEvent.choices.map((choice) => (
-              <button
-                key={choice.id}
-                onClick={() => onSelectChoice(choice)}
-                className={`p-3 rounded-lg border text-left transition-all group flex flex-col justify-between ${
-                  isPrts
-                    ? 'bg-slate-900/80 border-slate-700 hover:border-cyan-400 hover:bg-slate-800'
-                    : 'bg-[#f4ebd0] border-[#5c4033]/40 hover:border-[#8b1e1e] hover:bg-[#faeed2]'
-                }`}
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-bold text-xs group-hover:text-cyan-400 transition-colors">
-                      {choice.label}
-                    </span>
-                    <ChevronRight className="w-4 h-4 opacity-50 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
+            {currentEvent.choices.map((choice) => {
+              const isAutoPending = choice.id === autoChoicePendingId;
+              return (
+                <button
+                  key={choice.id}
+                  onClick={() => onSelectChoice(choice)}
+                  className={`p-3 rounded-lg border text-left transition-all group flex flex-col justify-between relative ${
+                    isAutoPending
+                      ? isPrts
+                        ? 'bg-cyan-950/80 border-cyan-400 ring-2 ring-cyan-400/50 shadow-[0_0_15px_rgba(6,182,212,0.4)] animate-pulse'
+                        : 'bg-[#faecd0] border-[#8b1e1e] ring-2 ring-[#8b1e1e]/40 shadow-[0_0_12px_rgba(139,30,30,0.3)]'
+                      : isPrts
+                        ? 'bg-slate-900/80 border-slate-700 hover:border-cyan-400 hover:bg-slate-800'
+                        : 'bg-[#f4ebd0] border-[#5c4033]/40 hover:border-[#8b1e1e] hover:bg-[#faeed2]'
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-bold text-xs group-hover:text-cyan-400 transition-colors flex items-center space-x-1.5">
+                        <span>{choice.label}</span>
+                        {isAutoPending && (
+                          <span className={`text-[10px] px-1.5 py-0.2 rounded font-extrabold flex items-center space-x-1 ${
+                            isPrts ? 'bg-cyan-400 text-black' : 'bg-[#8b1e1e] text-white'
+                          }`}>
+                            <Bot className="w-2.5 h-2.5" />
+                            <span>AI 자동 선택</span>
+                          </span>
+                        )}
+                      </span>
+                      <ChevronRight className="w-4 h-4 opacity-50 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
+                    </div>
+                    <p className="text-[11px] opacity-70 leading-normal mb-2">
+                      {choice.description}
+                    </p>
                   </div>
-                  <p className="text-[11px] opacity-70 leading-normal mb-2">
-                    {choice.description}
-                  </p>
-                </div>
 
-                {choice.diceCheck && (
-                  <div className="flex items-center space-x-1.5 text-[10px] text-amber-400 pt-1.5 border-t border-white/5">
-                    <Dices className="w-3 h-3" />
-                    <span>
-                      {choice.diceCheck.stat.toUpperCase()} 판정 (난이도: {choice.diceCheck.difficulty})
-                    </span>
-                  </div>
-                )}
-              </button>
-            ))}
+                  {choice.diceCheck && (
+                    <div className="flex items-center space-x-1.5 text-[10px] text-amber-400 pt-1.5 border-t border-white/5">
+                      <Dices className="w-3 h-3" />
+                      <span>
+                        {choice.diceCheck.stat.toUpperCase()} 판정 (난이도: {choice.diceCheck.difficulty})
+                      </span>
+                    </div>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
       )}

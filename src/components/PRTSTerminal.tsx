@@ -18,7 +18,8 @@ import {
   Award, 
   Trophy,
   RotateCcw,
-  Activity
+  Activity,
+  Bot
 } from 'lucide-react';
 
 interface Props {
@@ -32,6 +33,9 @@ interface Props {
   onChangeSpeed: (speed: GameSpeed) => void;
   onNextYear: () => void;
   onSkipToNextEvent?: () => void;
+  isAutoChoiceEnabled: boolean;
+  onToggleAutoChoice: () => void;
+  autoChoicePendingId?: string | null;
   onOpenActions: () => void;
   onOpenHallOfFame: () => void;
   onOpenAchievementBook?: () => void;
@@ -53,6 +57,9 @@ export const PRTSTerminal: React.FC<Props> = ({
   onChangeSpeed,
   onNextYear,
   onSkipToNextEvent,
+  isAutoChoiceEnabled,
+  onToggleAutoChoice,
+  autoChoicePendingId,
   onOpenActions,
   onOpenHallOfFame,
   onOpenAchievementBook,
@@ -395,6 +402,7 @@ export const PRTSTerminal: React.FC<Props> = ({
             currentEvent={currentEvent}
             character={character}
             onSelectChoice={onSelectChoice}
+            autoChoicePendingId={autoChoicePendingId}
             theme={theme}
           />
         </section>
@@ -402,17 +410,33 @@ export const PRTSTerminal: React.FC<Props> = ({
 
       {/* Bottom Control Deck */}
       <footer className="h-14 border-t border-cyan-500/30 bg-[#0f131a] px-3 sm:px-4 flex items-center justify-between shrink-0 gap-2 overflow-x-auto">
-        {/* Action Points Button */}
-        <button
-          onClick={onOpenActions}
-          className="flex items-center space-x-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-lg bg-cyan-600/30 hover:bg-cyan-500/40 border border-cyan-400/50 text-cyan-300 transition-all font-bold text-xs shrink-0"
-        >
-          <Sparkles className="w-4 h-4 text-cyan-400 shrink-0" />
-          <span className="hidden xs:inline">자율 활동</span>
-          <span className="px-1.5 py-0.2 bg-cyan-400 text-black text-[10px] rounded font-black">
-            {character.actionPoints} AP
-          </span>
-        </button>
+        {/* Action Points & Auto Choice Options */}
+        <div className="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
+          <button
+            onClick={onOpenActions}
+            className="flex items-center space-x-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-cyan-600/30 hover:bg-cyan-500/40 border border-cyan-400/50 text-cyan-300 transition-all font-bold text-xs"
+          >
+            <Sparkles className="w-4 h-4 text-cyan-400 shrink-0" />
+            <span className="hidden xs:inline">자율 활동</span>
+            <span className="px-1.5 py-0.2 bg-cyan-400 text-black text-[10px] rounded font-black">
+              {character.actionPoints} AP
+            </span>
+          </button>
+
+          <button
+            onClick={onToggleAutoChoice}
+            className={`flex items-center space-x-1 px-2.5 py-1.5 rounded-lg border text-xs font-bold transition-all ${
+              isAutoChoiceEnabled
+                ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300 shadow-[0_0_8px_rgba(6,182,212,0.25)]'
+                : 'bg-slate-800/80 border-slate-700 text-slate-400 hover:text-slate-200'
+            }`}
+            title="자동 진행 중 스토리 사건 및 선택지를 AI가 능력치에 맞춰 자동 선택 (클릭하여 켜기/끄기)"
+          >
+            <Bot className="w-3.5 h-3.5 shrink-0" />
+            <span className="hidden sm:inline">{isAutoChoiceEnabled ? '사건 자동: ON' : '사건 자동: OFF'}</span>
+            <span className="sm:hidden">{isAutoChoiceEnabled ? '자동ON' : '자동OFF'}</span>
+          </button>
+        </div>
 
         {/* Time Control Group */}
         <div className="flex items-center space-x-1.5 sm:space-x-2 shrink-0">

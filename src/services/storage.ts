@@ -8,6 +8,7 @@ const STORAGE_KEYS = {
   HALL_OF_FAME: 'terra_life_hall_of_fame',
   THEME: 'terra_life_theme_mode',
   MUTED: 'terra_life_audio_muted',
+  AUTO_CHOICE: 'terra_life_auto_choice_mode',
   ACHIEVEMENTS: 'terra_life_achievements_v2',
   DISCOVERED_ENDINGS: 'terra_life_discovered_endings_v2'
 };
@@ -107,6 +108,23 @@ export const storage = {
       return localStorage.getItem(STORAGE_KEYS.MUTED) === 'true';
     } catch {
       return false;
+    }
+  },
+
+  saveAutoChoice(enabled: boolean) {
+    try {
+      localStorage.setItem(STORAGE_KEYS.AUTO_CHOICE, String(enabled));
+    } catch {
+      // ignore
+    }
+  },
+
+  loadAutoChoice(): boolean {
+    try {
+      const val = localStorage.getItem(STORAGE_KEYS.AUTO_CHOICE);
+      return val === null ? true : val === 'true';
+    } catch {
+      return true;
     }
   },
 

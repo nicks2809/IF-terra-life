@@ -17,7 +17,8 @@ import {
   Trophy,
   RotateCcw,
   Feather,
-  Flame
+  Flame,
+  Bot
 } from 'lucide-react';
 
 interface Props {
@@ -31,6 +32,9 @@ interface Props {
   onChangeSpeed: (speed: GameSpeed) => void;
   onNextYear: () => void;
   onSkipToNextEvent?: () => void;
+  isAutoChoiceEnabled: boolean;
+  onToggleAutoChoice: () => void;
+  autoChoicePendingId?: string | null;
   onOpenActions: () => void;
   onOpenHallOfFame: () => void;
   onOpenAchievementBook?: () => void;
@@ -52,6 +56,9 @@ export const HistoryTome: React.FC<Props> = ({
   onChangeSpeed,
   onNextYear,
   onSkipToNextEvent,
+  isAutoChoiceEnabled,
+  onToggleAutoChoice,
+  autoChoicePendingId,
   onOpenActions,
   onOpenHallOfFame,
   onOpenAchievementBook,
@@ -290,6 +297,7 @@ export const HistoryTome: React.FC<Props> = ({
             currentEvent={currentEvent}
             character={character}
             onSelectChoice={onSelectChoice}
+            autoChoicePendingId={autoChoicePendingId}
             theme={theme}
           />
         </section>
@@ -297,16 +305,33 @@ export const HistoryTome: React.FC<Props> = ({
 
       {/* Tome Bottom Dock */}
       <footer className="h-14 border-t-2 border-[#5c4033] bg-[#d9c79f] px-3 sm:px-6 flex items-center justify-between shrink-0 shadow-md gap-2 overflow-x-auto">
-        <button
-          onClick={onOpenActions}
-          className="flex items-center space-x-1.5 px-3 sm:px-4 py-1.5 rounded-lg bg-[#8b1e1e] hover:bg-[#a32828] text-white text-xs font-bold shadow transition-all shrink-0"
-        >
-          <Feather className="w-4 h-4 shrink-0" />
-          <span className="hidden xs:inline">자율 행동</span>
-          <span className="px-1.5 py-0.2 bg-white text-black text-[10px] rounded font-black">
-            {character.actionPoints} AP
-          </span>
-        </button>
+        {/* Action Points & Auto Choice Options */}
+        <div className="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
+          <button
+            onClick={onOpenActions}
+            className="flex items-center space-x-1.5 px-3 sm:px-4 py-1.5 rounded-lg bg-[#8b1e1e] hover:bg-[#a32828] text-white text-xs font-bold shadow transition-all shrink-0"
+          >
+            <Feather className="w-4 h-4 shrink-0" />
+            <span className="hidden xs:inline">자율 행동</span>
+            <span className="px-1.5 py-0.2 bg-white text-black text-[10px] rounded font-black">
+              {character.actionPoints} AP
+            </span>
+          </button>
+
+          <button
+            onClick={onToggleAutoChoice}
+            className={`flex items-center space-x-1 px-2.5 py-1.5 rounded-lg text-xs font-bold shadow transition-all border ${
+              isAutoChoiceEnabled
+                ? 'bg-[#8b1e1e] text-white border-[#8b1e1e]'
+                : 'bg-[#ebdcb9] border-[#5c4033]/40 text-[#5c4d47] hover:text-[#2c1810]'
+            }`}
+            title="자동 진행 중 스토리 사건 및 선택지를 AI가 능력치에 맞춰 자동 선택 (클릭하여 켜기/끄기)"
+          >
+            <Bot className="w-3.5 h-3.5 shrink-0" />
+            <span className="hidden sm:inline">{isAutoChoiceEnabled ? '사건 자동: ON' : '사건 자동: OFF'}</span>
+            <span className="sm:hidden">{isAutoChoiceEnabled ? '자동ON' : '자동OFF'}</span>
+          </button>
+        </div>
 
         <div className="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
           <button

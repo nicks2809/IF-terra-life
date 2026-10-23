@@ -515,6 +515,76 @@ export class GameEngine {
     return { updatedChar: char, triggeredEvent };
   }
 
+  // 인공지능 사건 선택지 자동 결정 (캐릭터 능력치, 종족, 직업 성향 반영)
+  public static selectAutoChoice(character: Character, event: GameEvent): EventChoice {
+    const choices = event.choices;
+    if (!choices || choices.length === 0) {
+      throw new Error('Event has no choices');
+    }
+    if (choices.length === 1) return choices[0];
+
+    const scored = choices.map(choice => {
+      let score = 50;
+
+      // 1. 주사위 체크가 있는 경우: 캐릭터 능력치 기반 성공 확률 및 적합도 계산
+      if (choice.diceCheck) {
+        const statVal = character.stats[choice.diceCheck.stat] || 50;
+        const statBonus = Math.floor(statVal / 5);
+        const expectedScore = 50 + statBonus;
+        const diff = expectedScore - choice.diceCheck.difficulty;
+        score += diff * 1.5;
+
+        // 특화 스탯 판정일 경우 추가 선호
+        if (statVal >= 70) score += 20;
+      }
+
+      // 2. 종족 및 직업적 시너지 키워드 반영
+      const text = (choice.label + ' ' + choice.description).toLowerCase();
+      if (character.race.includes('살카즈') && (text.includes('살카즈') || text.includes('마왕') || text.includes('피') || text.includes('어둠'))) score += 15;
+      if (character.race.includes('에기르') && (text.includes('심해') || text.includes('바다') || text.includes('헌터스') || text.includes('해사'))) score += 15;
+      if (character.race.includes('산크타') && (text.includes('총기') || text.includes('율법') || text.includes('수호') || text.includes('광륜'))) score += 15;
+      if (character.career.includes('로도스') && (text.includes('로도스') || text.includes('치료') || text.includes('구호') || text.includes('감염자'))) score += 15;
+      if (character.nation === '카시미어' && (text.includes('기사') || text.includes('경기') || text.includes('영광'))) score += 15;
+
+      // 3. 인생의 다채로움을 위한 가벼운 난수 변동 (±10)
+      score += (Math.random() * 20 - 10);
+
+      return { choice, score };
+    });
+
+    scored.sort((a, b) => b.score - a.score);
+    return scored[0].choice;
+  }
+
+  // 자동 전투 커맨드 결정 (전술 AI)
+  public static selectAutoBattleCommand(
+    character: Character, 
+    battle: BattleState
+  ): { command: 'attack' | 'arts' | 'defend' | 'item'; itemId?: string } {
+    // 1. 체력이 35% 미만이고 구급 스프레이가 있다면 우선 회복
+    if (character.stats.health < character.stats.maxHealth * 0.35) {
+      const spray = character.inventory.find(slot => slot.item.id === 'med_emergency_spray' && slot.count > 0);
+      if (spray) {
+        return { command: 'item', itemId: spray.item.id };
+      }
+    }
+
+    // 2. 아츠 적성이 전투력보다 높고 이성이 충분하면 오리지늄 아츠 시전
+    if (character.stats.artsAptitude > character.stats.combat && character.stats.sanity >= 8) {
+      return { command: 'arts' };
+    }
+
+    // 3. 적 공격력이 40 이상인데 내 실드가 없고 체력이 50% 이하일 때 전술 방어
+    if (battle.playerShield <= 0 && battle.enemy.atk >= 40 && character.stats.health < character.stats.maxHealth * 0.5) {
+      if (Math.random() < 0.4) {
+        return { command: 'defend' };
+      }
+    }
+
+    // 4. 기본은 강력한 물리 타격
+    return { command: 'attack' };
+  }
+
   // 선택지 판정 및 처리
   public static resolveChoice(
     character: Character,
