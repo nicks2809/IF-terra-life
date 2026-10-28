@@ -1,7 +1,7 @@
 // src/components/CombatModal.tsx
 import React, { useState } from 'react';
 import { Character, BattleState, ThemeMode } from '../types';
-import { Sword, Sparkles, Shield, HeartPulse, LogOut, Skull, Trophy } from 'lucide-react';
+import { Sword, Sparkles, Shield, HeartPulse, LogOut, Skull, Trophy, Flame } from 'lucide-react';
 
 interface Props {
   character: Character;
@@ -20,9 +20,10 @@ export const CombatModal: React.FC<Props> = ({
   onClose,
   theme
 }) => {
+  const [selectedItem, setSelectedItem] = useState<string>('');
+
   if (!isOpen) return null;
 
-  const [selectedItem, setSelectedItem] = useState<string>('');
   const isPrts = theme === 'prts';
   const enemy = battle.enemy;
 
@@ -31,12 +32,12 @@ export const CombatModal: React.FC<Props> = ({
   const playerSanPercent = Math.max(0, Math.min(100, Math.round((character.stats.sanity / character.stats.maxSanity) * 100)));
 
   const consumableItems = character.inventory.filter(s => 
-    s.count > 0 && (s.item.effectType === 'heal_hp' || s.item.effectType === 'heal_san')
+    s.count > 0 && (s.item.effectType === 'heal_hp' || s.item.effectType === 'heal_san' || s.item.effectType === 'boost_arts')
   );
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
-      <div className={`w-full max-w-2xl rounded-xl border shadow-2xl p-6 transition-all ${
+      <div className={`w-full max-w-2xl rounded-xl border shadow-2xl p-5 sm:p-6 transition-all ${
         isPrts 
           ? 'bg-[#0f131a] border-red-500/50 text-slate-100 font-mono' 
           : 'bg-[#f4ebd0] border-[#8b1e1e] text-[#1a1412] font-serif'
@@ -49,8 +50,8 @@ export const CombatModal: React.FC<Props> = ({
               {isPrts ? '전술 교전 상태 (TACTICAL ENGAGEMENT)' : '결전의 순간'}
             </h2>
           </div>
-          <div className={`text-xs px-2.5 py-1 rounded ${isPrts ? 'bg-slate-800 text-slate-300' : 'bg-[#8b1e1e]/20 text-[#8b1e1e]'}`}>
-            턴 {battle.turn}
+          <div className={`text-xs px-2.5 py-1 rounded font-bold ${isPrts ? 'bg-slate-800 text-slate-300' : 'bg-[#8b1e1e]/20 text-[#8b1e1e]'}`}>
+            턴 {battle.turn} {battle.turn % 3 === 2 && !battle.result ? '· ⚠️ 다음 턴 적 필살기 예고' : ''}
           </div>
         </div>
 
@@ -65,8 +66,11 @@ export const CombatModal: React.FC<Props> = ({
                 <h3 className="font-bold text-sm text-red-400">{enemy.name}</h3>
                 <span className="text-[10px] text-slate-400">{enemy.faction}</span>
               </div>
-              <div className="text-xs text-red-300 font-bold">
-                {enemy.hp} / {enemy.maxHp} HP
+              <div className="text-right text-xs">
+                <span className="text-red-300 font-bold">{enemy.hp} / {enemy.maxHp} HP</span>
+                {battle.enemyShield > 0 && (
+                  <span className="text-purple-300 text-[10px] block">주술 실드 +{battle.enemyShield}</span>
+                )}
               </div>
             </div>
 
@@ -83,8 +87,8 @@ export const CombatModal: React.FC<Props> = ({
               <span>방어: {enemy.def}</span>
               <span>마저: {enemy.artsRes}%</span>
             </div>
-            <div className="text-[10px] text-amber-400/90 mt-1 italic">
-              특기: {enemy.specialSkillName}
+            <div className="text-[10px] text-amber-400/90 mt-1.5">
+              <span className="font-bold">특수기 [{enemy.specialSkillName}]:</span> {enemy.specialSkillDesc}
             </div>
           </div>
 
@@ -95,16 +99,23 @@ export const CombatModal: React.FC<Props> = ({
             <div className="flex items-center justify-between mb-2">
               <div>
                 <h3 className="font-bold text-sm text-cyan-400">{character.name} ({character.race})</h3>
-                <span className="text-[10px] text-amber-400 font-bold">
-                  {character.oripathy.isInfected 
-                    ? `광석병 증폭: ${character.oripathy.activeArtsMultiplier}x` 
-                    : '비감염 (표준 아츠)'}
-                </span>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="text-[10px] text-amber-400 font-bold">
+                    {character.oripathy.isInfected 
+                      ? `광석병 증폭: ${character.oripathy.activeArtsMultiplier}x` 
+                      : '비감염 (표준 아츠)'}
+                  </span>
+                  {battle.catalystActive && (
+                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-purple-600 text-white font-bold animate-pulse flex items-center gap-0.5">
+                      <Flame className="w-2.5 h-2.5" /> 촉매 3x 폭주
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="text-right text-xs">
                 <span className="text-emerald-400 font-bold">{character.stats.health}/{character.stats.maxHealth} HP</span>
                 {battle.playerShield > 0 && (
-                  <span className="text-cyan-300 text-[10px] block">실드 +{battle.playerShield}</span>
+                  <span className="text-cyan-300 text-[10px] block">방어 실드 +{battle.playerShield}</span>
                 )}
               </div>
             </div>
@@ -126,7 +137,8 @@ export const CombatModal: React.FC<Props> = ({
             </div>
 
             <div className="flex justify-between text-[11px] text-slate-400">
-              <span>전투력: {character.stats.combat} (+{character.equipment.weapon?.atkBonus || 0})</span>
+              <span>전투: {character.stats.combat}{character.equipment.weapon ? `(+${character.equipment.weapon.atkBonus})` : ''}</span>
+              <span>방어: {Math.max(0, (character.equipment.armor?.defBonus || 0) - (battle.armorBreak || 0))}</span>
               <span>아츠: {character.stats.artsAptitude}</span>
               <span>이성: {character.stats.sanity}</span>
             </div>
@@ -146,32 +158,39 @@ export const CombatModal: React.FC<Props> = ({
 
         {/* Result Overlay or Command Deck */}
         {battle.result ? (
-          <div className="p-4 rounded-lg bg-black/40 border border-white/20 text-center space-y-3">
+          <div className={`p-4 rounded-lg border text-center space-y-3 ${
+            isPrts ? 'bg-black/60 border-cyan-500/40' : 'bg-[#e8dcbe] border-[#8b1e1e]'
+          }`}>
             {battle.result === 'victory' && (
-              <div className="text-emerald-400 flex items-center justify-center space-x-2">
-                <Trophy className="w-6 h-6" />
-                <span className="text-lg font-bold">전투 승리!</span>
+              <div className="space-y-1">
+                <div className="text-emerald-400 flex items-center justify-center space-x-2">
+                  <Trophy className="w-6 h-6" />
+                  <span className="text-lg font-extrabold">교전 승리! 적 제압 완료</span>
+                </div>
+                <p className="text-xs text-amber-300 font-bold">
+                  전리품 획득: +{enemy.rewardLmd.toLocaleString()} LMD · 실전 능력치 +5 상승
+                </p>
               </div>
             )}
             {battle.result === 'defeat' && (
               <div className="text-red-500 flex items-center justify-center space-x-2">
                 <Skull className="w-6 h-6" />
-                <span className="text-lg font-bold">전사...</span>
+                <span className="text-lg font-extrabold">치명상으로 인한 전사...</span>
               </div>
             )}
             {battle.result === 'fled' && (
               <div className="text-amber-400 flex items-center justify-center space-x-2">
                 <LogOut className="w-6 h-6" />
-                <span className="text-lg font-bold">전선 이탈 성공</span>
+                <span className="text-lg font-extrabold">전선 이탈 성공</span>
               </div>
             )}
             <button
               onClick={onClose}
-              className={`px-6 py-2 rounded text-xs font-bold tracking-wider ${
+              className={`px-6 py-2 rounded-lg text-xs font-bold tracking-wider transition-all ${
                 isPrts ? 'bg-cyan-500 hover:bg-cyan-400 text-black' : 'bg-[#8b1e1e] hover:bg-[#a32828] text-white'
               }`}
             >
-              {isPrts ? '전투 기록 닫기' : '상황 종료'}
+              {isPrts ? '전투 결과 확인 및 복귀' : '상황 종료'}
             </button>
           </div>
         ) : (
@@ -191,7 +210,7 @@ export const CombatModal: React.FC<Props> = ({
                 className="flex items-center justify-center space-x-1.5 p-3 rounded-lg bg-cyan-600/80 hover:bg-cyan-500 text-white font-bold text-xs transition-all disabled:opacity-40"
               >
                 <Sparkles className="w-4 h-4" />
-                <span>오리지늄 아츠</span>
+                <span>오리지늄 아츠 (-8 SAN)</span>
               </button>
 
               <button
@@ -207,7 +226,7 @@ export const CombatModal: React.FC<Props> = ({
                 className="flex items-center justify-center space-x-1.5 p-3 rounded-lg bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs transition-all"
               >
                 <LogOut className="w-4 h-4" />
-                <span>후퇴 시도</span>
+                <span>후퇴 시도 (65%)</span>
               </button>
             </div>
 
@@ -222,10 +241,10 @@ export const CombatModal: React.FC<Props> = ({
                     isPrts ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-[#e8dcbe] border-[#5c4033] text-black'
                   }`}
                 >
-                  <option value="">보유 전술 약품 선택...</option>
+                  <option value="">전술 의약품 · 촉매 선택...</option>
                   {consumableItems.map(slot => (
                     <option key={slot.item.id} value={slot.item.id}>
-                      {slot.item.name} ({slot.count}개 남음) - {slot.item.description}
+                      {slot.item.name} ({slot.count}개) - {slot.item.description}
                     </option>
                   ))}
                 </select>
@@ -239,7 +258,7 @@ export const CombatModal: React.FC<Props> = ({
                   }}
                   className="px-3 py-1.5 rounded text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-40 transition-all shrink-0"
                 >
-                  사용
+                  즉시 투여
                 </button>
               </div>
             )}

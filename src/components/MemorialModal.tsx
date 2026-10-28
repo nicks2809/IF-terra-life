@@ -11,6 +11,7 @@ interface Props {
   record: DeathRecord;
   isOpen: boolean;
   onRestart: () => void;
+  onOpenReincarnation?: () => void;
   onOpenHallOfFame: () => void;
   onOpenAchievementBook?: () => void;
   theme: ThemeMode;
@@ -20,6 +21,7 @@ export const MemorialModal: React.FC<Props> = ({
   record,
   isOpen,
   onRestart,
+  onOpenReincarnation,
   onOpenHallOfFame,
   onOpenAchievementBook,
   theme
@@ -312,6 +314,16 @@ ${record.notableAchievements.map(a => `• ${a}`).join('\n')}
             <span>추모실</span>
           </button>
 
+          {onOpenReincarnation && (
+            <button
+              onClick={onOpenReincarnation}
+              className="flex items-center space-x-1.5 px-4 py-2 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg transition-all"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>운명 설계 환생</span>
+            </button>
+          )}
+
           <button
             onClick={onRestart}
             className={`flex items-center space-x-1.5 px-5 py-2 rounded-lg text-xs font-bold shadow-lg transition-all ${
@@ -319,7 +331,7 @@ ${record.notableAchievements.map(a => `• ${a}`).join('\n')}
             }`}
           >
             <RotateCcw className="w-4 h-4" />
-            <span>새로운 생애 시작</span>
+            <span>즉시 무작위 환생</span>
           </button>
         </div>
       </div>

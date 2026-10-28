@@ -6,6 +6,36 @@ export type GameSpeed = 1 | 2 | 4 | 8 | 16;
 
 export type Gender = '남성' | '여성';
 
+export type AIStrategy = 'balanced' | 'survival' | 'combat' | 'wealth';
+
+export type LogFilter = 'all' | 'event' | 'news' | 'combat' | 'oripathy';
+
+export interface AdvancedSettings {
+  aiStrategy: AIStrategy;
+  pauseOnLowHp: boolean;
+  pauseOnOripathyCrisis: boolean;
+  pauseOnRareEvent: boolean;
+  autoUseApAndShop: boolean;
+  crtEffect: boolean;
+}
+
+export interface ReincarnationPerk {
+  id: string;
+  name: string;
+  description: string;
+  reqPoints: number;
+  badge: string;
+}
+
+export interface ReincarnationConfig {
+  name?: string;
+  gender?: Gender;
+  raceId?: string;
+  nationId?: string;
+  environment?: EnvironmentType;
+  perkIds?: string[];
+}
+
 export interface RaceTrait {
   id: string;
   name: string;
@@ -189,6 +219,9 @@ export interface Character {
   deathRecord?: DeathRecord;
   secretFlags: Record<string, boolean>;
   unlockedAchievements: string[];
+  seenEventIds?: string[];
+  eventCooldowns?: Record<string, number>;
+  reincarnationPerks?: string[];
 }
 
 export interface DiceCheck {
@@ -291,6 +324,8 @@ export interface BattleState {
   playerShield: number;
   enemyShield: number;
   damageTaken?: number;
+  catalystActive?: boolean;
+  armorBreak?: number;
   result?: 'victory' | 'defeat' | 'fled';
 }
 
@@ -308,6 +343,7 @@ export interface LogEntry {
     dc: number;
     result: '대성공' | '성공' | '실패' | '대참사';
   };
+  effectBadges?: string[];
   timestamp: string;
 }
 

@@ -1,6 +1,15 @@
 // src/services/storage.ts
-import { Character, DeathRecord, LogEntry, ThemeMode, UnlockedAchievement } from '../types';
+import { AdvancedSettings, Character, DeathRecord, LogEntry, ThemeMode, UnlockedAchievement } from '../types';
 import { ACHIEVEMENTS_DATA } from '../data/achievements';
+
+export const DEFAULT_ADVANCED_SETTINGS: AdvancedSettings = {
+  aiStrategy: 'balanced',
+  pauseOnLowHp: true,
+  pauseOnOripathyCrisis: false,
+  pauseOnRareEvent: false,
+  autoUseApAndShop: true,
+  crtEffect: true,
+};
 
 const STORAGE_KEYS = {
   ACTIVE_CHAR: 'terra_life_active_character',
@@ -10,7 +19,8 @@ const STORAGE_KEYS = {
   MUTED: 'terra_life_audio_muted',
   AUTO_CHOICE: 'terra_life_auto_choice_mode',
   ACHIEVEMENTS: 'terra_life_achievements_v2',
-  DISCOVERED_ENDINGS: 'terra_life_discovered_endings_v2'
+  DISCOVERED_ENDINGS: 'terra_life_discovered_endings_v2',
+  ADVANCED_SETTINGS: 'terra_life_advanced_settings_v1'
 };
 
 export const storage = {
@@ -125,6 +135,23 @@ export const storage = {
       return val === null ? true : val === 'true';
     } catch {
       return true;
+    }
+  },
+
+  saveAdvancedSettings(settings: AdvancedSettings) {
+    try {
+      localStorage.setItem(STORAGE_KEYS.ADVANCED_SETTINGS, JSON.stringify(settings));
+    } catch {
+      // ignore
+    }
+  },
+
+  loadAdvancedSettings(): AdvancedSettings {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.ADVANCED_SETTINGS);
+      return data ? { ...DEFAULT_ADVANCED_SETTINGS, ...JSON.parse(data) } : DEFAULT_ADVANCED_SETTINGS;
+    } catch {
+      return DEFAULT_ADVANCED_SETTINGS;
     }
   },
 

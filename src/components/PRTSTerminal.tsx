@@ -19,7 +19,9 @@ import {
   Trophy,
   RotateCcw,
   Activity,
-  Bot
+  Bot,
+  Settings,
+  ShoppingBag
 } from 'lucide-react';
 
 interface Props {
@@ -39,6 +41,9 @@ interface Props {
   onOpenActions: () => void;
   onOpenHallOfFame: () => void;
   onOpenAchievementBook?: () => void;
+  onOpenSettings?: () => void;
+  onOpenReincarnation?: () => void;
+  crtEffect?: boolean;
   onRestart: () => void;
   isMuted: boolean;
   onToggleMute: () => void;
@@ -63,6 +68,9 @@ export const PRTSTerminal: React.FC<Props> = ({
   onOpenActions,
   onOpenHallOfFame,
   onOpenAchievementBook,
+  onOpenSettings,
+  onOpenReincarnation,
+  crtEffect = true,
   onRestart,
   isMuted,
   onToggleMute,
@@ -136,13 +144,23 @@ export const PRTSTerminal: React.FC<Props> = ({
   }[character.oripathy.stage];
 
   return (
-    <div className="flex flex-col h-screen bg-[#0b0d11] text-slate-100 font-mono select-none overflow-hidden">
+    <div className="flex flex-col h-screen bg-[#0b0d11] text-slate-100 font-mono select-none overflow-hidden relative">
+      {/* Subtle CRT Scanline Overlay */}
+      {crtEffect && (
+        <div
+          className="pointer-events-none fixed inset-0 z-40 opacity-[0.04]"
+          style={{
+            backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, #00e5ff 3px)'
+          }}
+        />
+      )}
+
       {/* Top Bar Header */}
-      <header className="h-12 border-b border-cyan-500/30 bg-[#0f131a] px-4 flex items-center justify-between shrink-0">
-        <div className="flex items-center space-x-3">
+      <header className="h-12 border-b border-cyan-500/30 bg-[#0f131a] px-3 sm:px-4 flex items-center justify-between shrink-0">
+        <div className="flex items-center space-x-2.5">
           <div className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></div>
           <span className="text-xs font-bold tracking-widest text-cyan-400 uppercase">
-            PRTS VITAL SYSTEM // TERRA OS
+            PRTS VITAL // TERRA OS
           </span>
           <span className="text-[11px] text-slate-400 hidden sm:inline">
             [테라력 {character.year}년 · {character.age}세]
@@ -150,7 +168,7 @@ export const PRTSTerminal: React.FC<Props> = ({
         </div>
 
         {/* Global Action Icons */}
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-1.5 sm:space-x-2">
           <button
             onClick={onToggleMute}
             className="p-1.5 rounded hover:bg-white/10 text-slate-300 hover:text-cyan-400 transition-colors"
@@ -159,9 +177,20 @@ export const PRTSTerminal: React.FC<Props> = ({
             {isMuted ? <VolumeX className="w-4 h-4 text-red-400" /> : <Volume2 className="w-4 h-4" />}
           </button>
 
+          {onOpenSettings && (
+            <button
+              onClick={onOpenSettings}
+              className="flex items-center space-x-1 px-2 py-1 rounded text-xs bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/30 transition-all"
+              title="전술 AI 성향 및 위기 자동 브레이크 설정"
+            >
+              <Settings className="w-3.5 h-3.5" />
+              <span className="hidden md:inline">고급 설정</span>
+            </button>
+          )}
+
           <button
             onClick={onSwitchTheme}
-            className="flex items-center space-x-1 px-2.5 py-1 rounded text-xs bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 transition-all"
+            className="flex items-center space-x-1 px-2 py-1 rounded text-xs bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 transition-all"
             title="고서적 테마로 전환"
           >
             <BookOpen className="w-3.5 h-3.5" />
@@ -171,7 +200,7 @@ export const PRTSTerminal: React.FC<Props> = ({
           {onOpenAchievementBook && (
             <button
               onClick={onOpenAchievementBook}
-              className="flex items-center space-x-1 px-2.5 py-1 rounded text-xs bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 transition-all"
+              className="flex items-center space-x-1 px-2 py-1 rounded text-xs bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 transition-all"
               title="테라 업적 도감"
             >
               <Trophy className="w-3.5 h-3.5" />
@@ -181,7 +210,7 @@ export const PRTSTerminal: React.FC<Props> = ({
 
           <button
             onClick={onOpenHallOfFame}
-            className="flex items-center space-x-1 px-2.5 py-1 rounded text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all"
+            className="flex items-center space-x-1 px-2 py-1 rounded text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all"
             title="지난 생애 추모실"
           >
             <Award className="w-3.5 h-3.5 text-indigo-400" />
@@ -189,11 +218,12 @@ export const PRTSTerminal: React.FC<Props> = ({
           </button>
 
           <button
-            onClick={onRestart}
-            className="p-1.5 rounded hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors"
-            title="새로운 생애 시작"
+            onClick={onOpenReincarnation || onRestart}
+            className="flex items-center space-x-1 px-2 py-1 rounded text-xs bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/40 transition-all"
+            title="운명 설계 및 새로운 생애 환생"
           >
-            <RotateCcw className="w-4 h-4" />
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span className="hidden lg:inline">환생 설계</span>
           </button>
         </div>
       </header>
@@ -369,27 +399,59 @@ export const PRTSTerminal: React.FC<Props> = ({
 
           {/* Equipment & Inventory */}
           <div className="p-3.5 rounded-lg border border-slate-800 bg-slate-900/40 text-xs space-y-2">
-            <div className="text-[11px] text-slate-400 border-b border-white/5 pb-1 font-bold">
-              장착 장비 및 물자
+            <div className="flex items-center justify-between text-[11px] text-slate-400 border-b border-white/5 pb-1 font-bold">
+              <span>장착 장비 및 물자</span>
+              <button
+                onClick={onOpenActions}
+                className="text-[10px] text-cyan-400 hover:underline flex items-center space-x-1"
+              >
+                <ShoppingBag className="w-3 h-3" />
+                <span>무기고·전직 열기</span>
+              </button>
             </div>
             <div className="flex justify-between text-[11px]">
               <span className="text-slate-400">무기:</span>
-              <span className="text-slate-200">{character.equipment.weapon?.name || '맨손'}</span>
+              <span className="text-slate-200 font-bold">
+                {character.equipment.weapon 
+                  ? `${character.equipment.weapon.name} (+${character.equipment.weapon.atkBonus})`
+                  : '맨손'}
+              </span>
             </div>
             <div className="flex justify-between text-[11px]">
               <span className="text-slate-400">방어구:</span>
-              <span className="text-slate-200">{character.equipment.armor?.name || '일반 평복'}</span>
+              <span className="text-slate-200 font-bold">
+                {character.equipment.armor 
+                  ? `${character.equipment.armor.name} (+${character.equipment.armor.defBonus})`
+                  : '일반 평복'}
+              </span>
             </div>
             <div className="pt-1.5 border-t border-white/5">
               <span className="text-[10px] text-slate-400 block mb-1">보유 소모품:</span>
               <div className="flex flex-wrap gap-1">
-                {character.inventory.map((slot, idx) => (
+                {character.inventory.length > 0 ? character.inventory.map((slot, idx) => (
                   <span key={idx} className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300">
                     {slot.item.name} x{slot.count}
                   </span>
-                ))}
+                )) : (
+                  <span className="text-[10px] text-slate-500">없음</span>
+                )}
               </div>
             </div>
+          </div>
+
+          {/* Faction Reputations */}
+          <div className="p-3.5 rounded-lg border border-slate-800 bg-slate-900/40 text-xs space-y-1.5">
+            <div className="text-[11px] text-slate-400 border-b border-white/5 pb-1 font-bold">
+              주요 세력 우호도
+            </div>
+            {Object.entries(character.factions).map(([fac, rep]) => (
+              <div key={fac} className="flex justify-between text-[11px]">
+                <span className="text-slate-400">{fac}</span>
+                <span className={`font-bold ${rep > 0 ? 'text-cyan-300' : rep < 0 ? 'text-red-400' : 'text-slate-500'}`}>
+                  {rep > 0 ? `+${rep}` : rep}
+                </span>
+              </div>
+            ))}
           </div>
         </aside>
 

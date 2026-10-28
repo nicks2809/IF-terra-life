@@ -1,6 +1,16 @@
 // src/App.tsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Character, LogEntry, GameEvent, EventChoice, GameSpeed, ThemeMode, BattleState } from './types';
+import { 
+  Character, 
+  LogEntry, 
+  GameEvent, 
+  EventChoice, 
+  GameSpeed, 
+  ThemeMode, 
+  BattleState, 
+  AdvancedSettings,
+  ReincarnationConfig
+} from './types';
 import { GameEngine } from './engine/gameEngine';
 import { storage } from './services/storage';
 import { sound } from './services/sound';
@@ -11,6 +21,8 @@ import { CombatModal } from './components/CombatModal';
 import { MemorialModal } from './components/MemorialModal';
 import { HallOfFameModal } from './components/HallOfFameModal';
 import { AchievementBookModal } from './components/AchievementBookModal';
+import { AdvancedSettingsModal } from './components/AdvancedSettingsModal';
+import { ReincarnationModal } from './components/ReincarnationModal';
 
 export const App: React.FC = () => {
   // --- 상태 관리 ---
@@ -43,6 +55,8 @@ export const App: React.FC = () => {
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const [isHallOfFameOpen, setIsHallOfFameOpen] = useState(false);
   const [isAchievementBookOpen, setIsAchievementBookOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isReincarnationOpen, setIsReincarnationOpen] = useState(false);
 
   // 시간 및 설정
   const [isPlaying, setIsPlaying] = useState(true);
@@ -51,6 +65,12 @@ export const App: React.FC = () => {
   const [autoChoicePendingId, setAutoChoicePendingId] = useState<string | null>(null);
   const [theme, setTheme] = useState<ThemeMode>(() => storage.loadTheme());
   const [isMuted, setIsMuted] = useState<boolean>(() => storage.loadMuted());
+  const [advancedSettings, setAdvancedSettings] = useState<AdvancedSettings>(() => storage.loadAdvancedSettings());
+
+  const handleUpdateSettings = (next: AdvancedSettings) => {
+    setAdvancedSettings(next);
+    storage.saveAdvancedSettings(next);
+  };
 
   const handleToggleAutoChoice = () => {
     const next = !isAutoChoiceEnabled;
@@ -82,7 +102,7 @@ export const App: React.FC = () => {
     if (character.isAlive) {
       storage.saveActiveCharacter(character);
     } else if (character.deathRecord) {
-      storage.saveActiveCharacter(null); // 사망 시 활성 캐릭터 클리어
+      storage.saveActiveCharacter(null);
       storage.saveMemorial(character.deathRecord);
     }
   }, [character]);
@@ -92,16 +112,34 @@ export const App: React.FC = () => {
     if (!character.isAlive || currentEvent || battleState?.isActive) return;
 
     sound.playVitalPulse();
-    const result = GameEngine.advanceOneYear(character, addLog);
-    setCharacter(result.updatedChar);
+    const result = GameEngine.advanceOneYear(character, addLog, {
+      autoManageApAndShop: isAutoChoiceEnabled && advancedSettings.autoUseApAndShop,
+      aiStrategy: advancedSettings.aiStrategy
+    });
+    const nextChar = result.updatedChar;
+    setCharacter(nextChar);
+
+    // 위기 감지 자동 브레이크 검사
+    if (nextChar.isAlive) {
+      if (advancedSettings.pauseOnLowHp && nextChar.stats.health <= nextChar.stats.maxHealth * 0.25) {
+        setIsPlaying(false);
+      }
+      if (advancedSettings.pauseOnOripathyCrisis && nextChar.oripathy.isInfected && nextChar.oripathy.crystallizationRate >= 70) {
+        setIsPlaying(false);
+      }
+    }
 
     if (result.triggeredEvent) {
       setCurrentEvent(result.triggeredEvent);
-      if (!isAutoChoiceEnabled) {
-        setIsPlaying(false); // 사건 자동 선택이 꺼져있을 때만 일시정지
+      const isRareMilestone = 
+        result.triggeredEvent.id.startsWith('career_special_') ||
+        result.triggeredEvent.category === 'fateful';
+
+      if (!isAutoChoiceEnabled || (advancedSettings.pauseOnRareEvent && isRareMilestone)) {
+        setIsPlaying(false);
       }
     }
-  }, [character, currentEvent, battleState, addLog, isAutoChoiceEnabled]);
+  }, [character, currentEvent, battleState, addLog, isAutoChoiceEnabled, advancedSettings]);
 
   // 다음 선택지(사건)가 발생할 때까지 즉시 건너뛰기
   const handleSkipToNextEvent = useCallback(() => {
@@ -111,9 +149,11 @@ export const App: React.FC = () => {
     let currentChar = character;
     let foundEvent: GameEvent | undefined = undefined;
 
-    // 최대 40년 또는 사건/전투/사망 발생 시까지 루프로 고속 진행
     for (let i = 0; i < 40; i++) {
-      const result = GameEngine.advanceOneYear(currentChar, addLog);
+      const result = GameEngine.advanceOneYear(currentChar, addLog, {
+        autoManageApAndShop: isAutoChoiceEnabled && advancedSettings.autoUseApAndShop,
+        aiStrategy: advancedSettings.aiStrategy
+      });
       currentChar = result.updatedChar;
 
       if (!currentChar.isAlive) {
@@ -124,25 +164,29 @@ export const App: React.FC = () => {
         foundEvent = result.triggeredEvent;
         break;
       }
+
+      if (advancedSettings.pauseOnLowHp && currentChar.stats.health <= currentChar.stats.maxHealth * 0.25) {
+        break;
+      }
     }
 
     setCharacter(currentChar);
     if (foundEvent) {
       setCurrentEvent(foundEvent);
-      setIsPlaying(false); // 건너뛰기는 항상 수동 선택을 위해 일시정지
+      setIsPlaying(false);
     }
-  }, [character, currentEvent, battleState, addLog]);
+  }, [character, currentEvent, battleState, addLog, isAutoChoiceEnabled, advancedSettings]);
 
   // 자동 진행 타이머
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   useEffect(() => {
-    if (isPlaying && character.isAlive && !currentEvent && !battleState?.isActive) {
+    if (isPlaying && character.isAlive && !currentEvent && !battleState) {
       const speedIntervalMap: Record<GameSpeed, number> = {
-        1: 900,  // 1x: 0.9초에 1년 (기존 16초에서 현실적인 템포로 대폭 개선)
-        2: 450,  // 2x: 0.45초에 1년
-        4: 200,  // 4x: 0.2초에 1년
-        8: 80,   // 8x: 0.08초에 1년
-        16: 35,  // 16x: 0.035초에 1년 (초광속 시뮬레이션)
+        1: 900,
+        2: 450,
+        4: 200,
+        8: 80,
+        16: 35,
       };
       const intervalMs = speedIntervalMap[speed] || 450;
       timerRef.current = setInterval(() => {
@@ -159,7 +203,7 @@ export const App: React.FC = () => {
   // 자동 진행 시 스토리 사건 자동 선택
   useEffect(() => {
     if (isPlaying && currentEvent && character.isAlive && isAutoChoiceEnabled) {
-      const chosen = GameEngine.selectAutoChoice(character, currentEvent);
+      const chosen = GameEngine.selectAutoChoice(character, currentEvent, advancedSettings.aiStrategy);
       setAutoChoicePendingId(chosen.id);
 
       const speedDelay: Record<GameSpeed, number> = {
@@ -183,20 +227,18 @@ export const App: React.FC = () => {
     } else {
       setAutoChoicePendingId(null);
     }
-  }, [isPlaying, currentEvent, character, speed, isAutoChoiceEnabled]);
+  }, [isPlaying, currentEvent, character, speed, isAutoChoiceEnabled, advancedSettings.aiStrategy]);
 
   // 자동 진행 시 턴제 전투 자동 진행
   useEffect(() => {
     if (isPlaying && battleState && character.isAlive && isAutoChoiceEnabled) {
-      // 전투가 끝난 상태면 잠시 후 닫기
       if (battleState.result) {
         const closeTimer = setTimeout(() => {
           setBattleState(undefined);
-        }, Math.max(200, Math.floor(600 / speed)));
+        }, Math.max(250, Math.floor(650 / speed)));
         return () => clearTimeout(closeTimer);
       }
 
-      // 전투 진행 중이면 커맨드 자동 실행
       if (battleState.isActive && battleState.isPlayerTurn) {
         const speedDelay: Record<GameSpeed, number> = {
           1: 800,
@@ -217,10 +259,10 @@ export const App: React.FC = () => {
     }
   }, [isPlaying, battleState, character, speed, isAutoChoiceEnabled]);
 
-  // 키보드 단축키 (Space: 일시정지/재생, N: 다음 해, S: 사건까지 건너뛰기, 1/2/4/8: 배속)
+  // 키보드 단축키
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) return;
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName)) return;
 
       if (e.code === 'Space') {
         e.preventDefault();
@@ -255,7 +297,7 @@ export const App: React.FC = () => {
     setCurrentEvent(undefined);
     setAutoChoicePendingId(null);
 
-    if (result.battleEnemy) {
+    if (result.battleEnemy && result.updatedChar.isAlive) {
       const newBattle = GameEngine.startBattle(result.battleEnemy);
       setBattleState(newBattle);
       if (!isAutoChoiceEnabled) {
@@ -265,35 +307,65 @@ export const App: React.FC = () => {
   };
 
   // 연간 자율 행동 실행
-  const handleAnnualAction = (actionType: 'cultivate_arts' | 'train_combat' | 'take_suppressant' | 'faction_bounty' | 'recreation') => {
+  const handleAnnualAction = (
+    actionType: 'cultivate_arts' | 'train_combat' | 'take_suppressant' | 'faction_bounty' | 'recreation' | 'study_lore'
+  ) => {
     const updated = GameEngine.executeAnnualAction(character, actionType, addLog);
+    setCharacter(updated);
+  };
+
+  // 무기고 및 암시장 아이템 구매 / 장착
+  const handleBuyOrEquipItem = (itemId: string) => {
+    const updated = GameEngine.buyOrEquipItem(character, itemId, addLog);
+    setCharacter(updated);
+  };
+
+  // 인벤토리 소모품 즉시 사용
+  const handleUseInventoryItem = (itemId: string) => {
+    const updated = GameEngine.useInventoryItem(character, itemId, addLog);
+    setCharacter(updated);
+  };
+
+  // 특수 직군 임관 신청
+  const handlePromoteCareer = (careerId: string) => {
+    const updated = GameEngine.promoteToSpecialCareer(character, careerId, addLog);
     setCharacter(updated);
   };
 
   // 전투 커맨드 실행
   const handleBattleCommand = (command: 'attack' | 'arts' | 'defend' | 'item' | 'flee', itemId?: string) => {
     if (!battleState) return;
-    const { updatedChar, updatedBattle } = GameEngine.executeBattleCommand(character, battleState, command, itemId);
+    const { updatedChar, updatedBattle } = GameEngine.executeBattleCommand(character, battleState, command, itemId, addLog);
     setCharacter(updatedChar);
-    setBattleState(updatedBattle);
+    if (!updatedChar.isAlive) {
+      setBattleState(undefined);
+    } else {
+      setBattleState(updatedBattle);
+    }
   };
 
-  // 새로운 캐릭터로 재시작
-  const handleRestart = () => {
+  // 새로운 캐릭터로 환생 시작 (무작위 또는 커스텀 설정 반영)
+  const handleStartReincarnation = (config?: ReincarnationConfig) => {
     sound.playBeep(600, 0.1, 'sine');
-    const newChar = GameEngine.createRandomCharacter();
+    const newChar = GameEngine.createRandomCharacter(config);
     setCharacter(newChar);
     setCurrentEvent(undefined);
     setAutoChoicePendingId(null);
     setBattleState(undefined);
     setIsPlaying(true);
+
+    const perkBadges = newChar.reincarnationPerks && newChar.reincarnationPerks.length > 0
+      ? [`환생 특전 ${newChar.reincarnationPerks.length}개 적용`]
+      : undefined;
+
     const initialLog: LogEntry = {
       id: 'init_' + Date.now(),
       year: newChar.year,
       age: 0,
       title: '【새로운 생애】 테라의 대지에 다시 태어나다',
-      text: `${newChar.nation}에서 ${newChar.race}의 아이로 새로운 생애를 시작합니다.`,
+      text: `${newChar.nation}의 [${newChar.environment}]에서 ${newChar.race}${newChar.subRace ? `(${newChar.subRace})` : ''}의 아이 "${newChar.name}"(으)로 새로운 생애를 시작합니다.`,
       type: 'general',
+      effectBadges: perkBadges,
       timestamp: new Date().toISOString()
     };
     setLogs([initialLog]);
@@ -338,7 +410,10 @@ export const App: React.FC = () => {
           onOpenActions={() => setIsActionsOpen(true)}
           onOpenHallOfFame={() => setIsHallOfFameOpen(true)}
           onOpenAchievementBook={() => setIsAchievementBookOpen(true)}
-          onRestart={handleRestart}
+          onOpenSettings={() => setIsSettingsOpen(true)}
+          onOpenReincarnation={() => setIsReincarnationOpen(true)}
+          crtEffect={advancedSettings.crtEffect}
+          onRestart={() => handleStartReincarnation()}
           isMuted={isMuted}
           onToggleMute={handleToggleMute}
           onSwitchTheme={handleSwitchTheme}
@@ -362,7 +437,9 @@ export const App: React.FC = () => {
           onOpenActions={() => setIsActionsOpen(true)}
           onOpenHallOfFame={() => setIsHallOfFameOpen(true)}
           onOpenAchievementBook={() => setIsAchievementBookOpen(true)}
-          onRestart={handleRestart}
+          onOpenSettings={() => setIsSettingsOpen(true)}
+          onOpenReincarnation={() => setIsReincarnationOpen(true)}
+          onRestart={() => handleStartReincarnation()}
           isMuted={isMuted}
           onToggleMute={handleToggleMute}
           onSwitchTheme={handleSwitchTheme}
@@ -370,21 +447,24 @@ export const App: React.FC = () => {
         />
       )}
 
-      {/* Annual Actions Modal */}
+      {/* Annual Actions, Armory & Career Center Modal */}
       <AnnualActionsModal
         character={character}
         isOpen={isActionsOpen}
         onClose={() => setIsActionsOpen(false)}
         onAction={handleAnnualAction}
+        onBuyOrEquipItem={handleBuyOrEquipItem}
+        onUseInventoryItem={handleUseInventoryItem}
+        onPromoteCareer={handlePromoteCareer}
         theme={theme}
       />
 
-      {/* Combat Modal */}
+      {/* Combat Modal (Fixed: remains open until closed so victory/flee result screen is visible) */}
       {battleState && (
         <CombatModal
           character={character}
           battle={battleState}
-          isOpen={battleState.isActive}
+          isOpen={!!battleState}
           onExecuteCommand={handleBattleCommand}
           onClose={() => setBattleState(undefined)}
           theme={theme}
@@ -395,13 +475,34 @@ export const App: React.FC = () => {
       {character.deathRecord && !character.isAlive && (
         <MemorialModal
           record={character.deathRecord}
-          isOpen={!character.isAlive}
-          onRestart={handleRestart}
+          isOpen={!character.isAlive && !isReincarnationOpen}
+          onRestart={() => handleStartReincarnation()}
+          onOpenReincarnation={() => setIsReincarnationOpen(true)}
           onOpenHallOfFame={() => setIsHallOfFameOpen(true)}
           onOpenAchievementBook={() => setIsAchievementBookOpen(true)}
           theme={theme}
         />
       )}
+
+      {/* Reincarnation & Destiny Setup Modal */}
+      <ReincarnationModal
+        isOpen={isReincarnationOpen}
+        onClose={() => setIsReincarnationOpen(false)}
+        onStartReincarnation={handleStartReincarnation}
+        theme={theme}
+      />
+
+      {/* Advanced Simulation & AI Settings Modal */}
+      <AdvancedSettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        settings={advancedSettings}
+        onUpdateSettings={handleUpdateSettings}
+        isMuted={isMuted}
+        onToggleMute={handleToggleMute}
+        theme={theme}
+        onSwitchTheme={handleSwitchTheme}
+      />
 
       {/* Hall of Fame Archive Modal */}
       <HallOfFameModal

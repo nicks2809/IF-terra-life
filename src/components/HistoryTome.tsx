@@ -18,7 +18,9 @@ import {
   RotateCcw,
   Feather,
   Flame,
-  Bot
+  Bot,
+  Settings,
+  ShoppingBag
 } from 'lucide-react';
 
 interface Props {
@@ -38,6 +40,8 @@ interface Props {
   onOpenActions: () => void;
   onOpenHallOfFame: () => void;
   onOpenAchievementBook?: () => void;
+  onOpenSettings?: () => void;
+  onOpenReincarnation?: () => void;
   onRestart: () => void;
   isMuted: boolean;
   onToggleMute: () => void;
@@ -62,6 +66,8 @@ export const HistoryTome: React.FC<Props> = ({
   onOpenActions,
   onOpenHallOfFame,
   onOpenAchievementBook,
+  onOpenSettings,
+  onOpenReincarnation,
   onRestart,
   isMuted,
   onToggleMute,
@@ -96,7 +102,7 @@ export const HistoryTome: React.FC<Props> = ({
           </div>
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-1.5 sm:space-x-2">
           <button
             onClick={onToggleMute}
             className="p-1.5 rounded hover:bg-black/10 text-[#5c4d47]"
@@ -105,9 +111,20 @@ export const HistoryTome: React.FC<Props> = ({
             {isMuted ? <VolumeX className="w-4 h-4 text-red-700" /> : <Volume2 className="w-4 h-4" />}
           </button>
 
+          {onOpenSettings && (
+            <button
+              onClick={onOpenSettings}
+              className="flex items-center space-x-1 px-2.5 py-1.5 rounded text-xs bg-[#5c4033] text-amber-100 hover:bg-[#432d24] transition-all shadow"
+              title="고급 설정"
+            >
+              <Settings className="w-3.5 h-3.5" />
+              <span className="hidden md:inline">고급 설정</span>
+            </button>
+          )}
+
           <button
             onClick={onSwitchTheme}
-            className="flex items-center space-x-1 px-3 py-1.5 rounded text-xs bg-[#2c1810] text-[#00e5ff] hover:bg-black transition-all shadow"
+            className="flex items-center space-x-1 px-2.5 py-1.5 rounded text-xs bg-[#2c1810] text-[#00e5ff] hover:bg-black transition-all shadow"
             title="PRTS 터미널로 복귀"
           >
             <Monitor className="w-3.5 h-3.5" />
@@ -117,7 +134,7 @@ export const HistoryTome: React.FC<Props> = ({
           {onOpenAchievementBook && (
             <button
               onClick={onOpenAchievementBook}
-              className="flex items-center space-x-1 px-3 py-1.5 rounded text-xs bg-[#c99732] text-black font-bold hover:bg-[#dba83f] transition-all shadow"
+              className="flex items-center space-x-1 px-2.5 py-1.5 rounded text-xs bg-[#c99732] text-black font-bold hover:bg-[#dba83f] transition-all shadow"
               title="테라 업적 도감"
             >
               <Trophy className="w-3.5 h-3.5" />
@@ -127,18 +144,19 @@ export const HistoryTome: React.FC<Props> = ({
 
           <button
             onClick={onOpenHallOfFame}
-            className="flex items-center space-x-1 px-3 py-1.5 rounded text-xs bg-[#8b1e1e] text-white hover:bg-[#a32828] transition-all shadow"
+            className="flex items-center space-x-1 px-2.5 py-1.5 rounded text-xs bg-[#8b1e1e] text-white hover:bg-[#a32828] transition-all shadow"
           >
             <Award className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">추모실</span>
           </button>
 
           <button
-            onClick={onRestart}
-            className="p-1.5 rounded hover:bg-black/10 text-[#5c4d47]"
-            title="새로운 생애 시작"
+            onClick={onOpenReincarnation || onRestart}
+            className="flex items-center space-x-1 px-2.5 py-1.5 rounded text-xs bg-[#2d5a27] text-white hover:bg-[#386d30] transition-all shadow"
+            title="운명 설계 및 새로운 생애 환생"
           >
-            <RotateCcw className="w-4 h-4" />
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span className="hidden lg:inline">환생 설계</span>
           </button>
         </div>
       </header>
@@ -285,6 +303,63 @@ export const HistoryTome: React.FC<Props> = ({
               <span>운수 (LUCK)</span>
               <span className="font-bold">{character.stats.luck}</span>
             </div>
+          </div>
+
+          {/* Equipment & Inventory */}
+          <div className="p-4 rounded-lg border border-[#5c4033]/40 bg-[#f4ebd0] space-y-2 text-xs">
+            <div className="flex items-center justify-between text-[11px] text-[#5c4d47] font-bold border-b border-[#5c4033]/20 pb-1">
+              <span>장착 무장 및 소지품</span>
+              <button
+                onClick={onOpenActions}
+                className="text-[10px] text-[#8b1e1e] hover:underline flex items-center space-x-1 font-bold"
+              >
+                <ShoppingBag className="w-3 h-3" />
+                <span>무기고·전직 열기</span>
+              </button>
+            </div>
+            <div className="flex justify-between text-[11px]">
+              <span className="text-[#5c4d47]">주무기:</span>
+              <span className="font-bold text-[#2c1810]">
+                {character.equipment.weapon
+                  ? `${character.equipment.weapon.name} (+${character.equipment.weapon.atkBonus})`
+                  : '맨손'}
+              </span>
+            </div>
+            <div className="flex justify-between text-[11px]">
+              <span className="text-[#5c4d47]">방어구:</span>
+              <span className="font-bold text-[#2c1810]">
+                {character.equipment.armor
+                  ? `${character.equipment.armor.name} (+${character.equipment.armor.defBonus})`
+                  : '일반 평복'}
+              </span>
+            </div>
+            <div className="pt-1.5 border-t border-[#5c4033]/20">
+              <span className="text-[10px] text-[#5c4d47] block mb-1">보유 소지품:</span>
+              <div className="flex flex-wrap gap-1">
+                {character.inventory.length > 0 ? character.inventory.map((slot, idx) => (
+                  <span key={idx} className="text-[10px] px-2 py-0.5 rounded bg-[#e8dcbe] border border-[#5c4033]/30 text-[#2c1810] font-bold">
+                    {slot.item.name} x{slot.count}
+                  </span>
+                )) : (
+                  <span className="text-[10px] text-[#5c4d47]">없음</span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Faction Reputations */}
+          <div className="p-4 rounded-lg border border-[#5c4033]/40 bg-[#f4ebd0] space-y-1.5 text-xs">
+            <div className="text-[11px] text-[#5c4d47] font-bold border-b border-[#5c4033]/20 pb-1">
+              주요 세력 신망도
+            </div>
+            {Object.entries(character.factions).map(([fac, rep]) => (
+              <div key={fac} className="flex justify-between text-[11px]">
+                <span className="text-[#5c4d47]">{fac}</span>
+                <span className={`font-bold ${rep > 0 ? 'text-[#2d5a27]' : rep < 0 ? 'text-red-800' : 'text-[#5c4d47]'}`}>
+                  {rep > 0 ? `+${rep}` : rep}
+                </span>
+              </div>
+            ))}
           </div>
         </aside>
 
