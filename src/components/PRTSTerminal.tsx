@@ -1,27 +1,32 @@
 import React, { useRef, useEffect, useMemo, useState } from 'react';
-import { Character, LogEntry, GameEvent, EventChoice, GameSpeed, ThemeMode } from '../types';
+import { Character, LogEntry, GameEvent, EventChoice, GameSpeed, ThemeMode, FocusStance, Season } from '../types';
 import { GameEngine } from '../engine/gameEngine';
+import { evaluateLifeGoal, FOCUS_STANCES } from '../data/traits';
 import { EventLogPanel } from './EventLogPanel';
-import { 
-  Heart, 
-  Brain, 
-  Coins, 
-  Sparkles, 
-  ShieldAlert, 
-  Play, 
-  Pause, 
-  FastForward, 
-  SkipForward, 
-  Volume2, 
-  VolumeX, 
-  BookOpen, 
-  Award, 
+import {
+  Heart,
+  Brain,
+  Coins,
+  Sparkles,
+  Play,
+  Pause,
+  FastForward,
+  SkipForward,
+  Volume2,
+  VolumeX,
+  BookOpen,
+  Award,
   Trophy,
   RotateCcw,
   Activity,
   Bot,
   Settings,
-  ShoppingBag
+  ShoppingBag,
+  Target,
+  Zap,
+  Users,
+  Copy,
+  Check
 } from 'lucide-react';
 
 interface Props {
@@ -33,6 +38,10 @@ interface Props {
   onTogglePlay: () => void;
   speed: GameSpeed;
   onChangeSpeed: (speed: GameSpeed) => void;
+  yearProgress?: number;
+  currentSeason?: Season;
+  minorTimeoutRemainingSec?: number | null;
+  onChangeFocusStance?: (stance: FocusStance) => void;
   onNextYear: () => void;
   onSkipToNextEvent?: () => void;
   isAutoChoiceEnabled: boolean;
@@ -60,6 +69,10 @@ export const PRTSTerminal: React.FC<Props> = ({
   onTogglePlay,
   speed,
   onChangeSpeed,
+  yearProgress = 0,
+  currentSeason = '봄',
+  minorTimeoutRemainingSec,
+  onChangeFocusStance,
   onNextYear,
   onSkipToNextEvent,
   isAutoChoiceEnabled,
@@ -78,6 +91,7 @@ export const PRTSTerminal: React.FC<Props> = ({
   theme
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [seedCopied, setSeedCopied] = useState(false);
 
   // 심전도(ECG) 펄스 애니메이션
   useEffect(() => {
@@ -134,6 +148,18 @@ export const PRTSTerminal: React.FC<Props> = ({
     return GameEngine.getCharacterLifespanProfile(character);
   }, [character.race, character.subRace, character.oripathy.crystallizationRate, character.oripathy.suppressantDoseLeft]);
 
+  const goalEval = useMemo(() => evaluateLifeGoal(character), [character]);
+  const nextPromo = useMemo(() => GameEngine.getNextPromotionThreshold(character), [character]);
+  const promoCheck = useMemo(() => GameEngine.checkTierPromotionEligibility(character), [character]);
+  const activeStance = FOCUS_STANCES.find(s => s.id === (character.focusStance || 'survival')) || FOCUS_STANCES[0];
+
+  const handleCopySeed = () => {
+    if (!character.seed) return;
+    navigator.clipboard?.writeText(character.seed).catch(() => {});
+    setSeedCopied(true);
+    setTimeout(() => setSeedCopied(false), 1500);
+  };
+
   const oripathyBadge = {
     Clean: { label: '비감염 (CLEAN)', color: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' },
     Early: { label: '초기 감염 (STAGE I)', color: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40' },
@@ -162,8 +188,8 @@ export const PRTSTerminal: React.FC<Props> = ({
           <span className="text-xs font-bold tracking-widest text-cyan-400 uppercase">
             PRTS VITAL // TERRA OS
           </span>
-          <span className="text-[11px] text-slate-400 hidden sm:inline">
-            [테라력 {character.year}년 · {character.age}세]
+          <span className="text-[11px] text-slate-300 hidden sm:inline">
+            [테라력 {character.year}년 {currentSeason} · {character.age}세]
           </span>
         </div>
 
@@ -181,7 +207,7 @@ export const PRTSTerminal: React.FC<Props> = ({
             <button
               onClick={onOpenSettings}
               className="flex items-center space-x-1 px-2 py-1 rounded text-xs bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/30 transition-all"
-              title="전술 AI 성향 및 위기 자동 브레이크 설정"
+              title="전술 AI 성향, 자동 넘김 및 백업 설정"
             >
               <Settings className="w-3.5 h-3.5" />
               <span className="hidden md:inline">고급 설정</span>
@@ -246,7 +272,7 @@ export const PRTSTerminal: React.FC<Props> = ({
             <span>{character.stats.health} / {character.stats.maxHealth}</span>
           </div>
           <div className="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-emerald-900/40">
-            <div 
+            <div
               className="bg-gradient-to-r from-emerald-500 to-teal-400 h-full transition-all duration-300"
               style={{ width: `${Math.max(0, Math.min(100, (character.stats.health / character.stats.maxHealth) * 100))}%` }}
             />
@@ -263,25 +289,29 @@ export const PRTSTerminal: React.FC<Props> = ({
             <span>{character.stats.sanity} / {character.stats.maxSanity}</span>
           </div>
           <div className="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-blue-900/40">
-            <div 
+            <div
               className="bg-gradient-to-r from-blue-500 to-cyan-400 h-full transition-all duration-300"
               style={{ width: `${Math.max(0, Math.min(100, (character.stats.sanity / character.stats.maxSanity) * 100))}%` }}
             />
           </div>
         </div>
 
-        {/* LMD & Faction */}
+        {/* LMD & Upkeep */}
         <div className="hidden md:flex items-center space-x-2 text-xs">
-          <Coins className="w-4 h-4 text-yellow-400" />
+          <Coins className="w-4 h-4 text-yellow-400 shrink-0" />
           <div>
-            <div className="text-[10px] text-slate-400">보유 자산</div>
+            <div className="text-[10px] text-slate-400">
+              보유 자산 {character.age >= 15 && <span className="text-slate-500">(세금 -{GameEngine.getAnnualLivingExpense(character)}/년)</span>}
+            </div>
             <div className="font-bold text-yellow-300">{character.stats.wealth.toLocaleString()} LMD</div>
           </div>
         </div>
 
         {/* Oripathy Badge */}
         <div className="text-right">
-          <div className="text-[10px] text-slate-400">광석병 병리 지표</div>
+          <div className="text-[10px] text-slate-400">
+            광석병 병리 {character.oripathy.isInfected && character.oripathy.lesionSite !== '없음' ? `[${character.oripathy.lesionSite}]` : '지표'}
+          </div>
           <div className="flex items-center justify-end space-x-1.5 mt-0.5">
             <span className={`text-[10px] px-2 py-0.5 rounded border font-bold ${oripathyBadge.color}`}>
               {oripathyBadge.label}
@@ -316,49 +346,112 @@ export const PRTSTerminal: React.FC<Props> = ({
               : 'border-transparent text-slate-400 hover:text-slate-200'
           }`}
         >
-          <span>인물 신상 · 스탯</span>
+          <span>신상 · 목표 · 태세</span>
         </button>
       </div>
 
       {/* Main Grid: Left Profile & Right Logs */}
       <main className="grow grid grid-cols-1 md:grid-cols-12 overflow-hidden">
         {/* Left Column: Character Sheet (4 cols) */}
-        <aside className={`md:col-span-4 border-r border-cyan-500/20 bg-[#0e1219] p-4 flex-col overflow-y-auto space-y-4 ${
+        <aside className={`md:col-span-4 border-r border-cyan-500/20 bg-[#0e1219] p-3.5 flex-col overflow-y-auto space-y-3 ${
           mobileTab === 'profile' ? 'flex' : 'hidden md:flex'
         }`}>
           {/* Identity Box */}
           <div className="p-3.5 rounded-lg border border-cyan-500/30 bg-slate-900/60 relative overflow-hidden">
-            <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center justify-between mb-1 gap-2">
               <span className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider">
                 SUBJECT DOSSIER
               </span>
-              <span className="text-[10px] text-slate-400">
-                {character.gender} · {character.race}
-                {character.subRace && ` (${character.subRace})`}
-              </span>
-            </div>
-            <h2 className="text-xl font-bold tracking-wider text-slate-100">
-              {character.name}
-            </h2>
-            <div className="text-xs text-slate-300 mt-1">
-              소속 국적: <span className="text-amber-400">{character.nation}</span>
-            </div>
-            <div className="text-xs text-slate-400">
-              성장 환경: {character.environment}
-            </div>
-            <div className="text-xs text-slate-400">
-              현재 직업: <span className="text-cyan-300">{character.career}</span>
-            </div>
-            <div className="text-xs text-slate-400 mt-1 flex items-center justify-between border-t border-cyan-500/20 pt-1.5">
-              <span>기대 수명: <span className="text-cyan-300 font-bold">{lifespanProfile.baseLifespan}세</span> (한계 {lifespanProfile.effectiveMaxLifespan}세)</span>
-              {character.oripathy.isInfected && (
-                <span className="text-[10px] text-amber-400">광석병 감퇴 적용</span>
+              {character.seed && (
+                <button
+                  onClick={handleCopySeed}
+                  className="inline-flex items-center space-x-1 px-1.5 py-0.5 rounded bg-slate-950/80 border border-slate-700 hover:border-cyan-400 text-[10px] text-slate-300 transition-colors"
+                  title="운명 시드 코드 복사 (환생 설계에서 동일 운명 재현 가능)"
+                >
+                  <span>{character.seed}</span>
+                  {seedCopied ? <Check className="w-2.5 h-2.5 text-emerald-400" /> : <Copy className="w-2.5 h-2.5 opacity-70" />}
+                </button>
               )}
             </div>
 
+            <div className="flex items-baseline justify-between gap-2">
+              <h2 className="text-lg font-bold tracking-wider text-slate-100">
+                {character.name}
+              </h2>
+              <span className="text-[11px] text-slate-400">
+                {character.gender} · {character.race}{character.subRace ? ` (${character.subRace})` : ''}
+              </span>
+            </div>
+
+            <div className="text-xs text-slate-300 mt-1 flex items-center justify-between">
+              <span>소속: <span className="text-amber-400">{character.nation}</span></span>
+              <span className="text-[11px] text-slate-400">{character.environment}</span>
+            </div>
+
+            <div className="text-xs text-slate-300 mt-1 flex items-center justify-between">
+              <span>
+                직위: <span className="text-cyan-300 font-bold">{character.career}</span>
+                <span className="text-slate-400"> · {character.careerRank}</span>
+              </span>
+              <span className="px-1.5 py-0.5 rounded bg-cyan-500/15 border border-cyan-500/40 text-cyan-300 text-[10px] font-extrabold">
+                T{character.careerTier ?? 0}
+              </span>
+            </div>
+
+            {/* Career Promotion Progress Bar */}
+            {character.age >= 15 && !character.specialCareerId && nextPromo && (
+              <div className="mt-2 pt-1.5 border-t border-white/5">
+                <div className="flex items-center justify-between text-[10px] mb-1">
+                  <span className="text-slate-400">승급 공적 (EXP): {character.careerExp || 0} / {nextPromo.reqExp}</span>
+                  {promoCheck.eligible ? (
+                    <button
+                      onClick={onOpenActions}
+                      className="text-amber-300 font-extrabold hover:underline animate-pulse"
+                    >
+                      승급 심사 가능 →
+                    </button>
+                  ) : (
+                    <span className="text-slate-500">목표 T{nextPromo.targetTier}</span>
+                  )}
+                </div>
+                <div className="w-full h-1.5 bg-slate-950 rounded-full overflow-hidden border border-slate-800">
+                  <div
+                    className="h-full bg-gradient-to-r from-cyan-500 to-amber-400 transition-all"
+                    style={{ width: `${Math.min(100, Math.round(((character.careerExp || 0) / nextPromo.reqExp) * 100))}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="text-[11px] text-slate-400 mt-2 flex items-center justify-between border-t border-cyan-500/20 pt-1.5">
+              <span>기대 수명: <span className="text-cyan-300 font-bold">{lifespanProfile.baseLifespan}세</span> (한계 {lifespanProfile.effectiveMaxLifespan}세)</span>
+              {character.oripathy.isInfected && (
+                <span className="text-[10px] text-amber-400">억제 {character.oripathy.suppressantDoseLeft}년</span>
+              )}
+            </div>
+
+            {/* Innate Traits (Talent & Flaw) */}
+            {character.innateTraits && character.innateTraits.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2 pt-1.5 border-t border-white/5">
+                {character.innateTraits.map(trait => (
+                  <span
+                    key={trait.id}
+                    title={trait.description}
+                    className={`text-[10px] px-2 py-0.5 rounded border font-bold cursor-help ${
+                      trait.type === 'talent'
+                        ? 'bg-emerald-950/70 border-emerald-500/40 text-emerald-300'
+                        : 'bg-rose-950/70 border-rose-500/40 text-rose-300'
+                    }`}
+                  >
+                    {trait.type === 'talent' ? '✦ ' : '✧ '}{trait.name} ({trait.badge})
+                  </span>
+                ))}
+              </div>
+            )}
+
             {/* Titles */}
             {character.titles.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-2.5">
+              <div className="flex flex-wrap gap-1 mt-2">
                 {character.titles.map((t, i) => (
                   <span key={i} className="text-[10px] px-2 py-0.5 rounded bg-cyan-950/80 border border-cyan-500/40 text-cyan-300">
                     {t}
@@ -368,10 +461,68 @@ export const PRTSTerminal: React.FC<Props> = ({
             )}
           </div>
 
+          {/* Life Goal (/goal) & Focus Boost (/boost) Clean Panel */}
+          <div className="p-3 rounded-lg border border-cyan-500/25 bg-slate-900/50 space-y-2.5 text-xs">
+            {/* Goal Section */}
+            {character.lifeGoal && (
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="flex items-center space-x-1 text-[11px] font-bold text-cyan-300">
+                    <Target className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>생애 목표: {character.lifeGoal.title}</span>
+                  </span>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded font-extrabold border ${
+                    character.goalAchieved || goalEval.achieved
+                      ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300'
+                      : 'bg-slate-800 border-slate-700 text-amber-300'
+                  }`}>
+                    {character.goalAchieved || goalEval.achieved ? `달성 완료 (+${character.lifeGoal.bonusPoints})` : `+${character.lifeGoal.bonusPoints} PTS`}
+                  </span>
+                </div>
+                <div className="text-[10px] text-slate-400 leading-snug" title={character.lifeGoal.targetText}>
+                  진척도: <span className="text-slate-200 font-semibold">{goalEval.progressText}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Focus Boost Stance Toggle */}
+            <div className="pt-2 border-t border-white/5">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="flex items-center space-x-1 text-[11px] font-bold text-amber-300">
+                  <Zap className="w-3.5 h-3.5 text-amber-400" />
+                  <span>연간 집중 태세</span>
+                </span>
+                <span className="text-[10px] text-slate-400">{activeStance.name}</span>
+              </div>
+              <div className="grid grid-cols-4 gap-1">
+                {FOCUS_STANCES.map(st => {
+                  const active = (character.focusStance || 'survival') === st.id;
+                  return (
+                    <button
+                      key={st.id}
+                      onClick={() => onChangeFocusStance?.(st.id)}
+                      title={`${st.name}: ${st.effectText}`}
+                      className={`py-1 rounded text-[10px] font-bold border transition-all ${
+                        active
+                          ? 'bg-cyan-500 text-black border-cyan-400 shadow font-extrabold'
+                          : 'bg-slate-950/70 text-slate-400 border-slate-800 hover:border-slate-600 hover:text-slate-200'
+                      }`}
+                    >
+                      {st.shortLabel}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="text-[10px] text-slate-400 mt-1.5 leading-tight">
+                {activeStance.effectText}
+              </div>
+            </div>
+          </div>
+
           {/* Stats Sheet */}
-          <div className="p-3.5 rounded-lg border border-slate-800 bg-slate-900/40 space-y-2 text-xs">
+          <div className="p-3 rounded-lg border border-slate-800 bg-slate-900/40 space-y-1.5 text-xs">
             <div className="flex items-center justify-between text-slate-400 text-[11px] border-b border-white/5 pb-1">
-              <span>기본 능력치</span>
+              <span>핵심 역량 (한계 체감 적용)</span>
               <span>수치</span>
             </div>
             <div className="flex justify-between">
@@ -397,8 +548,28 @@ export const PRTSTerminal: React.FC<Props> = ({
             </div>
           </div>
 
+          {/* Bonds (인연) */}
+          {character.bonds && character.bonds.length > 0 && (
+            <div className="p-3 rounded-lg border border-slate-800 bg-slate-900/40 text-xs space-y-1.5">
+              <div className="flex items-center space-x-1.5 text-[11px] text-slate-400 border-b border-white/5 pb-1 font-bold">
+                <Users className="w-3.5 h-3.5 text-cyan-400" />
+                <span>대지의 인연 ({character.bonds.filter(b => b.isAlive).length}명 생존)</span>
+              </div>
+              {character.bonds.map(bond => (
+                <div key={bond.id} className="flex items-center justify-between text-[11px]" title={bond.fateText || `${bond.role} · 위기 시 구명 개입 가능`}>
+                  <span className={bond.isAlive ? 'text-slate-200 font-semibold' : 'text-slate-500 line-through'}>
+                    {bond.isAlive ? '● ' : '✝ '}{bond.name} <span className="text-[10px] opacity-75">({bond.role})</span>
+                  </span>
+                  <span className={`text-[10px] font-bold ${bond.isAlive ? 'text-cyan-300' : 'text-rose-400/80'}`}>
+                    {bond.isAlive ? `유대 ${bond.affinity}` : '산화'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Equipment & Inventory */}
-          <div className="p-3.5 rounded-lg border border-slate-800 bg-slate-900/40 text-xs space-y-2">
+          <div className="p-3 rounded-lg border border-slate-800 bg-slate-900/40 text-xs space-y-2">
             <div className="flex items-center justify-between text-[11px] text-slate-400 border-b border-white/5 pb-1 font-bold">
               <span>장착 장비 및 물자</span>
               <button
@@ -406,13 +577,13 @@ export const PRTSTerminal: React.FC<Props> = ({
                 className="text-[10px] text-cyan-400 hover:underline flex items-center space-x-1"
               >
                 <ShoppingBag className="w-3 h-3" />
-                <span>무기고·전직 열기</span>
+                <span>무기고·승급 열기</span>
               </button>
             </div>
             <div className="flex justify-between text-[11px]">
               <span className="text-slate-400">무기:</span>
               <span className="text-slate-200 font-bold">
-                {character.equipment.weapon 
+                {character.equipment.weapon
                   ? `${character.equipment.weapon.name} (+${character.equipment.weapon.atkBonus})`
                   : '맨손'}
               </span>
@@ -420,7 +591,7 @@ export const PRTSTerminal: React.FC<Props> = ({
             <div className="flex justify-between text-[11px]">
               <span className="text-slate-400">방어구:</span>
               <span className="text-slate-200 font-bold">
-                {character.equipment.armor 
+                {character.equipment.armor
                   ? `${character.equipment.armor.name} (+${character.equipment.armor.defBonus})`
                   : '일반 평복'}
               </span>
@@ -440,7 +611,7 @@ export const PRTSTerminal: React.FC<Props> = ({
           </div>
 
           {/* Faction Reputations */}
-          <div className="p-3.5 rounded-lg border border-slate-800 bg-slate-900/40 text-xs space-y-1.5">
+          <div className="p-3 rounded-lg border border-slate-800 bg-slate-900/40 text-xs space-y-1.5">
             <div className="text-[11px] text-slate-400 border-b border-white/5 pb-1 font-bold">
               주요 세력 우호도
             </div>
@@ -465,6 +636,7 @@ export const PRTSTerminal: React.FC<Props> = ({
             character={character}
             onSelectChoice={onSelectChoice}
             autoChoicePendingId={autoChoicePendingId}
+            minorTimeoutRemainingSec={minorTimeoutRemainingSec}
             isPlaying={isPlaying}
             onNextYear={onNextYear}
             onSkipToNextEvent={onSkipToNextEvent}
@@ -473,6 +645,36 @@ export const PRTSTerminal: React.FC<Props> = ({
           />
         </section>
       </main>
+
+      {/* Four-Season Smooth Time Progression Ribbon */}
+      <div className="h-6 bg-[#0b0f17] border-t border-cyan-500/20 px-3 sm:px-4 flex items-center justify-between gap-3 shrink-0 text-[10px]">
+        <div className="flex items-center space-x-2 shrink-0">
+          <span className="text-cyan-400 font-bold">
+            {character.year}년 · {currentSeason}
+          </span>
+          <div className="hidden sm:flex items-center space-x-1 text-slate-500">
+            {(['봄', '여름', '가을', '겨울'] as Season[]).map(s => (
+              <span
+                key={s}
+                className={`px-1 rounded ${
+                  currentSeason === s ? 'bg-cyan-500/20 text-cyan-300 font-bold' : ''
+                }`}
+              >
+                {s}
+              </span>
+            ))}
+          </div>
+        </div>
+        <div className="grow bg-slate-900/90 h-1.5 rounded-full overflow-hidden border border-cyan-950">
+          <div
+            className="h-full bg-gradient-to-r from-cyan-500 via-teal-400 to-amber-300 transition-[width] duration-75"
+            style={{ width: `${Math.max(0, Math.min(100, yearProgress))}%` }}
+          />
+        </div>
+        <span className="text-slate-400 shrink-0 font-bold">
+          {isPlaying && !currentEvent ? `${speed}x 진행 중` : currentEvent ? '선택 대기' : '정지'}
+        </span>
+      </div>
 
       {/* Bottom Control Deck */}
       <footer className="h-14 border-t border-cyan-500/30 bg-[#0f131a] px-3 sm:px-4 flex items-center justify-between shrink-0 gap-2 overflow-x-auto">
@@ -483,7 +685,7 @@ export const PRTSTerminal: React.FC<Props> = ({
             className="flex items-center space-x-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-cyan-600/30 hover:bg-cyan-500/40 border border-cyan-400/50 text-cyan-300 transition-all font-bold text-xs"
           >
             <Sparkles className="w-4 h-4 text-cyan-400 shrink-0" />
-            <span className="hidden xs:inline">자율 활동</span>
+            <span className="hidden xs:inline">활동·승급</span>
             <span className="px-1.5 py-0.2 bg-cyan-400 text-black text-[10px] rounded font-black">
               {character.actionPoints} AP
             </span>
@@ -496,7 +698,7 @@ export const PRTSTerminal: React.FC<Props> = ({
                 ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300 shadow-[0_0_8px_rgba(6,182,212,0.25)]'
                 : 'bg-slate-800/80 border-slate-700 text-slate-400 hover:text-slate-200'
             }`}
-            title="자동 진행 중 스토리 사건 및 선택지를 AI가 능력치에 맞춰 자동 선택 (클릭하여 켜기/끄기)"
+            title="자동 진행 중 스토리 사건 및 선택지를 AI가 능력치에 맞춰 자동 선택"
           >
             <Bot className="w-3.5 h-3.5 shrink-0" />
             <span className="hidden sm:inline">{isAutoChoiceEnabled ? '사건 자동: ON' : '사건 자동: OFF'}</span>
@@ -510,8 +712,8 @@ export const PRTSTerminal: React.FC<Props> = ({
           <button
             onClick={onTogglePlay}
             className={`flex items-center space-x-1 px-2.5 py-1.5 rounded-lg border text-xs font-bold transition-all ${
-              isPlaying 
-                ? 'bg-amber-500/20 border-amber-500/50 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.2)]' 
+              isPlaying
+                ? 'bg-amber-500/20 border-amber-500/50 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.2)]'
                 : 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300 hover:bg-emerald-500/30'
             }`}
             title={isPlaying ? '일시정지 (Space)' : '자동 진행 시작 (Space)'}
@@ -529,9 +731,9 @@ export const PRTSTerminal: React.FC<Props> = ({
             )}
           </button>
 
-          {/* Speed Buttons (1x, 2x, 4x, 8x, 16x) */}
+          {/* Speed Buttons (1x, 2x, 4x, 8x, 16x, 32x) */}
           <div className="flex items-center bg-black/40 rounded-lg p-0.5 border border-cyan-500/20">
-            {([1, 2, 4, 8, 16] as GameSpeed[]).map((s) => (
+            {([1, 2, 4, 8, 16, 32] as GameSpeed[]).map((s, idx) => (
               <button
                 key={s}
                 onClick={() => onChangeSpeed(s)}
@@ -540,7 +742,7 @@ export const PRTSTerminal: React.FC<Props> = ({
                     ? 'bg-cyan-500 text-black shadow font-extrabold'
                     : 'text-slate-400 hover:text-white'
                 }`}
-                title={`배속 설정: ${s}배속 (단축키: ${s})`}
+                title={`배속 설정: ${s}배속 (단축키: ${idx + 1} 또는 [ / ])`}
               >
                 {s}x
               </button>

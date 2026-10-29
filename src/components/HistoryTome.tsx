@@ -229,6 +229,56 @@ export const HistoryTome: React.FC<Props> = ({
             )}
           </div>
 
+          {/* Innate Traits & Life Goal */}
+          {(character.lifeGoal || (character.innateTraits && character.innateTraits.length > 0)) && (
+            <div className="p-3.5 rounded-lg border border-[#5c4033]/40 bg-[#f4ebd0] space-y-1.5 text-xs shadow-sm">
+              {character.lifeGoal && (
+                <div className="flex items-center justify-between text-[11px] pb-1 border-b border-[#5c4033]/20">
+                  <span className="font-bold text-[#8b1e1e]">생애 목표</span>
+                  <span className="font-bold text-[#2c1810]">
+                    {character.lifeGoal.title} {character.goalAchieved ? '★ 달성' : '진행 중'}
+                  </span>
+                </div>
+              )}
+              {character.innateTraits && character.innateTraits.length > 0 && (
+                <div className="flex flex-wrap gap-1 pt-0.5">
+                  {character.innateTraits.map(t => (
+                    <span
+                      key={t.id}
+                      className={`text-[10px] px-2 py-0.5 rounded font-bold border ${
+                        t.type === 'talent'
+                          ? 'bg-emerald-100 border-emerald-600 text-emerald-900'
+                          : 'bg-rose-100 border-rose-600 text-rose-900'
+                      }`}
+                      title={t.description}
+                    >
+                      {t.type === 'talent' ? '✦' : '▼'} {t.name}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Bonds / Companions */}
+          {character.bonds && character.bonds.length > 0 && (
+            <div className="p-3.5 rounded-lg border border-[#5c4033]/40 bg-[#f4ebd0] space-y-1.5 text-xs shadow-sm">
+              <div className="text-[11px] font-bold text-[#8b1e1e] border-b border-[#5c4033]/20 pb-1">
+                생사를 함께한 인연 ({character.bonds.filter(b => b.isAlive).length}명 생존)
+              </div>
+              <div className="space-y-1">
+                {character.bonds.map(b => (
+                  <div key={b.id} className="flex items-center justify-between text-[11px]">
+                    <span className="font-bold text-[#2c1810]">{b.name} ({b.role})</span>
+                    <span className={b.isAlive ? 'text-emerald-800 font-bold' : 'text-slate-500 line-through text-[10px]'}>
+                      {b.isAlive ? `호감 ${b.affinity}` : '전사/영면'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Vitals Summary */}
           <div className="p-4 rounded-lg border border-[#5c4033]/40 bg-[#f4ebd0] space-y-3 text-xs">
             <div className="flex justify-between items-center">
@@ -436,7 +486,7 @@ export const HistoryTome: React.FC<Props> = ({
           </button>
 
           <div className="flex items-center bg-[#ebdcb9] rounded-lg p-0.5 border border-[#5c4033]/40">
-            {([1, 2, 4, 8, 16] as GameSpeed[]).map((s) => (
+            {([1, 2, 4, 8, 16, 32] as GameSpeed[]).map((s) => (
               <button
                 key={s}
                 onClick={() => onChangeSpeed(s)}
@@ -445,7 +495,7 @@ export const HistoryTome: React.FC<Props> = ({
                     ? 'bg-[#8b1e1e] text-white shadow font-extrabold'
                     : 'text-[#5c4d47] hover:text-[#2c1810]'
                 }`}
-                title={`배속 설정: ${s}배속 (단축키: ${s})`}
+                title={`배속 설정: ${s}배속`}
               >
                 {s}x
               </button>

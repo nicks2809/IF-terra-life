@@ -1,7 +1,8 @@
 // src/components/EventLogPanel.tsx
 import React, { useRef, useEffect, useState } from 'react';
 import { LogEntry, GameEvent, EventChoice, Character, ThemeMode, LogFilter } from '../types';
-import { Radio, AlertTriangle, Sparkles, Sword, Dices, ChevronRight, Bot, Play, FastForward, Filter } from 'lucide-react';
+import { GameEngine } from '../engine/gameEngine';
+import { Radio, AlertTriangle, Sparkles, Sword, Dices, ChevronRight, Bot, Play, FastForward, Filter, Lock, Clock } from 'lucide-react';
 
 interface Props {
   logs: LogEntry[];
@@ -9,6 +10,7 @@ interface Props {
   character: Character;
   onSelectChoice: (choice: EventChoice) => void;
   autoChoicePendingId?: string | null;
+  minorTimeoutRemainingSec?: number | null;
   isPlaying?: boolean;
   onNextYear?: () => void;
   onSkipToNextEvent?: () => void;
@@ -22,6 +24,7 @@ export const EventLogPanel: React.FC<Props> = ({
   character,
   onSelectChoice,
   autoChoicePendingId,
+  minorTimeoutRemainingSec,
   isPlaying,
   onNextYear,
   onSkipToNextEvent,
@@ -34,7 +37,7 @@ export const EventLogPanel: React.FC<Props> = ({
 
   const filteredLogs = logs.filter(entry => {
     if (filter === 'all') return true;
-    if (filter === 'event') return entry.type === 'critical' || !!entry.rollDetails || entry.title.includes('【판정') || entry.title.includes('【업적') || entry.title.includes('【특수 직군');
+    if (filter === 'event') return entry.type === 'critical' || !!entry.rollDetails || entry.title.includes('【판정') || entry.title.includes('【업적') || entry.title.includes('【특수 직군') || entry.title.includes('【직급') || entry.title.includes('【생애 목표');
     if (filter === 'news') return entry.type === 'news';
     if (filter === 'combat') return entry.type === 'battle' || entry.type === 'hazard';
     if (filter === 'oripathy') return entry.type === 'oripathy' || entry.title.includes('광석병') || entry.title.includes('억제제');
@@ -90,9 +93,9 @@ export const EventLogPanel: React.FC<Props> = ({
 
   const getEffectBadgeStyle = (badge: string) => {
     const isNegative = badge.includes('-') && !badge.includes('결정화 -');
-    const isOripathyBad = badge.includes('결정화 +') || badge.includes('감염');
-    const isLmd = badge.includes('LMD') || badge.includes('급여');
-    const isSpecial = badge.includes('업적') || badge.includes('직군') || badge.includes('칭호');
+    const isOripathyBad = badge.includes('결정화 +') || badge.includes('감염') || badge.includes('확진');
+    const isLmd = badge.includes('LMD') || badge.includes('급여') || badge.includes('보수');
+    const isSpecial = badge.includes('업적') || badge.includes('직군') || badge.includes('칭호') || badge.includes('목표') || badge.includes('직급');
 
     if (isSpecial) {
       return isPrts
@@ -152,7 +155,7 @@ export const EventLogPanel: React.FC<Props> = ({
       </div>
 
       {/* Scrollable Story Logs */}
-      <div 
+      <div
         ref={logContainerRef}
         className="grow overflow-y-auto space-y-2.5 p-3.5 sm:p-4 pr-2 font-mono scroll-smooth"
       >
@@ -168,15 +171,15 @@ export const EventLogPanel: React.FC<Props> = ({
                 ? isPrts ? 'bg-amber-950/20 border-amber-500/40 text-amber-200' : 'bg-amber-100 border-amber-700 text-amber-950'
                 : entry.type === 'battle'
                 ? isPrts ? 'bg-rose-950/20 border-rose-500/40 text-rose-200' : 'bg-rose-100 border-rose-700 text-rose-950'
-                : isPrts 
-                ? 'bg-slate-900/40 border-slate-800/80 text-slate-300' 
+                : isPrts
+                ? 'bg-slate-900/40 border-slate-800/80 text-slate-300'
                 : 'bg-[#f0e4c6] border-[#5c4033]/25 text-[#1a1412]'
             }`}
           >
             <div className="flex items-center justify-between gap-2 mb-1.5">
-              <div className="flex items-center space-x-2">
-                <span className={`text-[10px] font-bold opacity-70 ${isPrts ? 'text-cyan-400' : 'text-[#8b1e1e]'}`}>
-                  [{entry.year}년 · {entry.age}세]
+              <div className="flex items-center space-x-2 flex-wrap">
+                <span className={`text-[10px] font-bold opacity-75 ${isPrts ? 'text-cyan-400' : 'text-[#8b1e1e]'}`}>
+                  [{entry.year}년{entry.season ? ` ${entry.season}` : ''} · {entry.age}세]
                 </span>
                 <span className="font-bold">{entry.title}</span>
               </div>
@@ -221,15 +224,27 @@ export const EventLogPanel: React.FC<Props> = ({
       {/* Current Active Choice Decision Panel */}
       {currentEvent && character.isAlive && (
         <div className={`shrink-0 p-4 border-t shadow-2xl transition-all ${
-          isPrts 
-            ? 'bg-[#0d1017] border-cyan-500/30 text-slate-100 font-mono' 
+          isPrts
+            ? 'bg-[#0d1017] border-cyan-500/30 text-slate-100 font-mono'
             : 'bg-[#ebdcb9] border-[#5c4033] text-[#1a1412] font-serif'
         }`}>
-          <div className="flex items-center space-x-2 mb-2">
-            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
-            <span className={`text-xs font-bold tracking-widest ${isPrts ? 'text-cyan-400' : 'text-[#8b1e1e]'}`}>
-              【운명의 갈림길】 {currentEvent.title}
-            </span>
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <div className="flex items-center space-x-2">
+              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+              <span className={`text-xs font-bold tracking-widest ${isPrts ? 'text-cyan-400' : 'text-[#8b1e1e]'}`}>
+                【운명의 갈림길】 {currentEvent.title}
+              </span>
+            </div>
+            {typeof minorTimeoutRemainingSec === 'number' && minorTimeoutRemainingSec > 0 && (
+              <span className={`inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[10px] font-bold border ${
+                isPrts
+                  ? 'bg-amber-950/60 border-amber-500/40 text-amber-300'
+                  : 'bg-amber-900/15 border-amber-800/40 text-amber-950'
+              }`}>
+                <Clock className="w-3 h-3" />
+                <span>자동 넘김 {minorTimeoutRemainingSec}초</span>
+              </span>
+            )}
           </div>
 
           <p className="text-xs mb-3 leading-relaxed opacity-90">
@@ -240,23 +255,33 @@ export const EventLogPanel: React.FC<Props> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
             {currentEvent.choices.map((choice) => {
               const isAutoPending = choice.id === autoChoicePendingId;
+              const reqCheck = GameEngine.checkChoiceRequirements(character, choice);
+              const isDisabled = !reqCheck.allowed;
+
               return (
                 <button
                   key={choice.id}
-                  onClick={() => onSelectChoice(choice)}
+                  disabled={isDisabled}
+                  onClick={() => !isDisabled && onSelectChoice(choice)}
                   className={`p-3 rounded-lg border text-left transition-all group flex flex-col justify-between relative ${
-                    isAutoPending
+                    isDisabled
                       ? isPrts
-                        ? 'bg-cyan-950/80 border-cyan-400 ring-2 ring-cyan-400/50 shadow-[0_0_15px_rgba(6,182,212,0.4)] animate-pulse'
-                        : 'bg-[#faecd0] border-[#8b1e1e] ring-2 ring-[#8b1e1e]/40 shadow-[0_0_12px_rgba(139,30,30,0.3)]'
-                      : isPrts
-                        ? 'bg-slate-900/80 border-slate-700 hover:border-cyan-400 hover:bg-slate-800'
-                        : 'bg-[#f4ebd0] border-[#5c4033]/40 hover:border-[#8b1e1e] hover:bg-[#faeed2]'
+                        ? 'bg-slate-950/60 border-slate-800/70 text-slate-500 cursor-not-allowed opacity-65'
+                        : 'bg-[#e3d7ba]/70 border-[#5c4033]/20 text-[#7d6f68] cursor-not-allowed opacity-70'
+                      : isAutoPending
+                        ? isPrts
+                          ? 'bg-cyan-950/80 border-cyan-400 ring-2 ring-cyan-400/50 shadow-[0_0_15px_rgba(6,182,212,0.4)] animate-pulse'
+                          : 'bg-[#faecd0] border-[#8b1e1e] ring-2 ring-[#8b1e1e]/40 shadow-[0_0_12px_rgba(139,30,30,0.3)]'
+                        : isPrts
+                          ? 'bg-slate-900/80 border-slate-700 hover:border-cyan-400 hover:bg-slate-800'
+                          : 'bg-[#f4ebd0] border-[#5c4033]/40 hover:border-[#8b1e1e] hover:bg-[#faeed2]'
                   }`}
                 >
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="font-bold text-xs group-hover:text-cyan-400 transition-colors flex items-center space-x-1.5">
+                      <span className={`font-bold text-xs transition-colors flex items-center flex-wrap gap-1.5 ${
+                        !isDisabled ? 'group-hover:text-cyan-400' : ''
+                      }`}>
                         <span>{choice.label}</span>
                         {isAutoPending && (
                           <span className={`text-[10px] px-1.5 py-0.2 rounded font-extrabold flex items-center space-x-1 ${
@@ -267,21 +292,35 @@ export const EventLogPanel: React.FC<Props> = ({
                           </span>
                         )}
                       </span>
-                      <ChevronRight className="w-4 h-4 opacity-50 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
+                      {isDisabled ? (
+                        <Lock className="w-3.5 h-3.5 shrink-0 opacity-60" />
+                      ) : (
+                        <ChevronRight className="w-4 h-4 shrink-0 opacity-50 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
+                      )}
                     </div>
-                    <p className="text-[11px] opacity-70 leading-normal mb-2">
+                    <p className="text-[11px] opacity-75 leading-normal mb-2">
                       {choice.description}
                     </p>
                   </div>
 
-                  {choice.diceCheck && (
-                    <div className="flex items-center space-x-1.5 text-[10px] text-amber-400 pt-1.5 border-t border-white/5">
-                      <Dices className="w-3 h-3" />
-                      <span>
-                        {choice.diceCheck.stat.toUpperCase()} 판정 (난이도: {choice.diceCheck.difficulty})
+                  <div className="flex flex-wrap items-center gap-2 pt-1.5 border-t border-white/5 text-[10px]">
+                    {choice.diceCheck && (
+                      <span className={`flex items-center space-x-1 font-bold ${isPrts ? 'text-amber-400' : 'text-[#8b1e1e]'}`}>
+                        <Dices className="w-3 h-3" />
+                        <span>{choice.diceCheck.stat.toUpperCase()} 판정 (DC {choice.diceCheck.difficulty})</span>
                       </span>
-                    </div>
-                  )}
+                    )}
+                    {isDisabled && reqCheck.reason && (
+                      <span className="text-red-400 font-bold">
+                        조건 미충족: {reqCheck.reason}
+                      </span>
+                    )}
+                    {!isDisabled && choice.requirements?.lmdCost && (
+                      <span className={isPrts ? 'text-yellow-300 font-bold' : 'text-amber-900 font-bold'}>
+                        소모: {choice.requirements.lmdCost.toLocaleString()} LMD
+                      </span>
+                    )}
+                  </div>
                 </button>
               );
             })}

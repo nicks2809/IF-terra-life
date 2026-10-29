@@ -2,13 +2,42 @@
 
 export type ThemeMode = 'prts' | 'tome';
 
-export type GameSpeed = 1 | 2 | 4 | 8 | 16;
+export type GameSpeed = 1 | 2 | 4 | 8 | 16 | 32;
+
+export type Season = '봄' | '여름' | '가을' | '겨울';
 
 export type Gender = '남성' | '여성';
 
 export type AIStrategy = 'balanced' | 'survival' | 'combat' | 'wealth';
 
+export type FocusStance = 'survival' | 'martial' | 'arcane' | 'career';
+
 export type LogFilter = 'all' | 'event' | 'news' | 'combat' | 'oripathy';
+
+export interface InnateTrait {
+  id: string;
+  name: string;
+  type: 'talent' | 'flaw';
+  description: string;
+  badge: string;
+}
+
+export interface LifeGoal {
+  id: string;
+  title: string;
+  description: string;
+  targetText: string;
+  bonusPoints: number;
+}
+
+export interface CharacterBond {
+  id: string;
+  name: string;
+  role: string;
+  affinity: number; // 0 ~ 100
+  isAlive: boolean;
+  fateText?: string;
+}
 
 export interface AdvancedSettings {
   aiStrategy: AIStrategy;
@@ -16,6 +45,7 @@ export interface AdvancedSettings {
   pauseOnOripathyCrisis: boolean;
   pauseOnRareEvent: boolean;
   autoUseApAndShop: boolean;
+  minorEventAutoTimeout: boolean;
   crtEffect: boolean;
 }
 
@@ -28,11 +58,14 @@ export interface ReincarnationPerk {
 }
 
 export interface ReincarnationConfig {
+  seed?: string;
+  useFixedSeed?: boolean;
   name?: string;
   gender?: Gender;
   raceId?: string;
   nationId?: string;
   environment?: EnvironmentType;
+  goalId?: string;
   perkIds?: string[];
 }
 
@@ -197,6 +230,7 @@ export interface SpecialCareer {
 
 export interface Character {
   id: string;
+  seed?: string;
   name: string;
   gender: Gender;
   race: string;
@@ -210,7 +244,16 @@ export interface Character {
   factions: Record<string, number>; // 진영별 평판 (-100 ~ 100)
   career: string;
   careerRank: string;
+  careerTier?: number; // 0(유년) ~ 5(전설 특수직군)
+  careerExp?: number;  // 직급 승급용 공적/경력도
   specialCareerId?: string;
+  focusStance?: FocusStance;
+  lifeGoal?: LifeGoal;
+  goalAchieved?: boolean;
+  innateTraits?: InnateTrait[];
+  bonds?: CharacterBond[];
+  milestones?: string[];
+  bossKills?: number;
   titles: string[];
   equipment: Equipment;
   inventory: InventorySlot[];
@@ -235,10 +278,14 @@ export interface OutcomeResult {
   crystallizationDelta?: number;
   bloodDensityDelta?: number;
   reputationDelta?: Record<string, number>;
+  careerExpDelta?: number;
   gainItemIds?: string[];
   gainTitles?: string[];
   deathReason?: string;
   specialCareerGain?: { id: string; name: string; rank: string };
+  addBond?: { name: string; role: string; affinity?: number };
+  loseRandomBondReason?: string;
+  changeEnvironment?: EnvironmentType;
   unlockAchievementId?: string;
   setSecretFlag?: string;
   setSecretFlag2?: string;
@@ -281,8 +328,11 @@ export interface GameEvent {
     isInfected?: boolean;
     race?: string[];
     nation?: string[];
+    environment?: EnvironmentType[];
     minCombat?: number;
     minArts?: number;
+    minIntellect?: number;
+    requiresLivingBond?: boolean;
     specificYear?: number;
     requiredFlag?: string;
     requiredCareer?: string;
@@ -326,6 +376,7 @@ export interface BattleState {
   damageTaken?: number;
   catalystActive?: boolean;
   armorBreak?: number;
+  ambushed?: boolean;
   result?: 'victory' | 'defeat' | 'fled';
 }
 
@@ -333,6 +384,7 @@ export interface LogEntry {
   id: string;
   year: number;
   age: number;
+  season?: Season;
   title: string;
   text: string;
   type: 'general' | 'critical' | 'hazard' | 'news' | 'battle' | 'oripathy';
@@ -354,9 +406,11 @@ export interface ScoreBreakdown {
   reputation: number;
   lifespan: number;
   endingBonus: number;
+  goalBonus?: number;
 }
 
 export interface DeathRecord {
+  seed?: string;
   yearOfDeath: number;
   ageAtDeath: number;
   cause: string;
@@ -364,6 +418,10 @@ export interface DeathRecord {
   finalRank: 'S' | 'A' | 'B' | 'C' | 'D' | 'F';
   lastWords: string;
   notableAchievements: string[];
+  milestones?: string[];
+  innateTraits?: InnateTrait[];
+  lifeGoalTitle?: string;
+  goalAchieved?: boolean;
   statsSummary: {
     combat: number;
     arts: number;

@@ -269,32 +269,34 @@ export const GAME_EVENTS: GameEvent[] = [
     title: '【특수 직군】 에기르의 부름: 어비설 헌터스 개조 제안',
     description: '에기르 출신의 당신에게 심해 기술단이 극비리에 접촉해왔습니다. "육상에 나와 있는 동포여, 해사의 침식에 맞서기 위해 신체를 초월적 전사로 개조하는 수술을 받겠는가?" 치명적인 고통이 따르지만 상상을 초월하는 완력을 얻게 됩니다.',
     category: 'career',
-    minAge: 18,
-    maxAge: 32,
-    conditions: { race: ['에기르'] },
+    minAge: 24,
+    maxAge: 45,
+    conditions: { race: ['에기르'], minCombat: 62 },
     choices: [
       {
         id: 'c_accept_abyssal_surgery',
         label: '개조 수술을 받아들여 어비설 헌터스로 거듭난다',
         description: '해사의 유전체와 에기르 나노 생체 합성을 견뎌냅니다.',
-        diceCheck: { stat: 'combat', difficulty: 70 },
+        diceCheck: { stat: 'combat', difficulty: 78 },
         outcomes: {
           criticalSuccess: {
             text: '기적적인 생체 적합성! 수술대 위에서 각성하여 순수한 어비설 헌터스로 각성했습니다! 완력과 신체 재생력이 인간의 한계를 초월합니다.',
-            statEffects: { combat: 35, health: 30, sanity: 20 },
+            statEffects: { combat: 18, health: 20, sanity: 10 },
+            careerExpDelta: 25,
             specialCareerGain: { id: 'abyssal_hunter', name: '어비설 헌터스 (Abyssal Hunter)', rank: '심해의 사냥꾼' },
             gainTitles: ['심해의 은빛 칼날'],
             unlockAchievementId: 'unique_abyssal_hunter'
           },
           success: {
             text: '극심한 발작 끝에 개조 수술을 성공적으로 마쳤습니다. 에기르의 초인적 완력을 손에 넣었습니다.',
-            statEffects: { combat: 25, health: 15, sanity: -10 },
+            statEffects: { combat: 14, health: 10, sanity: -15 },
+            careerExpDelta: 15,
             specialCareerGain: { id: 'abyssal_hunter', name: '어비설 헌터스 (Abyssal Hunter)', rank: '견습 사냥꾼' },
             unlockAchievementId: 'unique_abyssal_hunter'
           },
           failure: {
             text: '생체 거부 반응으로 혈관이 파열될 뻔했습니다! 수술은 중단되었고 간신히 목숨만 건졌습니다.',
-            statEffects: { health: -40, sanity: -25 }
+            statEffects: { health: -45, sanity: -25 }
           }
         }
       },
@@ -305,7 +307,7 @@ export const GAME_EVENTS: GameEvent[] = [
         outcomes: {
           success: {
             text: '심해의 기술자들은 아쉬워하며 물러났습니다. 당신은 자신의 신체를 보전했습니다.',
-            statEffects: { sanity: 15 }
+            statEffects: { sanity: 12 }
           }
         }
       }
@@ -316,26 +318,27 @@ export const GAME_EVENTS: GameEvent[] = [
     title: '【특수 직군】 라테라노 공증소의 칙령: 건 익제큐터 임명',
     description: '라테라노 성도의 제5청 공증소에서 전령이 도착했습니다. 당신의 뛰어난 사격 실력과 성스러운 율법 준수도를 인정하여 수호총 집행관(Executor)으로의 승격을 제안합니다.',
     category: 'career',
-    minAge: 18,
-    maxAge: 32,
-    conditions: { race: ['산크타'] },
+    minAge: 24,
+    maxAge: 42,
+    conditions: { race: ['산크타'], minCombat: 58 },
     choices: [
       {
         id: 'c_accept_executor',
         label: '교황청 제5청의 집행관 서약을 맹세한다',
         description: '공증소의 제식 흑색 코트와 개조 수호총을 지급받습니다.',
-        diceCheck: { stat: 'intellect', difficulty: 60 },
+        diceCheck: { stat: 'intellect', difficulty: 74 },
         outcomes: {
           success: {
             text: '성스러운 율법의 이름으로! 라테라노 건 익제큐터로 정식 취임했습니다. 오리지늄 수호총 사격술이 극에 달합니다.',
-            statEffects: { combat: 22, intellect: 15, sanity: 15, wealth: 2000 },
+            statEffects: { combat: 14, intellect: 10, sanity: 10, wealth: 1400 },
+            careerExpDelta: 20,
             specialCareerGain: { id: 'gun_executor', name: '라테라노 건 익제큐터', rank: '공증소 제5청 집행관' },
             gainTitles: ['율법의 집행자'],
             unlockAchievementId: 'mystic_gun_executor'
           },
           failure: {
-            text: '엄격한 율법 필기 시험에서 몇 가지 조항을 혼동하여 보류되었습니다.',
-            statEffects: { intellect: 5, sanity: -5 }
+            text: '엄격한 율법 필기 및 탄도 심의에서 보류 판정을 받았습니다.',
+            statEffects: { intellect: 4, sanity: -10 }
           }
         }
       },
@@ -357,26 +360,27 @@ export const GAME_EVENTS: GameEvent[] = [
     title: '【특수 직군】 염국 대리(司)의 밀령: 암행 사법 감찰사',
     description: '염국 황제의 직속 사법기관 대리(司)로부터 붉은 밀지가 당도했습니다. "수이(Sui)의 준동을 감시하고, 각 주의 탐관오리를 징벌할 암행 감찰사로 임명하노라."',
     category: 'career',
-    minAge: 19,
-    maxAge: 35,
-    conditions: { nation: ['염국'] },
+    minAge: 25,
+    maxAge: 45,
+    conditions: { nation: ['염국'], minIntellect: 62 },
     choices: [
       {
         id: 'c_accept_yan_censor',
         label: '천하의 법도를 바로세우기 위해 대리의 칙령을 받든다',
         description: '정3품 감찰패와 어사도를 하사받습니다.',
-        diceCheck: { stat: 'intellect', difficulty: 68 },
+        diceCheck: { stat: 'intellect', difficulty: 76 },
         outcomes: {
           success: {
             text: '황제의 어명을 받들어 염국 대리 사법 감찰관으로 등극했습니다! 수많은 관리들이 당신의 그림자 앞에서도 고개를 숙입니다.',
-            statEffects: { intellect: 25, combat: 15, wealth: 3000 },
+            statEffects: { intellect: 15, combat: 10, wealth: 1800 },
+            careerExpDelta: 20,
             specialCareerGain: { id: 'yan_censor', name: '염국 대리 사법 감찰사', rank: '대리 정3품 감찰관' },
             gainTitles: ['염국 대리 사경'],
             unlockAchievementId: 'mystic_yan_high_censor'
           },
           failure: {
-            text: '조정의 복잡한 궁중 시험에서 아쉽게 낙방했습니다.',
-            statEffects: { intellect: 8, sanity: -10 }
+            text: '조정의 까다로운 경전 및 암행 실무 고시에서 낙방했습니다.',
+            statEffects: { intellect: 5, sanity: -12 }
           }
         }
       }
@@ -387,26 +391,27 @@ export const GAME_EVENTS: GameEvent[] = [
     title: '【특수 직군】 라인 생명(Rhine Lab) 특수 프로젝트 주임 취임',
     description: '트리몬트의 첨단 생명공학 대기업 라인 랩에서 당신의 연구 성과와 천재적인 감각을 눈여겨보고 총괄 디렉터직을 제안해왔습니다.',
     category: 'career',
-    minAge: 20,
-    maxAge: 38,
-    conditions: { nation: ['컬럼비아'] },
+    minAge: 26,
+    maxAge: 48,
+    conditions: { nation: ['컬럼비아'], minIntellect: 65 },
     choices: [
       {
         id: 'c_accept_rhine_director',
         label: '라인 랩의 특수 생체 연구 총괄 디렉터로 부임한다',
         description: '최첨단 연구실과 막대한 연구비를 배정받습니다.',
-        diceCheck: { stat: 'intellect', difficulty: 70 },
+        diceCheck: { stat: 'intellect', difficulty: 78 },
         outcomes: {
           success: {
-            text: '크리스틴 라이트 총괄의 승인을 받아 라인 랩 섹션 디렉터로 임명되었습니다! 천문학적인 연구비와 특허권이 주어집니다.',
-            statEffects: { intellect: 28, wealth: 5000, artsAptitude: 15 },
+            text: '크리스틴 라이트 총괄의 승인을 받아 라인 랩 섹션 디렉터로 임명되었습니다! 연구 예산과 특별 특허권이 부여됩니다.',
+            statEffects: { intellect: 16, wealth: 2400, artsAptitude: 10 },
+            careerExpDelta: 20,
             specialCareerGain: { id: 'rhine_director', name: '라인 랩 총괄 디렉터', rank: '특수 프로젝트 수석 주임' },
             gainTitles: ['라인 랩 주임'],
             unlockAchievementId: 'mystic_rhine_director'
           },
           failure: {
-            text: '윤리위원회의 까다로운 청문회 문턱을 넘지 못했습니다.',
-            statEffects: { intellect: 10, sanity: -10 }
+            text: '윤리위원회와 이사회 청문회의 높은 문턱을 넘지 못했습니다.',
+            statEffects: { intellect: 5, sanity: -12 }
           }
         }
       }
@@ -417,32 +422,34 @@ export const GAME_EVENTS: GameEvent[] = [
     title: '【특수 직군】 런디니움의 유산: 빅토리아 증기기사 계승',
     description: '빅토리아의 폐쇄된 지하 격납고에서 잠들어 있던 전설의 고대 증기기사(Steam Knight) 갑주가 당신의 신체 반응에 공명하기 시작합니다!',
     category: 'career',
-    minAge: 20,
-    maxAge: 40,
-    conditions: { nation: ['빅토리아'] },
+    minAge: 25,
+    maxAge: 46,
+    conditions: { nation: ['빅토리아'], minCombat: 65 },
     choices: [
       {
         id: 'c_awaken_steam_knight',
         label: '증기 코어를 점화하고 거병의 조종간을 쥔다',
         description: '고압 증기와 육중한 강철 프레임에 몸을 싣습니다.',
-        diceCheck: { stat: 'combat', difficulty: 75 },
+        diceCheck: { stat: 'combat', difficulty: 80 },
         outcomes: {
           criticalSuccess: {
             text: '굉음과 함께 런디니움의 고대 증기기사가 완벽히 기동했습니다! 당신은 제국의 살아있는 거병이자 증기기사단의 후계자가 되었습니다.',
-            statEffects: { combat: 35, health: 30, wealth: 4000 },
+            statEffects: { combat: 20, health: 18, wealth: 2000 },
+            careerExpDelta: 25,
             specialCareerGain: { id: 'steam_knight', name: '빅토리아 증기기사', rank: '런디니움 제식 거병' },
             gainTitles: ['증기기사의 후예'],
             unlockAchievementId: 'unique_steam_knight_heart'
           },
           success: {
             text: '증기 압력을 조절하며 갑주 기동에 성공했습니다.',
-            statEffects: { combat: 22, health: 18 },
+            statEffects: { combat: 14, health: 12 },
+            careerExpDelta: 15,
             specialCareerGain: { id: 'steam_knight', name: '빅토리아 증기기사', rank: '예비 기동병' },
             unlockAchievementId: 'unique_steam_knight_heart'
           },
           failure: {
-            text: '증기 밸브의 폭주로 전신에 가벼운 화상을 입었습니다.',
-            statEffects: { health: -30, sanity: -15 }
+            text: '증기 밸브의 폭주로 전신에 심한 화상을 입었습니다.',
+            statEffects: { health: -38, sanity: -18 }
           }
         }
       }
@@ -453,27 +460,28 @@ export const GAME_EVENTS: GameEvent[] = [
     title: '【특수 직군】 우르수스 황제의 검 (내위) 비밀 결사',
     description: '북방 설원의 눈보라 속에서 검은 안개를 두른 의문의 기사가 나타났습니다. "우르수스의 피가 흐르는 자여, 황제의 국경을 지키는 그림자가 되겠는가?"',
     category: 'career',
-    minAge: 20,
-    maxAge: 40,
-    conditions: { nation: ['우르수스 제국'] },
+    minAge: 26,
+    maxAge: 46,
+    conditions: { nation: ['우르수스 제국'], minCombat: 68 },
     choices: [
       {
         id: 'c_accept_emperors_blade',
         label: '극북의 악마 파편을 품고 황제의 검으로 서약한다',
         description: '검은 안개를 다루는 친위 내위의 맹세를 맺습니다.',
-        diceCheck: { stat: 'combat', difficulty: 76 },
+        diceCheck: { stat: 'combat', difficulty: 82 },
         outcomes: {
           success: {
             text: '갑주 틈새로 검은 안개가 피어오릅니다. 당신은 황제 직속 내위 "황제의 검"이 되었습니다. 적들은 당신의 그림자만 보아도 얼어붙습니다.',
-            statEffects: { combat: 32, intellect: 18, sanity: -15 },
+            statEffects: { combat: 18, intellect: 12, sanity: -18 },
+            careerExpDelta: 25,
             specialCareerGain: { id: 'emperors_blade', name: '우르수스 황제의 검', rank: '황실 친위 내위' },
             gainTitles: ['검은 안개의 추적자'],
             setSecretFlag: 'emperors_blade_vow',
             unlockAchievementId: 'unique_emperors_blade'
           },
           failure: {
-            text: '악마 파편의 오염을 견디지 못하고 정신 붕괴를 겪을 뻔했습니다.',
-            statEffects: { health: -45, sanity: -35 }
+            text: '악마 파편의 오염을 견디지 못하고 치명적인 내상과 정신 붕괴를 겪었습니다.',
+            statEffects: { health: -50, sanity: -38 }
           }
         }
       }
@@ -757,19 +765,21 @@ export const GAME_EVENTS: GameEvent[] = [
         diceCheck: { stat: 'combat', difficulty: 75 },
         outcomes: {
           criticalSuccess: {
-            text: '상대 기사의 방패를 일격에 분쇄하고 챔피언에 등극했습니다! 수만 관중이 당신의 이름을 연호하며 거액의 우승 상금이 쏟아집니다!',
-            statEffects: { combat: 25, wealth: 12000, sanity: 25 },
+            text: '상대 기사의 방패를 일격에 분쇄하고 챔피언에 등극했습니다! 수만 관중이 당신의 이름을 연호하며 우승 상금이 수여됩니다!',
+            statEffects: { combat: 18, wealth: 4500, sanity: 20 },
+            careerExpDelta: 20,
             gainTitles: ['메이저 챔피언'],
             unlockAchievementId: 'mystic_radiant_champion'
           },
           success: {
             text: '치열한 연장전 끝에 판정승을 거두었습니다! 우승 상금과 명성을 획득했습니다.',
-            statEffects: { combat: 15, wealth: 5000, health: -20 },
+            statEffects: { combat: 12, wealth: 2400, health: -20 },
+            careerExpDelta: 12,
             gainTitles: ['영광의 기사']
           },
           failure: {
             text: '상대의 기습적인 아츠 랜스에 밀려 아쉽게 준우승에 머물렀습니다.',
-            statEffects: { health: -35, wealth: 1500, sanity: -15 }
+            statEffects: { health: -35, wealth: 700, sanity: -15 }
           }
         }
       },
@@ -777,15 +787,15 @@ export const GAME_EVENTS: GameEvent[] = [
         id: 'c_kazimierz_gamble',
         label: '지략을 발휘하여 상업연합회의 배팅 장부를 분석하고 거액을 베팅한다',
         description: '경기 결과에 지략을 걸어 금융 수익을 노립니다.',
-        diceCheck: { stat: 'intellect', difficulty: 70 },
+        diceCheck: { stat: 'intellect', difficulty: 74 },
         outcomes: {
           success: {
-            text: '완벽한 확률 계산으로 배당금 잭팟을 터뜨렸습니다!',
-            statEffects: { wealth: 8000, intellect: 15 }
+            text: '정교한 확률 계산으로 배당금 수익을 거두었습니다!',
+            statEffects: { wealth: 3200, intellect: 10 }
           },
           failure: {
             text: '승부조작에 휘말려 베팅금을 잃었습니다.',
-            statEffects: { wealth: -2000, sanity: -15 }
+            statEffects: { wealth: -1800, sanity: -15 }
           }
         }
       }
@@ -807,14 +817,16 @@ export const GAME_EVENTS: GameEvent[] = [
         outcomes: {
           criticalSuccess: {
             text: '칼날이 허공을 가를 때마다 수십 마리의 해사가 산산조각 났습니다! 심해의 속삭임은 당신의 강철 같은 의지 앞에 침묵했습니다.',
-            statEffects: { combat: 30, sanity: 25, wealth: 6000 },
+            statEffects: { combat: 20, sanity: 20, wealth: 2800 },
+            careerExpDelta: 22,
             gainTitles: ['심해의 침묵자'],
             setSecretFlag: 'conquered_seaborne',
             unlockAchievementId: 'unique_abyssal_hunter'
           },
           success: {
             text: '치열한 사투 끝에 해사 무리를 물리치고 등대를 지켜냈습니다.',
-            statEffects: { combat: 18, health: -30, sanity: -15 },
+            statEffects: { combat: 14, health: -30, sanity: -15 },
+            careerExpDelta: 14,
             setSecretFlag: 'conquered_seaborne'
           },
           failure: {
@@ -828,11 +840,11 @@ export const GAME_EVENTS: GameEvent[] = [
         id: 'c_rekindle_lighthouse',
         label: '재판관의 랜턴을 밝히고 고대 등대의 오리지늄 렌즈를 재점화한다',
         description: '빛으로 바다의 어둠을 몰아내고 해사들을 쫓아냅니다.',
-        diceCheck: { stat: 'artsAptitude', difficulty: 75 },
+        diceCheck: { stat: 'artsAptitude', difficulty: 76 },
         outcomes: {
           success: {
             text: '눈부신 황금빛 등대 광선이 밤바다를 갈랐습니다! 해사들이 비명을 지르며 심해로 도주했습니다.',
-            statEffects: { artsAptitude: 22, sanity: 20 },
+            statEffects: { artsAptitude: 16, sanity: 18 },
             setSecretFlag: 'conquered_seaborne'
           },
           failure: {
@@ -859,14 +871,16 @@ export const GAME_EVENTS: GameEvent[] = [
         outcomes: {
           criticalSuccess: {
             text: '푸른 천공에 거대한 구멍이 뚫리고... 은하와 수억 개의 별들이 모습을 드러냈습니다! 고대 인류 보존자 트레버 프리스톤의 홀로그램이 당신에게 고대의 비밀을 전송했습니다!',
-            statEffects: { intellect: 35, sanity: 30, wealth: 10000 },
+            statEffects: { intellect: 22, sanity: 25, wealth: 4000 },
+            careerExpDelta: 25,
             gainTitles: ['별을 올려다본 자'],
             setSecretFlag: 'witnessed_lone_trail',
             unlockAchievementId: 'unique_lone_trail_sky'
           },
           success: {
             text: '발사는 성공했습니다. 당신은 대지 너머에 진정한 하늘이 존재함을 눈으로 목격했습니다.',
-            statEffects: { intellect: 20, sanity: 15 },
+            statEffects: { intellect: 15, sanity: 15 },
+            careerExpDelta: 15,
             setSecretFlag: 'witnessed_lone_trail'
           },
           failure: {
@@ -893,7 +907,8 @@ export const GAME_EVENTS: GameEvent[] = [
         outcomes: {
           criticalSuccess: {
             text: '살카즈 백부장을 단칼에 베어 넘기고 성벽의 적 기갑선을 격침시켰습니다! 런디니움의 구원자로 칭송받습니다.',
-            statEffects: { combat: 25, wealth: 8000, sanity: 20 },
+            statEffects: { combat: 18, wealth: 3800, sanity: 20 },
+            careerExpDelta: 25,
             gainTitles: ['런디니움의 구원자'],
             setSecretFlag: 'steam_knight_stand',
             setSecretFlag2: 'completed_act1_or_act2',
@@ -901,7 +916,8 @@ export const GAME_EVENTS: GameEvent[] = [
           },
           success: {
             text: '격렬한 포화 속에서 시민들의 대피로를 확보했습니다.',
-            statEffects: { combat: 15, health: -35, wealth: 3000 },
+            statEffects: { combat: 12, health: -35, wealth: 1600 },
+            careerExpDelta: 15,
             setSecretFlag: 'completed_act1_or_act2'
           },
           failure: {
@@ -919,7 +935,8 @@ export const GAME_EVENTS: GameEvent[] = [
         outcomes: {
           success: {
             text: '고압 증기 폭풍이 전장을 휩쓸며 적 비행선이 화염에 휩싸여 추락했습니다! 제국의 전설이 되었습니다.',
-            statEffects: { combat: 30, health: -20, wealth: 10000 },
+            statEffects: { combat: 20, health: -20, wealth: 4200 },
+            careerExpDelta: 25,
             gainTitles: ['강철의 수호기사'],
             setSecretFlag: 'steam_knight_stand'
           },
@@ -947,14 +964,16 @@ export const GAME_EVENTS: GameEvent[] = [
         outcomes: {
           criticalSuccess: {
             text: '성림의 영령들과 공명하여 거대한 빛의 결계를 완성했습니다! 붕괴체 무리가 정화되어 소멸했습니다. 테라는 구원받았습니다.',
-            statEffects: { artsAptitude: 30, combat: 20, sanity: 30 },
+            statEffects: { artsAptitude: 22, combat: 14, sanity: 25 },
+            careerExpDelta: 25,
             gainTitles: ['극북의 결계사'],
             setSecretFlag: 'stopped_collapse',
             unlockAchievementId: 'unique_sami_daemon_slayer'
           },
           success: {
             text: '피를 흘리며 결계선을 사수했습니다. 붕괴체의 남하가 멈췄습니다.',
-            statEffects: { artsAptitude: 18, health: -40, sanity: -20 },
+            statEffects: { artsAptitude: 14, health: -40, sanity: -20 },
+            careerExpDelta: 15,
             setSecretFlag: 'stopped_collapse'
           },
           failure: {
@@ -981,11 +1000,12 @@ export const GAME_EVENTS: GameEvent[] = [
         id: 'c_shield_people',
         label: '일생의 모든 아츠와 무력을 짜내어 피난민들을 지킨다',
         description: '후세를 위해 장렬하게 전장에 섭니다.',
-        diceCheck: { stat: 'combat', difficulty: 80 },
+        diceCheck: { stat: 'combat', difficulty: 82 },
         outcomes: {
           criticalSuccess: {
             text: '기적과도 같은 활약으로 재앙의 파편들을 전부 쳐내고 사람들을 구했습니다! 온 테라가 당신의 이름을 영원히 기억할 것입니다!',
-            statEffects: { sanity: 40, wealth: 15000 },
+            statEffects: { sanity: 30, wealth: 5500 },
+            careerExpDelta: 30,
             gainTitles: ['테라의 수호 성인'],
             unlockAchievementId: 'legend_living_myth'
           },
@@ -1503,5 +1523,445 @@ export const GAME_EVENTS: GameEvent[] = [
         }
       }
     ]
+  },
+
+  // ==========================================
+  // 테라의 가혹한 현실 및 인연 사건 (Harsh Terra Reality & Bonds)
+  // ==========================================
+  {
+    id: 'harsh_ursus_infected_patrol',
+    title: '【가혹한 테라】 감염자 색출 순찰대의 야간 불심검문',
+    description: '탐조등 불빛이 골목을 가르며 무장 헌병과 감찰 순찰대가 거리를 봉쇄했습니다. 휴대용 오리지늄 혈중 농도 측정기가 비프음을 내며 당신의 목덜미와 손목을 향합니다.',
+    category: 'oripathy',
+    minAge: 14,
+    maxAge: 999,
+    conditions: { isInfected: true, environment: ['이동도시 상류층', '일반 거주구', '슬럼가 및 암시장'] },
+    choices: [
+      {
+        id: 'c_patrol_bribe_or_forge',
+        label: '위조 비감염 증명서와 뒷돈(400 LMD)을 찔러 넣어 검문을 무마한다',
+        description: '부패한 순찰대원의 주머니를 채워 위기를 모면합니다.',
+        requirements: { lmdCost: 400 },
+        diceCheck: { stat: 'intellect', difficulty: 56 },
+        outcomes: {
+          success: {
+            text: '순찰대장이 지폐 뭉치를 코트 안주머니에 쑤셔 넣더니 측정기 전원을 끄고 지나가라 손짓했습니다. 치욕스럽지만 자유를 지켰습니다.',
+            statEffects: { sanity: -6, intellect: 4 }
+          },
+          failure: {
+            text: '돈만 빼앗기고 개머리판에 구타당한 뒤 슬럼 격리 구역으로 쫓겨났습니다!',
+            statEffects: { health: -22, sanity: -16 },
+            changeEnvironment: '슬럼가 및 암시장'
+          }
+        }
+      },
+      {
+        id: 'c_patrol_breakthrough',
+        label: '검문선을 무력으로 돌파하여 어두운 하수구로 도주한다',
+        description: '체포되어 광산에 끌려가느니 사선을 뚫습니다.',
+        diceCheck: { stat: 'combat', difficulty: 64 },
+        outcomes: {
+          success: {
+            text: '전광석화 같은 몸놀림으로 검문 대열을 허물고 하수도 배수관으로 몸을 감췄습니다!',
+            statEffects: { combat: 6, health: -12, sanity: -5 },
+            careerExpDelta: 8
+          },
+          failure: {
+            text: '진압봉과 석궁 세례를 맞으며 강제 노역소 호송차에 실렸다가 간신히 탈출했습니다. 온몸이 만신창이입니다.',
+            statEffects: { health: -38, sanity: -22, wealth: -300 },
+            crystallizationDelta: 3.5,
+            changeEnvironment: '슬럼가 및 암시장'
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'harsh_catastrophe_sector_jettison',
+    title: '【가혹한 테라】 재앙 회피 기동: 하층 거주구 긴급 절단',
+    description: '전방에 초대형 오리지늄 폭풍이 발생하자, 이동도시 중앙 통제실이 추진 속도를 높이기 위해 당신이 머무는 외곽 하층 플랫폼의 연결 볼트를 폭파 절단하기로 결정했습니다! 경고 사이렌과 함께 도개교가 올라가기 시작합니다!',
+    category: 'fateful',
+    minAge: 10,
+    maxAge: 999,
+    conditions: { environment: ['일반 거주구', '슬럼가 및 암시장'] },
+    choices: [
+      {
+        id: 'c_jump_jettison_bridge',
+        label: '분리되는 강철 도개교 끝단을 향해 전력으로 질주하여 도약한다',
+        description: '한 발이라도 늦으면 황야 한복판에 버려집니다.',
+        diceCheck: { stat: 'combat', difficulty: 62 },
+        outcomes: {
+          criticalSuccess: {
+            text: '끊어지는 크레인 와이어를 붙잡고 본체 갑판 위로 극적으로 기어올랐습니다! 뒤편에서 버려진 외곽 구획이 흑자색 폭풍 속으로 삼켜집니다.',
+            statEffects: { combat: 8, luck: 4, sanity: -8 },
+            careerExpDelta: 10
+          },
+          success: {
+            text: '손바닥이 찢어지는 고통을 참으며 본체 난간을 붙잡아 살아남았습니다.',
+            statEffects: { health: -18, sanity: -12 }
+          },
+          failure: {
+            text: '도개교에서 미끄러져 분리된 구획과 함께 황야에 남겨졌습니다! 재앙 분진을 뒤집어쓰며 노마드 캠프까지 걸어야 했습니다.',
+            statEffects: { health: -35, sanity: -24, wealth: -450 },
+            crystallizationDelta: 4.5,
+            bloodDensityDelta: 0.08,
+            changeEnvironment: '황야의 노마드 캠프'
+          }
+        }
+      },
+      {
+        id: 'c_seal_underground_bunker',
+        label: '절단 구획 지하 밀폐 배수 벙커의 방폭문을 잠그고 폭풍이 지나가길 버틴다',
+        description: '산소와 식량이 바닥나기 전에 구조대가 오길 기도합니다.',
+        diceCheck: { stat: 'intellect', difficulty: 58 },
+        outcomes: {
+          success: {
+            text: '환기 필터를 옷감으로 이중 밀봉해 분진 유입을 막아냈습니다. 사흘 뒤 지나가던 로도스 외근 수색팀에게 구조되었습니다.',
+            statEffects: { intellect: 6, health: -10, sanity: -10 },
+            reputationDelta: { '로도스 아일랜드': 12 }
+          },
+          failure: {
+            text: '배관 틈새로 스며든 활성 오리지늄 분진을 마시며 극심한 고열과 공포에 시달렸습니다.',
+            statEffects: { health: -30, sanity: -25 },
+            crystallizationDelta: 5.5,
+            bloodDensityDelta: 0.1
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'harsh_kazimierz_blood_pit',
+    title: '【가혹한 테라】 네온사인 아래의 지하 무규칙 혈투장',
+    description: '화려한 이동도시 상업지구의 지하 폐공장. 스폰서들의 유흥을 위해 채무자와 감염자들을 철창에 가두고 싸우게 하는 불법 지하 투기장에 발을 들였습니다.',
+    category: 'combat',
+    minAge: 17,
+    maxAge: 65,
+    choices: [
+      {
+        id: 'c_enter_blood_pit',
+        label: '배당금이 걸린 철창 매치에 직접 출전하여 상금을 쟁취한다',
+        description: '규칙도 심판도 없는 냉혹한 백병전입니다.',
+        diceCheck: { stat: 'combat', difficulty: 66 },
+        outcomes: {
+          criticalSuccess: {
+            text: '단 세 합 만에 거구의 상대를 쓰러뜨리자 관중석에서 지폐 다발이 쏟아집니다! 피 냄새 섞인 대전료를 챙겨 나왔습니다.',
+            statEffects: { wealth: 1400, combat: 7, sanity: -8 },
+            careerExpDelta: 12
+          },
+          success: {
+            text: '갈비뼈에 금이 갔지만 상대를 제압하고 대전료를 받아냈습니다.',
+            statEffects: { wealth: 750, combat: 4, health: -22, sanity: -10 },
+            careerExpDelta: 8
+          },
+          failure: {
+            text: '비열한 모래 뿌리기와 둔기 기습에 쓰러져 치료비만 날렸습니다.',
+            statEffects: { health: -42, sanity: -18, wealth: -250 }
+          }
+        },
+        triggerBattleEnemyId: 'wasteland_bandit'
+      },
+      {
+        id: 'c_aid_pit_wounded',
+        label: '투기장 뒷문 의무실에서 버려진 부상 투사들을 응급처치하고 빠져나온다',
+        description: '돈 대신 양심과 뒷골목의 신망을 지킵니다.',
+        outcomes: {
+          success: {
+            text: '지혈을 받은 노련한 투사가 감사를 표하며 실전 급소 방어 비결을 알려주었습니다.',
+            statEffects: { combat: 3, sanity: 6, wealth: -80 },
+            addBond: { name: '크비에트', role: '지하 투기장 생존자', affinity: 55 }
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'harsh_iberia_inquisition_lantern',
+    title: '【가혹한 테라】 황폐한 해안과 재판관의 등불 심문',
+    description: '잿빛 안개가 낀 해안 도시. 긴 흑의를 입은 이베리아 재판관이 핸드캐논과 등불을 들고 당신을 가로막습니다. "이방인이여, 바다의 속삭임을 들었는가? 네 눈동자의 흔들림을 증명하라."',
+    category: 'fateful',
+    minAge: 16,
+    maxAge: 999,
+    choices: [
+      {
+        id: 'c_prove_lucid_sanity',
+        label: '흔들림 없는 눈빛으로 교리와 이성적 결백을 논리정연하게 진술한다',
+        description: '정신력이 약하면 심해 교도 혐의를 뒤집어씁니다.',
+        diceCheck: { stat: 'intellect', difficulty: 64 },
+        outcomes: {
+          success: {
+            text: '"...오염의 징후는 없군. 밤바다를 가까이하지 마라." 재판관은 등불을 거두고 비상 식량 꾸러미를 던져주며 사라졌습니다.',
+            statEffects: { intellect: 6, sanity: 5 },
+            gainItemIds: ['med_emergency_spray']
+          },
+          failure: {
+            text: '긴장한 나머지 말문이 막혀 사흘간 차가운 석조 지하실에 구금되어 혹독한 청문 조사를 받았습니다.',
+            statEffects: { health: -18, sanity: -26 }
+          }
+        }
+      },
+      {
+        id: 'c_flee_coastal_cliffs',
+        label: '안개를 틈타 해안 암초 절벽 길로 빠르게 이탈한다',
+        description: '재판소의 관할 구역을 벗어납니다.',
+        diceCheck: { stat: 'luck', difficulty: 55 },
+        outcomes: {
+          success: {
+            text: '자욱한 해무 덕분에 추적을 따돌리고 내륙 교역로에 합류했습니다.',
+            statEffects: { luck: 4, health: -6 }
+          },
+          failure: {
+            text: '날카로운 암초에 발을 헛디뎌 추락하며 큰 타박상을 입었습니다.',
+            statEffects: { health: -28, sanity: -12 }
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'harsh_lungmen_slum_syndicate',
+    title: '【가혹한 테라】 하층 구역 폭력 조직의 보호세 갈취',
+    description: '장마철 빗물이 고인 뒷골목에서 쇠파이프와 쇠뇌로 무장한 지역 조직원들이 거처 문을 걷어차며 이번 달 "안전 유지비"를 두 배로 내놓으라고 협박합니다.',
+    category: 'life',
+    minAge: 14,
+    maxAge: 999,
+    conditions: { environment: ['일반 거주구', '슬럼가 및 암시장'] },
+    choices: [
+      {
+        id: 'c_pay_syndicate_tax',
+        label: '피해를 막기 위해 이를 악물고 350 LMD를 건넨다',
+        description: '당장의 유혈 충돌을 피합니다.',
+        requirements: { lmdCost: 350 },
+        outcomes: {
+          success: {
+            text: '조직원들은 비릿하게 웃으며 지폐를 세어보고 물러갔습니다. 비참한 현실에 주먹을 꽉 쥡니다.',
+            statEffects: { sanity: -10, intellect: 2 }
+          }
+        }
+      },
+      {
+        id: 'c_repel_syndicate',
+        label: '무기를 뽑아 들고 문턱을 넘은 폭력배들을 정면으로 제압한다',
+        description: '만만한 먹잇감이 아님을 각인시킵니다.',
+        diceCheck: { stat: 'combat', difficulty: 56 },
+        outcomes: {
+          success: {
+            text: '선두에 선 행동대장을 단숨에 꺾어 빗물 바닥에 내동댕이치자, 패거리들이 혼비백산하여 달아났습니다!',
+            statEffects: { combat: 5, sanity: 6 },
+            careerExpDelta: 6
+          },
+          failure: {
+            text: '수적 열세에 밀려 집기가 부서지고 지갑까지 털렸습니다.',
+            statEffects: { health: -28, sanity: -15, wealth: -280 }
+          }
+        },
+        triggerBattleEnemyId: 'wasteland_bandit'
+      }
+    ]
+  },
+  {
+    id: 'harsh_columbia_clinical_subject',
+    title: '【가혹한 테라】 외곽 생체 연구소의 고수익 임상 시험 전단지',
+    description: '전봇대에 붙은 구인 광고. "신형 오리지늄 신경 안정제 3상 피험자 모집 — 당일 현금 1,200 LMD 지급, 면책 동의서 서명 필수." 생활고에 시달리는 이들이 줄을 서 있습니다.',
+    category: 'oripathy',
+    minAge: 18,
+    maxAge: 70,
+    choices: [
+      {
+        id: 'c_join_clinical_trial',
+        label: '위험을 감수하고 면책 동의서에 서명한 뒤 주사를 맞는다',
+        description: '목돈을 손에 넣지만 심각한 부작용 위험이 따릅니다.',
+        diceCheck: { stat: 'luck', difficulty: 62 },
+        outcomes: {
+          criticalSuccess: {
+            text: '놀랍게도 신약이 당신의 체질과 완벽히 맞아떨어져 아츠 감응도가 상승하고 두둑한 사례비까지 챙겼습니다!',
+            statEffects: { wealth: 1300, artsAptitude: 6, health: 5 }
+          },
+          success: {
+            text: '심한 오한과 구토가 이틀간 이어졌으나 약속된 임상 수당 1,100 LMD를 수령했습니다.',
+            statEffects: { wealth: 1100, health: -16, sanity: -10 },
+            bloodDensityDelta: 0.04
+          },
+          failure: {
+            text: '투약 직후 혈관이 타들어 가는 급성 거부 반응이 일어났습니다! 연구소는 면책 조항을 들이밀며 위자료 몇 푼만 던져주고 당신을 내쫓았습니다.',
+            statEffects: { wealth: 250, health: -38, sanity: -24 },
+            crystallizationDelta: 5.0,
+            bloodDensityDelta: 0.12
+          }
+        }
+      },
+      {
+        id: 'c_ignore_clinical_flyer',
+        label: '전단지를 구겨 버리고 정직한 일거리를 찾으러 발걸음을 옮긴다',
+        description: '목숨을 담보로 한 돈은 거절합니다.',
+        outcomes: {
+          success: {
+            text: '주머니는 가볍지만 내 몸의 주도권만큼은 대기업에 넘기지 않았습니다.',
+            statEffects: { sanity: 4 }
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'harsh_suppressant_price_spike',
+    title: '【가혹한 테라】 억제제 공급망 대란과 희석 앰플 파동',
+    description: '국경 봉쇄로 정품 오리지늄 억제제 가격이 폭등했습니다! 체내 결정이 욱신거리며 통증이 몰려오는데, 약국 진열대는 텅 비어 있고 암시장 브로커만이 수상한 무라벨 앰플을 흔들고 있습니다.',
+    category: 'oripathy',
+    minAge: 12,
+    maxAge: 999,
+    conditions: { isInfected: true },
+    choices: [
+      {
+        id: 'c_pay_blackmarket_premium',
+        label: '웃돈(650 LMD)을 주고서라도 로도스 유출 정품 앰플을 수소문해 투여한다',
+        description: '출혈이 크지만 안전하게 발작을 진정시킵니다.',
+        requirements: { lmdCost: 650 },
+        outcomes: {
+          success: {
+            text: '어렵게 구한 정품 억제제를 투여하자 타는 듯한 결정화 통증이 가라앉았습니다.',
+            statEffects: { health: 8, sanity: 5 },
+            crystallizationDelta: -1.5
+          }
+        }
+      },
+      {
+        id: 'c_endure_raw_pain',
+        label: '불량 약물에 손을 대느니 차가운 수건을 물고 생으로 발작을 견딘다',
+        description: '돈을 아끼지만 육체와 정신이 깎여 나갑니다.',
+        outcomes: {
+          success: {
+            text: '밤새 식은땀을 흘리며 경련을 버텨냈습니다. 피부 아래 검은 결정이 조금 더 자라난 것이 느껴집니다.',
+            statEffects: { health: -24, sanity: -18 },
+            crystallizationDelta: 3.2
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'harsh_kazdel_night_ambush',
+    title: '【가혹한 테라】 잿빛 황무지의 야간 살카즈 약탈조 기습',
+    description: '모닥불이 꺼져가는 새벽 3시, 바위 능선 너머에서 주술 아츠의 붉은 잔광과 함께 굶주린 탈영 용병 패거리가 야영지를 포위했습니다!',
+    category: 'combat',
+    minAge: 16,
+    maxAge: 999,
+    conditions: { environment: ['황야의 노마드 캠프', '슬럼가 및 암시장', '이동기지 (로도스/블랙스틸)'] },
+    choices: [
+      {
+        id: 'c_counter_night_ambush',
+        label: '기습에 당황하지 않고 엄폐물 뒤에서 역습을 가한다',
+        description: '야간 백병전으로 적의 선봉을 꺾습니다.',
+        diceCheck: { stat: 'combat', difficulty: 68 },
+        outcomes: {
+          success: {
+            text: '어둠 속에서 침착하게 적 지휘관의 무기를 쳐내고 패거리를 격퇴했습니다! 버리고 간 군수품을 노획했습니다.',
+            statEffects: { combat: 6, wealth: 550 },
+            careerExpDelta: 10
+          },
+          failure: {
+            text: '기습 화살에 어깨를 스치며 보급품 일부를 빼앗긴 채 불리한 교전에 돌입합니다!',
+            statEffects: { health: -25, wealth: -300, sanity: -10 }
+          }
+        },
+        triggerBattleEnemyId: 'reunion_vanguard'
+      },
+      {
+        id: 'c_abandon_pack_escape',
+        label: '배낭 일부를 미끼로 던져두고 어둠 속 협곡으로 은밀히 이탈한다',
+        description: '재물 손실을 감수하고 목숨을 보전합니다.',
+        diceCheck: { stat: 'intellect', difficulty: 54 },
+        outcomes: {
+          success: {
+            text: '약탈자들이 배낭을 뒤지는 사이 기척을 지우고 협곡을 빠져나왔습니다.',
+            statEffects: { wealth: -250, intellect: 4 }
+          },
+          failure: {
+            text: '자갈을 밟아 위치가 노출되는 바람에 비탈길을 구르며 도망쳐야 했습니다.',
+            statEffects: { wealth: -350, health: -22, sanity: -12 }
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'bond_battlefield_comrade',
+    title: '【대지의 인연】 폭우 속 폐허에서 마주친 동료',
+    description: '오리지늄 산성비를 피해 숨어든 폐건물 처마 아래. 부상당한 팔에 붕대를 감고 있던 한 방랑 실무자가 경계를 풀고 당신에게 건빵과 수통을 건넵니다. 밤새 서로의 살아온 이야기를 나누며 깊은 신뢰가 싹틉니다.',
+    category: 'life',
+    minAge: 15,
+    maxAge: 999,
+    choices: [
+      {
+        id: 'c_forge_comrade_bond',
+        label: '비상약과 식량을 나누고 앞으로 서로의 등 뒤를 맡기기로 약조한다',
+        description: '가혹한 테라에서 생사를 함께할 소중한 인연을 맺습니다.',
+        outcomes: {
+          success: {
+            text: '"살아서 다시 보자고. 네가 부르면 어디든 달려갈 테니." 차가운 대지 위에서 든든한 동반자를 얻었습니다.',
+            statEffects: { sanity: 14, combat: 3 },
+            careerExpDelta: 6,
+            addBond: { name: '레온', role: '맹세를 나눈 전우', affinity: 65 }
+          }
+        }
+      },
+      {
+        id: 'c_keep_lone_distance',
+        label: '테라에서 정은 곧 약점이다. 짧은 인사만 남기고 새벽에 홀로 떠난다',
+        description: '고독하지만 흔들림 없는 단독 행보를 택합니다.',
+        outcomes: {
+          success: {
+            text: '상실의 아픔을 겪지 않기 위해 스스로 고독을 택했습니다. 발걸음은 가볍지만 가슴 한구석이 서늘합니다.',
+            statEffects: { intellect: 4, sanity: -4 },
+            careerExpDelta: 4
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'bond_oripathy_parting',
+    title: '【대지의 인연】 검은 결정으로 스러져가는 동료의 마지막 밤',
+    description: '오랫동안 당신과 생사고락을 함께해 온 소중한 인연이 말기 광석병 급성 발작으로 쓰러졌습니다. 호흡할 때마다 잿빛 원석 분진이 피어오르고, 동료는 떨리는 손으로 당신의 소매를 붙잡습니다. "내 몸이 부서지기 전에... 멀리 떨어져 줘..."',
+    category: 'oripathy',
+    minAge: 18,
+    maxAge: 999,
+    conditions: { requiresLivingBond: true },
+    choices: [
+      {
+        id: 'c_save_bond_suppressant',
+        label: '보유 중인 로도스 정품 억제제와 응급 수술비(900 LMD)를 총동원해 생명을 붙잡는다',
+        description: '정품 억제제 1개와 900 LMD를 소모하여 기적적인 연명을 시도합니다.',
+        requirements: { itemCost: { itemId: 'med_rhodes_suppressant', count: 1 }, lmdCost: 900 },
+        diceCheck: { stat: 'luck', difficulty: 52 },
+        outcomes: {
+          success: {
+            text: '필사적인 투약과 밤샘 간호 끝에 급성 결정화 확산이 기적처럼 멈췄습니다! 동료는 눈물을 흘리며 당신의 손을 맞잡았습니다.',
+            statEffects: { sanity: 18, luck: 4 },
+            reputationDelta: { '로도스 아일랜드': 15 }
+          },
+          failure: {
+            text: '모든 약물과 자금을 쏟아부었으나 이미 장기를 파고든 결정을 막기엔 너무 늦었습니다... 동료는 당신의 품에서 평온한 미소를 남기고 조용히 눈을 감았습니다.',
+            statEffects: { sanity: -22 },
+            loseRandomBondReason: '급성 광석병 합병증으로 당신의 품에서 영면'
+          }
+        }
+      },
+      {
+        id: 'c_stay_until_end',
+        label: '분진 감염의 위험을 무릅쓰고 마지막 숨이 멎을 때까지 손을 잡아준다',
+        description: '떠나는 인연이 외롭지 않도록 최후를 배웅하고 유지를 이어받습니다.',
+        outcomes: {
+          success: {
+            text: '"고마워... 너와 함께한 계절들이 내 인생 최고의 행운이었어." 동료는 검은 결정 가루가 되어 흩어졌고, 남겨진 낡은 무기와 유품이 당신의 결의를 다잡게 합니다.',
+            statEffects: { sanity: -26, combat: 6, artsAptitude: 5 },
+            crystallizationDelta: 2.0,
+            bloodDensityDelta: 0.04,
+            loseRandomBondReason: '말기 광석병 결정화로 유품을 남기고 산화'
+          }
+        }
+      }
+    ]
   }
 ];
+

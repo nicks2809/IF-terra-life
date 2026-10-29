@@ -10,7 +10,7 @@ export const SPECIAL_CAREERS_DATA: SpecialCareer[] = [
     loreSecret: '그들의 칼날은 뼈와 살을 가르고, 그들의 피는 해사를 끌어당기지만 결코 바다에 굴복하지 않습니다.',
     category: 'combat',
     allowedRaces: ['에기르'],
-    reqMinStats: { combat: 75, health: 70 }
+    reqMinStats: { combat: 80, health: 75 }
   },
   {
     id: 'gun_executor',
@@ -20,7 +20,7 @@ export const SPECIAL_CAREERS_DATA: SpecialCareer[] = [
     loreSecret: '그들의 머리 위 광륜은 언제나 서늘하게 빛나며, 규율에 위배되는 어떤 감정도 허락하지 않습니다.',
     category: 'combat',
     allowedRaces: ['산크타'],
-    reqMinStats: { combat: 65, intellect: 60 }
+    reqMinStats: { combat: 75, intellect: 68 }
   },
   {
     id: 'radiant_knight',
@@ -30,7 +30,7 @@ export const SPECIAL_CAREERS_DATA: SpecialCareer[] = [
     loreSecret: '자본과 스포트라이트 뒤편에서, 진정한 기사도의 이상을 가슴에 품고 싸웁니다.',
     category: 'combat',
     allowedNations: ['카시미어'],
-    reqMinStats: { combat: 75, wealth: 1500 }
+    reqMinStats: { combat: 80, wealth: 3500 }
   },
   {
     id: 'rhine_director',
@@ -40,7 +40,7 @@ export const SPECIAL_CAREERS_DATA: SpecialCareer[] = [
     loreSecret: '트리몬트의 연구실 깊은 곳에서 테라의 천공 너머를 응시하는 비밀 프로젝트를 진행합니다.',
     category: 'intellect',
     allowedNations: ['컬럼비아'],
-    reqMinStats: { intellect: 75, artsAptitude: 55 }
+    reqMinStats: { intellect: 82, artsAptitude: 65 }
   },
   {
     id: 'yan_censor',
@@ -50,7 +50,7 @@ export const SPECIAL_CAREERS_DATA: SpecialCareer[] = [
     loreSecret: '동방의 유구한 법도와 내공 아츠를 품고, 나라를 뒤흔들려는 거대한 음모를 추적합니다.',
     category: 'intellect',
     allowedNations: ['염국'],
-    reqMinStats: { intellect: 75, combat: 60 }
+    reqMinStats: { intellect: 80, combat: 68 }
   },
   {
     id: 'steam_knight',
@@ -61,7 +61,7 @@ export const SPECIAL_CAREERS_DATA: SpecialCareer[] = [
     category: 'combat',
     allowedNations: ['빅토리아'],
     allowedRaces: ['아슬란', '드라코', '펠린', '우르수스'],
-    reqMinStats: { combat: 80, health: 80 }
+    reqMinStats: { combat: 84, health: 82 }
   },
   {
     id: 'emperors_blade',
@@ -72,7 +72,7 @@ export const SPECIAL_CAREERS_DATA: SpecialCareer[] = [
     category: 'special',
     allowedNations: ['우르수스 제국'],
     allowedRaces: ['우르수스'],
-    reqMinStats: { combat: 80, intellect: 65 }
+    reqMinStats: { combat: 85, intellect: 72 }
   },
   {
     id: 'siracusa_capo',
@@ -83,7 +83,7 @@ export const SPECIAL_CAREERS_DATA: SpecialCareer[] = [
     category: 'special',
     allowedNations: ['시라쿠사'],
     allowedRaces: ['루포', '펠린'],
-    reqMinStats: { combat: 70, wealth: 2500 }
+    reqMinStats: { combat: 76, wealth: 4500 }
   },
   {
     id: 'rhodes_elite',
@@ -92,8 +92,8 @@ export const SPECIAL_CAREERS_DATA: SpecialCareer[] = [
     description: '아미야와 켈시의 전폭적인 신뢰를 받는 로도스의 최상위 오퍼레이터. 테라 각지의 결전에 단독 투입되어 불가능을 가능케 합니다.',
     loreSecret: '감염자 치료의 희망과 인류 구원의 이상을 두 어깨에 짊어진 채 전선에 섭니다.',
     category: 'special',
-    reqMinReputation: { '로도스 아일랜드': 45 },
-    reqMinStats: { combat: 75, artsAptitude: 70 }
+    reqMinReputation: { '로도스 아일랜드': 55 },
+    reqMinStats: { combat: 78, artsAptitude: 75 }
   },
   {
     id: 'sarkaz_court',
@@ -103,7 +103,7 @@ export const SPECIAL_CAREERS_DATA: SpecialCareer[] = [
     loreSecret: '고대 주술의 피와 복수심으로 가득 차 있으며, 적들에게 원초의 공포를 선사합니다.',
     category: 'arts',
     allowedRaces: ['살카즈'],
-    reqMinStats: { artsAptitude: 75, combat: 70 }
+    reqMinStats: { artsAptitude: 80, combat: 75 }
   },
   {
     id: 'sami_snowpriest',
@@ -114,7 +114,7 @@ export const SPECIAL_CAREERS_DATA: SpecialCareer[] = [
     category: 'arts',
     allowedNations: ['사미'],
     allowedRaces: ['엘라피아', '살카즈'],
-    reqMinStats: { artsAptitude: 70, sanity: 70 }
+    reqMinStats: { artsAptitude: 78, sanity: 72 }
   },
   {
     id: 'karlan_captain',
@@ -124,6 +124,6 @@ export const SPECIAL_CAREERS_DATA: SpecialCareer[] = [
     loreSecret: '만년설 성산의 전통 보수파와의 암투 속에서 가문의 원대한 이상을 지키기 위해 무력을 행사합니다.',
     category: 'special',
     allowedNations: ['쉐라그'],
-    reqMinStats: { combat: 65, intellect: 65 }
+    reqMinStats: { combat: 74, intellect: 74 }
   }
 ];

@@ -224,7 +224,54 @@ ${record.notableAchievements.map(a => `• ${a}`).join('\n')}
                   <span className="opacity-60 block">엔딩 보너스</span>
                   <span className={`font-bold ${rarityStyle.text}`}>+{record.scoreBreakdown.endingBonus}</span>
                 </div>
+                {record.scoreBreakdown.goalBonus ? (
+                  <div>
+                    <span className="opacity-60 block">생애 목표</span>
+                    <span className="font-bold text-amber-300">+{record.scoreBreakdown.goalBonus}</span>
+                  </div>
+                ) : null}
               </div>
+            </div>
+          )}
+
+          {/* Innate Traits & Life Goal */}
+          {(record.lifeGoalTitle || (record.innateTraits && record.innateTraits.length > 0)) && (
+            <div className="mb-3 flex flex-wrap items-center gap-1.5 text-[10px]">
+              {record.lifeGoalTitle && (
+                <span className={`px-2 py-0.5 rounded border font-bold flex items-center space-x-1 ${
+                  record.goalAchieved
+                    ? isPrts ? 'bg-amber-950/40 border-amber-500/50 text-amber-300' : 'bg-amber-100 border-amber-600 text-amber-900'
+                    : isPrts ? 'bg-slate-900/60 border-slate-700 text-slate-400' : 'bg-[#e5d6b1] border-[#5c4033]/30 text-[#5c4d47]'
+                }`}>
+                  <Sparkles className="w-3 h-3 text-amber-400 shrink-0" />
+                  <span>목표: {record.lifeGoalTitle} ({record.goalAchieved ? '달성 ★' : '미완'})</span>
+                </span>
+              )}
+              {record.innateTraits?.map(t => (
+                <span
+                  key={t.id}
+                  className={`px-1.5 py-0.5 rounded border font-bold ${
+                    t.type === 'talent'
+                      ? isPrts ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300' : 'bg-emerald-100 border-emerald-600 text-emerald-900'
+                      : isPrts ? 'bg-rose-950/40 border-rose-500/40 text-rose-300' : 'bg-rose-100 border-rose-600 text-rose-900'
+                  }`}
+                  title={t.description}
+                >
+                  {t.type === 'talent' ? '✦' : '▼'} {t.name}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Key Milestones (도시의 한 사람으로 태어나 생애 족적) */}
+          {record.milestones && record.milestones.length > 0 && (
+            <div className="mb-3 p-2.5 rounded-lg border border-white/5 bg-black/20 text-[11px] space-y-1">
+              <span className="font-bold opacity-75 block text-[10px]">【주요 생애 족적】</span>
+              <ul className="space-y-0.5 opacity-80 list-disc list-inside text-[10px] leading-tight">
+                {record.milestones.slice(-4).map((m, idx) => (
+                  <li key={idx} className="truncate">{m}</li>
+                ))}
+              </ul>
             </div>
           )}
 

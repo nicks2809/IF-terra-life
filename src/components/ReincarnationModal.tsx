@@ -4,9 +4,10 @@ import { EnvironmentType, Gender, ReincarnationConfig, ThemeMode } from '../type
 import { RACES_DATA } from '../data/races';
 import { NATIONS_DATA } from '../data/nations';
 import { REINCARNATION_PERKS } from '../data/perks';
+import { LIFE_GOALS } from '../data/traits';
 import { GameEngine } from '../engine/gameEngine';
 import { storage } from '../services/storage';
-import { Sparkles, Dices, Trophy, Lock, CheckCircle2, RotateCcw, X } from 'lucide-react';
+import { Sparkles, Dices, Trophy, Lock, CheckCircle2, RotateCcw, X, Target, Key } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
@@ -26,6 +27,8 @@ export const ReincarnationModal: React.FC<Props> = ({
   const [raceId, setRaceId] = useState<string>('random');
   const [nationId, setNationId] = useState<string>('random');
   const [environment, setEnvironment] = useState<string>('random');
+  const [goalId, setGoalId] = useState<string>('random');
+  const [customSeed, setCustomSeed] = useState<string>('');
   const [selectedPerks, setSelectedPerks] = useState<string[]>(['perk_merchant_heir']);
 
   const achStats = useMemo(() => storage.getAchievementCollectionStats(), [isOpen]);
@@ -56,6 +59,9 @@ export const ReincarnationModal: React.FC<Props> = ({
       raceId: raceId === 'random' ? undefined : raceId,
       nationId: nationId === 'random' ? undefined : nationId,
       environment: environment === 'random' ? undefined : (environment as EnvironmentType),
+      goalId: goalId === 'random' ? undefined : goalId,
+      seed: customSeed.trim() || undefined,
+      useFixedSeed: !!customSeed.trim(),
       perkIds: selectedPerks
     };
     onStartReincarnation(config);
@@ -231,6 +237,47 @@ export const ReincarnationModal: React.FC<Props> = ({
                   <option key={env} value={env}>{env}</option>
                 ))}
               </select>
+            </div>
+          </div>
+
+          {/* Row 2.5: Life Goal & Destiny Seed */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-bold mb-1 opacity-80 flex items-center space-x-1">
+                <Target className="w-3.5 h-3.5 text-amber-400" />
+                <span>생애 목표 지정 (S등급 핵심 가산점)</span>
+              </label>
+              <select
+                value={goalId}
+                onChange={(e) => setGoalId(e.target.value)}
+                className={`w-full px-2.5 py-1.5 rounded-lg border text-xs font-bold ${
+                  isPrts ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white/80 border-[#5c4033] text-black'
+                }`}
+              >
+                <option value="random">🎲 무작위 생애 서원</option>
+                {LIFE_GOALS.map(g => (
+                  <option key={g.id} value={g.id}>
+                    {g.title} (+{g.bonusPoints}점) — {g.description}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="text-xs font-bold mb-1 opacity-80 flex items-center space-x-1">
+                <Key className="w-3.5 h-3.5 text-cyan-400" />
+                <span>운명 시드 코드 (선택 사항)</span>
+              </label>
+              <input
+                type="text"
+                value={customSeed}
+                onChange={(e) => setCustomSeed(e.target.value.toUpperCase())}
+                placeholder="예: TR-A8K2-9XZP (비워두면 무작위)"
+                maxLength={20}
+                className={`w-full px-3 py-1.5 rounded-lg border text-xs font-mono uppercase ${
+                  isPrts ? 'bg-slate-900 border-slate-700 text-cyan-300 placeholder-slate-600' : 'bg-white/80 border-[#5c4033] text-[#2c1810] placeholder-[#8c7b74]'
+                }`}
+              />
             </div>
           </div>
 

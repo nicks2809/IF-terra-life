@@ -1,5 +1,5 @@
 // src/services/storage.ts
-import { AdvancedSettings, Character, DeathRecord, LogEntry, ThemeMode, UnlockedAchievement } from '../types';
+import { AdvancedSettings, Character, DeathRecord, GameSpeed, LogEntry, ThemeMode, UnlockedAchievement } from '../types';
 import { ACHIEVEMENTS_DATA } from '../data/achievements';
 
 export const DEFAULT_ADVANCED_SETTINGS: AdvancedSettings = {
@@ -8,8 +8,11 @@ export const DEFAULT_ADVANCED_SETTINGS: AdvancedSettings = {
   pauseOnOripathyCrisis: false,
   pauseOnRareEvent: false,
   autoUseApAndShop: true,
+  minorEventAutoTimeout: false,
   crtEffect: true,
 };
+
+const VALID_SPEEDS: GameSpeed[] = [1, 2, 4, 8, 16, 32];
 
 const STORAGE_KEYS = {
   ACTIVE_CHAR: 'terra_life_active_character',
@@ -18,9 +21,11 @@ const STORAGE_KEYS = {
   THEME: 'terra_life_theme_mode',
   MUTED: 'terra_life_audio_muted',
   AUTO_CHOICE: 'terra_life_auto_choice_mode',
+  SPEED: 'terra_life_game_speed_v1',
   ACHIEVEMENTS: 'terra_life_achievements_v2',
   DISCOVERED_ENDINGS: 'terra_life_discovered_endings_v2',
-  ADVANCED_SETTINGS: 'terra_life_advanced_settings_v1'
+  ADVANCED_SETTINGS: 'terra_life_advanced_settings_v1',
+  INHERITANCE_LMD: 'terra_life_legacy_inheritance_lmd'
 };
 
 export const storage = {
@@ -66,7 +71,7 @@ export const storage = {
     try {
       const records = this.loadHallOfFame();
       // 중복 방지
-      const exists = records.some(r => r.characterName === record.characterName && r.yearOfDeath === record.yearOfDeath);
+      const exists = records.some(r => r.characterName === record.characterName && r.yearOfDeath === record.yearOfDeath && r.ageAtDeath === record.ageAtDeath);
       if (!exists) {
         records.unshift(record);
         localStorage.setItem(STORAGE_KEYS.HALL_OF_FAME, JSON.stringify(records));
@@ -135,6 +140,23 @@ export const storage = {
       return val === null ? true : val === 'true';
     } catch {
       return true;
+    }
+  },
+
+  saveSpeed(speed: GameSpeed) {
+    try {
+      localStorage.setItem(STORAGE_KEYS.SPEED, String(speed));
+    } catch {
+      // ignore
+    }
+  },
+
+  loadSpeed(): GameSpeed {
+    try {
+      const val = Number(localStorage.getItem(STORAGE_KEYS.SPEED)) as GameSpeed;
+      return VALID_SPEEDS.includes(val) ? val : 1;
+    } catch {
+      return 1;
     }
   },
 
@@ -225,5 +247,82 @@ export const storage = {
     } catch {
       // ignore
     }
+  },
+
+  saveLastInheritanceLmd(lmd: number) {
+    try {
+      const inherited = Math.min(5000, Math.max(0, Math.floor(lmd * 0.1)));
+      localStorage.setItem(STORAGE_KEYS.INHERITANCE_LMD, String(inherited));
+    } catch {
+      // ignore
+    }
+  },
+
+  consumeLastInheritanceLmd(): number {
+    try {
+      const val = Number(localStorage.getItem(STORAGE_KEYS.INHERITANCE_LMD)) || 0;
+      localStorage.removeItem(STORAGE_KEYS.INHERITANCE_LMD);
+      return val;
+    } catch {
+      return 0;
+    }
+  },
+
+  peekLastInheritanceLmd(): number {
+    try {
+      return Number(localStorage.getItem(STORAGE_KEYS.INHERITANCE_LMD)) || 0;
+    } catch {
+      return 0;
+    }
+  },
+
+  // --- 기록관 백업 JSON 내보내기 / 가져오기 ---
+  exportBackupJson(): string {
+    const payload = {
+      version: 2,
+      exportedAt: new Date().toISOString(),
+      hallOfFame: this.loadHallOfFame(),
+      achievements: this.loadUnlockedAchievements(),
+      discoveredEndings: this.loadDiscoveredEndings(),
+      advancedSettings: this.loadAdvancedSettings(),
+      activeCharacter: this.loadActiveCharacter(),
+      activeLogs: this.loadLogs()
+    };
+    return JSON.stringify(payload, null, 2);
+  },
+
+  importBackupJson(raw: string): boolean {
+    try {
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== 'object') return false;
+      const hasValidField =
+        Array.isArray(parsed.hallOfFame) ||
+        (parsed.achievements && typeof parsed.achievements === 'object') ||
+        (parsed.discoveredEndings && typeof parsed.discoveredEndings === 'object');
+      if (!hasValidField) return false;
+
+      if (Array.isArray(parsed.hallOfFame)) {
+        localStorage.setItem(STORAGE_KEYS.HALL_OF_FAME, JSON.stringify(parsed.hallOfFame));
+      }
+      if (parsed.achievements && typeof parsed.achievements === 'object' && !Array.isArray(parsed.achievements)) {
+        localStorage.setItem(STORAGE_KEYS.ACHIEVEMENTS, JSON.stringify(parsed.achievements));
+      }
+      if (parsed.discoveredEndings && typeof parsed.discoveredEndings === 'object' && !Array.isArray(parsed.discoveredEndings)) {
+        localStorage.setItem(STORAGE_KEYS.DISCOVERED_ENDINGS, JSON.stringify(parsed.discoveredEndings));
+      }
+      if (parsed.advancedSettings && typeof parsed.advancedSettings === 'object') {
+        this.saveAdvancedSettings({ ...DEFAULT_ADVANCED_SETTINGS, ...parsed.advancedSettings });
+      }
+      if (parsed.activeCharacter && typeof parsed.activeCharacter === 'object' && parsed.activeCharacter.name) {
+        this.saveActiveCharacter(parsed.activeCharacter);
+      }
+      if (Array.isArray(parsed.activeLogs)) {
+        this.saveLogs(parsed.activeLogs);
+      }
+      return true;
+    } catch {
+      return false;
+    }
   }
 };
+

@@ -60,12 +60,22 @@ export const App: React.FC = () => {
 
   // 시간 및 설정
   const [isPlaying, setIsPlaying] = useState(true);
-  const [speed, setSpeed] = useState<GameSpeed>(1);
+  const [speed, setSpeed] = useState<GameSpeed>(() => storage.loadSpeed());
   const [isAutoChoiceEnabled, setIsAutoChoiceEnabled] = useState<boolean>(() => storage.loadAutoChoice());
   const [autoChoicePendingId, setAutoChoicePendingId] = useState<string | null>(null);
   const [theme, setTheme] = useState<ThemeMode>(() => storage.loadTheme());
   const [isMuted, setIsMuted] = useState<boolean>(() => storage.loadMuted());
   const [advancedSettings, setAdvancedSettings] = useState<AdvancedSettings>(() => storage.loadAdvancedSettings());
+  const [yearProgress, setYearProgress] = useState<number>(0);
+
+  const handleChangeSpeed = (nextSpeed: GameSpeed) => {
+    setSpeed(nextSpeed);
+    storage.saveSpeed(nextSpeed);
+  };
+
+  const handleChangeFocusStance = (stance: any) => {
+    setCharacter(prev => ({ ...prev, focusStance: stance }));
+  };
 
   const handleUpdateSettings = (next: AdvancedSettings) => {
     setAdvancedSettings(next);
@@ -182,11 +192,12 @@ export const App: React.FC = () => {
   useEffect(() => {
     if (isPlaying && character.isAlive && !currentEvent && !battleState) {
       const speedIntervalMap: Record<GameSpeed, number> = {
-        1: 900,
-        2: 450,
-        4: 200,
-        8: 80,
-        16: 35,
+        1: 2400,
+        2: 1600,
+        4: 1050,
+        8: 700,
+        16: 480,
+        32: 350
       };
       const intervalMs = speedIntervalMap[speed] || 450;
       timerRef.current = setInterval(() => {
@@ -207,13 +218,14 @@ export const App: React.FC = () => {
       setAutoChoicePendingId(chosen.id);
 
       const speedDelay: Record<GameSpeed, number> = {
-        1: 900,
-        2: 450,
-        4: 200,
-        8: 80,
-        16: 35
+        1: 2000,
+        2: 1300,
+        4: 900,
+        8: 600,
+        16: 420,
+        32: 300
       };
-      const delay = speedDelay[speed] || 450;
+      const delay = speedDelay[speed] || 1000;
 
       const eventTimer = setTimeout(() => {
         handleSelectChoice(chosen);
@@ -235,19 +247,20 @@ export const App: React.FC = () => {
       if (battleState.result) {
         const closeTimer = setTimeout(() => {
           setBattleState(undefined);
-        }, Math.max(250, Math.floor(650 / speed)));
+        }, Math.max(350, Math.floor(900 / speed)));
         return () => clearTimeout(closeTimer);
       }
 
       if (battleState.isActive && battleState.isPlayerTurn) {
         const speedDelay: Record<GameSpeed, number> = {
-          1: 800,
-          2: 400,
-          4: 180,
-          8: 70,
-          16: 30
+          1: 1600,
+          2: 1050,
+          4: 720,
+          8: 480,
+          16: 340,
+          32: 240
         };
-        const delay = speedDelay[speed] || 400;
+        const delay = speedDelay[speed] || 750;
 
         const battleTimer = setTimeout(() => {
           const { command, itemId } = GameEngine.selectAutoBattleCommand(character, battleState);
@@ -283,6 +296,20 @@ export const App: React.FC = () => {
         setSpeed(8);
       } else if (e.key === '6' || e.key === '0') {
         setSpeed(16);
+      } else if (e.key === '3' || e.key === '5') {
+        setSpeed(32);
+      } else if (e.key === '[') {
+        const list: GameSpeed[] = [1, 2, 4, 8, 16, 32];
+        setSpeed(prev => {
+          const idx = list.indexOf(prev);
+          return idx > 0 ? list[idx - 1] : prev;
+        });
+      } else if (e.key === ']') {
+        const list: GameSpeed[] = [1, 2, 4, 8, 16, 32];
+        setSpeed(prev => {
+          const idx = list.indexOf(prev);
+          return idx < list.length - 1 ? list[idx + 1] : prev;
+        });
       }
     };
 
@@ -401,7 +428,10 @@ export const App: React.FC = () => {
           isPlaying={isPlaying}
           onTogglePlay={() => setIsPlaying(!isPlaying)}
           speed={speed}
-          onChangeSpeed={setSpeed}
+          onChangeSpeed={handleChangeSpeed}
+          yearProgress={yearProgress}
+          currentSeason={GameEngine.pickSeason(character)}
+          onChangeFocusStance={handleChangeFocusStance}
           onNextYear={handleAdvanceYear}
           onSkipToNextEvent={handleSkipToNextEvent}
           isAutoChoiceEnabled={isAutoChoiceEnabled}
@@ -428,7 +458,7 @@ export const App: React.FC = () => {
           isPlaying={isPlaying}
           onTogglePlay={() => setIsPlaying(!isPlaying)}
           speed={speed}
-          onChangeSpeed={setSpeed}
+          onChangeSpeed={handleChangeSpeed}
           onNextYear={handleAdvanceYear}
           onSkipToNextEvent={handleSkipToNextEvent}
           isAutoChoiceEnabled={isAutoChoiceEnabled}
