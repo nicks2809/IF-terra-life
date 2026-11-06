@@ -187,6 +187,72 @@ export const GAME_EVENTS: GameEvent[] = [
             statEffects: { combat: 3, intellect: 2 }
           }
         }
+      },
+      {
+        id: 'c_slug_swarm_clash',
+        label: '배관에서 갑자기 쏟아져 나온 변이 오리지늄 슬러그 무리를 무기를 들고 퇴치한다',
+        description: '산성 분비물을 뿜는 야생 슬러그 무리와 실전 교전을 벌입니다.',
+        diceCheck: { stat: 'combat', difficulty: 42 },
+        outcomes: {
+          criticalSuccess: {
+            text: '민첩하게 슬러그 무리의 급소를 찔러 산성 피해 없이 완벽히 퇴치했습니다! 뒷골목 주민들이 환호합니다.',
+            statEffects: { combat: 6, health: 5, wealth: 250 },
+            gainTitles: ['슬러그 사냥꾼']
+          },
+          success: {
+            text: '옷자락이 다소 부식되었지만 슬러그 무리를 물리쳤습니다.',
+            statEffects: { combat: 4, health: -8 }
+          },
+          failure: {
+            text: '산성 분비물을 뒤집어쓰고 화상을 입었습니다!',
+            statEffects: { health: -18, sanity: -8 }
+          }
+        },
+        triggerBattleEnemyId: 'slug_swarm'
+      }
+    ]
+  },
+  {
+    id: 'event_wasteland_slug_infestation',
+    title: '【황야 탐색】 노마드 캠프 주변의 변이 슬러그 대량 발생',
+    description: '황야 노마드 캠프 인근. 비정상적으로 증식한 변이 오리지늄 슬러그 무리가 가축 사료와 텐트를 부식시키며 주민들을 위협하고 있습니다.',
+    category: 'life',
+    minAge: 12,
+    maxAge: 35,
+    conditions: { environment: ['황야의 노마드 캠프', '슬럼가 및 암시장'] },
+    choices: [
+      {
+        id: 'c_purge_slug_infestation',
+        label: '무기를 들고 캠프 주민들을 도와 슬러그 무리를 소탕한다',
+        description: '산성 슬러그 무리와 직접 교전을 벌입니다.',
+        diceCheck: { stat: 'combat', difficulty: 45 },
+        outcomes: {
+          success: {
+            text: '슬러그 무리를 성공적으로 소탕하고 캠프 주민들로부터 감사의 보수와 원석 껍질을 받았습니다.',
+            statEffects: { combat: 5, wealth: 350, sanity: 6 }
+          },
+          failure: {
+            text: '산성액에 장비가 부식되고 상처를 입었습니다.',
+            statEffects: { health: -20, sanity: -10 }
+          }
+        },
+        triggerBattleEnemyId: 'slug_swarm'
+      },
+      {
+        id: 'c_slug_chemical_smoke',
+        label: '자극성 연막탄을 피워 슬러그 무리를 황야 바깥으로 유인한다',
+        description: '지략을 발휘하여 무혈 해결을 시도합니다.',
+        diceCheck: { stat: 'intellect', difficulty: 48 },
+        outcomes: {
+          success: {
+            text: '연막이 슬러그 무리의 후각을 자극하여 전부 협곡 아래로 유인했습니다.',
+            statEffects: { intellect: 5, sanity: 8 }
+          },
+          failure: {
+            text: '연기를 잘못 마셔 심한 기침을 겪었습니다.',
+            statEffects: { health: -10, sanity: -5 }
+          }
+        }
       }
     ]
   },
@@ -452,6 +518,34 @@ export const GAME_EVENTS: GameEvent[] = [
             statEffects: { health: -38, sanity: -18 }
           }
         }
+      },
+      {
+        id: 'c_duel_ancient_steam_knight',
+        label: '격납고에서 폭주 중인 고대 증기기사와 실전 결전을 벌인다',
+        description: '실전 무투로 증기기사의 인공지능 코어를 굴복시키고 자격을 증명합니다.',
+        diceCheck: { stat: 'combat', difficulty: 78 },
+        outcomes: {
+          criticalSuccess: {
+            text: '고대 거병의 압도적인 돌진을 흘려내고 조종석을 완벽히 장악했습니다! 증기기사가 당신의 명령에 복종합니다.',
+            statEffects: { combat: 22, health: 15, wealth: 3000 },
+            careerExpDelta: 28,
+            specialCareerGain: { id: 'steam_knight', name: '빅토리아 증기기사', rank: '런디니움 정예 거병' },
+            gainTitles: ['증기기사를 굴복시킨 자'],
+            unlockAchievementId: 'unique_slay_steam_goliath'
+          },
+          success: {
+            text: '치열한 교전 끝에 증기기사를 기능 정지시키고 복구에 성공했습니다.',
+            statEffects: { combat: 14, health: -30, wealth: 1500 },
+            careerExpDelta: 16,
+            specialCareerGain: { id: 'steam_knight', name: '빅토리아 증기기사', rank: '예비 기동병' },
+            unlockAchievementId: 'unique_steam_knight_heart'
+          },
+          failure: {
+            text: '증기 파일벙커의 반동에 직격당해 치명상을 입었습니다.',
+            statEffects: { health: -55, sanity: -20 }
+          }
+        },
+        triggerBattleEnemyId: 'londinium_steam_knight'
       }
     ]
   },
@@ -466,7 +560,7 @@ export const GAME_EVENTS: GameEvent[] = [
     choices: [
       {
         id: 'c_accept_emperors_blade',
-        label: '극북의 악마 파편을 품고 황제의 검으로 서약한다',
+        label: '극북의 악마 파편을 품고 황제의 검으로 서약한다 (황제의 검 결투)',
         description: '검은 안개를 다루는 친위 내위의 맹세를 맺습니다.',
         diceCheck: { stat: 'combat', difficulty: 82 },
         outcomes: {
@@ -482,6 +576,61 @@ export const GAME_EVENTS: GameEvent[] = [
           failure: {
             text: '악마 파편의 오염을 견디지 못하고 치명적인 내상과 정신 붕괴를 겪었습니다.',
             statEffects: { health: -50, sanity: -38 }
+          }
+        },
+        triggerBattleEnemyId: 'emperors_blade'
+      }
+    ]
+  },
+  {
+    id: 'story_ursus_shadow_guard_clash',
+    title: '【우르수스 사변】 눈보라 속의 그림자: 황제의 검과의 결전',
+    description: '북방 설원의 거센 눈보라 속에서, 우르수스 황실의 정예 친위대 "황제의 검(Emperor\'s Blade)"이 붕괴의 검은 안개를 뿜어내며 당신의 진로를 가로막아 섭니다. "황제의 영토에 발을 들인 침입자에게 죽음을."',
+    category: 'fateful',
+    minAge: 22,
+    maxAge: 55,
+    conditions: { nation: ['우르수스 제국'] },
+    choices: [
+      {
+        id: 'c_fight_emperors_blade_boss',
+        label: '검은 안개의 붕괴 영역을 정면 돌파하며 황제의 검과 결전을 벌인다 (보스전)',
+        description: '황실 친위대의 검은 안개와 결사 항전을 치릅니다.',
+        diceCheck: { stat: 'combat', difficulty: 82 },
+        outcomes: {
+          criticalSuccess: {
+            text: '검은 안개를 가르고 황제의 검의 갑주를 격파했습니다! 제국의 그림자가 침묵하고 거대한 명성을 얻었습니다.',
+            statEffects: { combat: 22, wealth: 4500, sanity: 20 },
+            careerExpDelta: 30,
+            gainTitles: ['황제의 검을 꺾은 자'],
+            setSecretFlag: 'emperors_blade_vow',
+            unlockAchievementId: 'unique_slay_emperors_blade'
+          },
+          success: {
+            text: '피를 흘리며 황제의 검의 맹공을 버텨내고 퇴각시켰습니다.',
+            statEffects: { combat: 15, health: -40, wealth: 2000 },
+            careerExpDelta: 18,
+            setSecretFlag: 'emperors_blade_vow'
+          },
+          failure: {
+            text: '붕괴 도메인의 검은 안개에 짓눌려 치명적인 내상을 입었습니다!',
+            statEffects: { health: -60, sanity: -35 }
+          }
+        },
+        triggerBattleEnemyId: 'emperors_blade'
+      },
+      {
+        id: 'c_flee_black_fog',
+        label: '눈보라를 틈타 검은 안개 영역에서 신속히 이탈한다',
+        description: '무리한 교전을 피하고 생존을 도모합니다.',
+        diceCheck: { stat: 'luck', difficulty: 60 },
+        outcomes: {
+          success: {
+            text: '지형을 이용하여 기척을 지우고 무사히 국경 감시선을 빠져나왔습니다.',
+            statEffects: { sanity: 5, luck: 3 }
+          },
+          failure: {
+            text: '안개 파편에 스쳐 한기와 부상을 입은 채 간신히 탈출했습니다.',
+            statEffects: { health: -30, sanity: -15 }
           }
         }
       }
@@ -945,6 +1094,35 @@ export const GAME_EVENTS: GameEvent[] = [
             statEffects: { health: -50, sanity: -25 }
           }
         }
+      },
+      {
+        id: 'c_londinium_steam_knight_duel',
+        label: '전장에 강림한 최후의 증기기사와 격돌하여 명예로운 결전을 벌인다',
+        description: '빅토리아의 옛 영광이자 비극적인 거인, 증기기사와의 피할 수 없는 결전입니다.',
+        diceCheck: { stat: 'combat', difficulty: 82 },
+        outcomes: {
+          criticalSuccess: {
+            text: '증기기사의 격렬한 파일 벙커 공격을 쳐내고 가슴팍의 증기 코어를 제압했습니다! 빅토리아의 전설적인 기사 서약이 당신에게 계승되었습니다!',
+            statEffects: { combat: 22, wealth: 4500, sanity: 20 },
+            careerExpDelta: 30,
+            gainTitles: ['강철의 수호기사', '증기기사의 후계자'],
+            setSecretFlag: 'steam_knight_stand',
+            setSecretFlag2: 'completed_act1_or_act2',
+            unlockAchievementId: 'unique_slay_steam_goliath'
+          },
+          success: {
+            text: '치열한 난전 끝에 증기기사를 안식에 들게 하고 런디니움 성벽 방어선을 사수했습니다.',
+            statEffects: { combat: 15, health: -40, wealth: 2500 },
+            careerExpDelta: 20,
+            setSecretFlag: 'steam_knight_stand',
+            setSecretFlag2: 'completed_act1_or_act2'
+          },
+          failure: {
+            text: '증기기사의 파괴적인 증기 충격파에 튕겨져 나가 전신 골절을 입었습니다!',
+            statEffects: { health: -65, sanity: -30 }
+          }
+        },
+        triggerBattleEnemyId: 'londinium_steam_knight'
       }
     ]
   },

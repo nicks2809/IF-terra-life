@@ -14,13 +14,15 @@ interface Props {
   onClose: () => void;
   onStartReincarnation: (config?: ReincarnationConfig) => void;
   theme: ThemeMode;
+  isAlive?: boolean;
 }
 
 export const ReincarnationModal: React.FC<Props> = ({
   isOpen,
   onClose,
   onStartReincarnation,
-  theme
+  theme,
+  isAlive = false
 }) => {
   const [name, setName] = useState<string>(() => GameEngine.getRandomName());
   const [gender, setGender] = useState<Gender>('남성');
@@ -53,6 +55,10 @@ export const ReincarnationModal: React.FC<Props> = ({
   };
 
   const handleCustomStart = () => {
+    if (isAlive) {
+      const confirmed = window.confirm("진행 중인 생애가 종료됩니다. 계속하시겠습니까?");
+      if (!confirmed) return;
+    }
     const config: ReincarnationConfig = {
       name: name.trim() || GameEngine.getRandomName(),
       gender,
@@ -69,6 +75,10 @@ export const ReincarnationModal: React.FC<Props> = ({
   };
 
   const handleInstantRandom = () => {
+    if (isAlive) {
+      const confirmed = window.confirm("진행 중인 생애가 종료됩니다. 계속하시겠습니까?");
+      if (!confirmed) return;
+    }
     onStartReincarnation({ perkIds: selectedPerks });
     onClose();
   };
@@ -109,6 +119,13 @@ export const ReincarnationModal: React.FC<Props> = ({
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        {/* Active Character Survival Warning Banner */}
+        {isAlive && (
+          <div className="p-2.5 rounded-lg border border-amber-500/50 bg-amber-950/40 text-amber-300 text-xs font-bold mb-3 flex items-center space-x-2 shrink-0">
+            <span>⚠️ 주의: 현재 진행 중인 생애가 생존 상태입니다. 환생 진행 시 진행 중인 생애가 종료됩니다.</span>
+          </div>
+        )}
 
         {/* Instant Random Rebirth Banner */}
         <div className={`p-3 rounded-lg border mb-4 flex flex-col sm:flex-row items-center justify-between gap-2 shrink-0 ${

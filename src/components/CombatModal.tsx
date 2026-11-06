@@ -1,5 +1,5 @@
 // src/components/CombatModal.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Character, BattleState, ThemeMode } from '../types';
 import { Sword, Sparkles, Shield, HeartPulse, LogOut, Skull, Trophy, Flame } from 'lucide-react';
 
@@ -21,6 +21,54 @@ export const CombatModal: React.FC<Props> = ({
   theme
 }) => {
   const [selectedItem, setSelectedItem] = useState<string>('');
+
+  const hasArtsBlockage = character.innateTraits?.some(t => t.id === 'flaw_arts_blockage') ?? false;
+  const artsSanCost = hasArtsBlockage ? 11 : 8;
+
+  // 키보드 단축키 1~4 지원
+  useEffect(() => {
+    if (!isOpen || battle.result || !battle.isPlayerTurn) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName)) return;
+
+      if (!battle.isPlayerTurn) {
+        if (['1', '2', '3', '4'].includes(e.key)) {
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+        }
+        return;
+      }
+
+      if (e.key === '1') {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        onExecuteCommand('attack');
+      } else if (e.key === '2') {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        if (character.stats.sanity >= artsSanCost) {
+          onExecuteCommand('arts');
+        }
+      } else if (e.key === '3') {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        onExecuteCommand('defend');
+      } else if (e.key === '4') {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        onExecuteCommand('flee');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [isOpen, battle.result, battle.isPlayerTurn, character.stats.sanity, artsSanCost, onExecuteCommand]);
 
   if (!isOpen) return null;
 
@@ -198,33 +246,40 @@ export const CombatModal: React.FC<Props> = ({
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               <button
                 onClick={() => onExecuteCommand('attack')}
-                className="flex items-center justify-center space-x-1.5 p-3 rounded-lg bg-red-600/80 hover:bg-red-500 text-white font-bold text-xs transition-all"
+                disabled={!battle.isPlayerTurn}
+                className="flex items-center justify-center space-x-1.5 p-3 rounded-lg bg-red-600/80 hover:bg-red-500 text-white font-bold text-xs transition-all shadow disabled:opacity-40 disabled:cursor-not-allowed"
               >
+                <kbd className="px-1.5 py-0.5 rounded text-[10px] bg-black/40 border border-white/20 font-mono">1</kbd>
                 <Sword className="w-4 h-4" />
                 <span>물리 공격</span>
               </button>
 
               <button
                 onClick={() => onExecuteCommand('arts')}
-                disabled={character.stats.sanity < 8}
-                className="flex items-center justify-center space-x-1.5 p-3 rounded-lg bg-cyan-600/80 hover:bg-cyan-500 text-white font-bold text-xs transition-all disabled:opacity-40"
+                disabled={!battle.isPlayerTurn || character.stats.sanity < artsSanCost}
+                className="flex items-center justify-center space-x-1.5 p-3 rounded-lg bg-cyan-600/80 hover:bg-cyan-500 text-white font-bold text-xs transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow"
               >
+                <kbd className="px-1.5 py-0.5 rounded text-[10px] bg-black/40 border border-white/20 font-mono">2</kbd>
                 <Sparkles className="w-4 h-4" />
-                <span>오리지늄 아츠 (-8 SAN)</span>
+                <span>오리지늄 아츠 (-{artsSanCost} SAN)</span>
               </button>
 
               <button
                 onClick={() => onExecuteCommand('defend')}
-                className="flex items-center justify-center space-x-1.5 p-3 rounded-lg bg-amber-600/80 hover:bg-amber-500 text-white font-bold text-xs transition-all"
+                disabled={!battle.isPlayerTurn}
+                className="flex items-center justify-center space-x-1.5 p-3 rounded-lg bg-amber-600/80 hover:bg-amber-500 text-white font-bold text-xs transition-all shadow disabled:opacity-40 disabled:cursor-not-allowed"
               >
+                <kbd className="px-1.5 py-0.5 rounded text-[10px] bg-black/40 border border-white/20 font-mono">3</kbd>
                 <Shield className="w-4 h-4" />
                 <span>전술 방어</span>
               </button>
 
               <button
                 onClick={() => onExecuteCommand('flee')}
-                className="flex items-center justify-center space-x-1.5 p-3 rounded-lg bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs transition-all"
+                disabled={!battle.isPlayerTurn}
+                className="flex items-center justify-center space-x-1.5 p-3 rounded-lg bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs transition-all shadow disabled:opacity-40 disabled:cursor-not-allowed"
               >
+                <kbd className="px-1.5 py-0.5 rounded text-[10px] bg-black/40 border border-white/20 font-mono">4</kbd>
                 <LogOut className="w-4 h-4" />
                 <span>후퇴 시도 (65%)</span>
               </button>
@@ -249,14 +304,14 @@ export const CombatModal: React.FC<Props> = ({
                   ))}
                 </select>
                 <button
-                  disabled={!selectedItem}
+                  disabled={!selectedItem || !battle.isPlayerTurn}
                   onClick={() => {
-                    if (selectedItem) {
+                    if (selectedItem && battle.isPlayerTurn) {
                       onExecuteCommand('item', selectedItem);
                       setSelectedItem('');
                     }
                   }}
-                  className="px-3 py-1.5 rounded text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-40 transition-all shrink-0"
+                  className="px-3 py-1.5 rounded text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all shrink-0"
                 >
                   즉시 투여
                 </button>

@@ -297,8 +297,8 @@ export const storage = {
       if (!parsed || typeof parsed !== 'object') return false;
       const hasValidField =
         Array.isArray(parsed.hallOfFame) ||
-        (parsed.achievements && typeof parsed.achievements === 'object') ||
-        (parsed.discoveredEndings && typeof parsed.discoveredEndings === 'object');
+        (parsed.achievements && typeof parsed.achievements === 'object' && !Array.isArray(parsed.achievements)) ||
+        (parsed.discoveredEndings && typeof parsed.discoveredEndings === 'object' && !Array.isArray(parsed.discoveredEndings));
       if (!hasValidField) return false;
 
       if (Array.isArray(parsed.hallOfFame)) {

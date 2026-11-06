@@ -244,7 +244,14 @@ export const PRTSTerminal: React.FC<Props> = ({
           </button>
 
           <button
-            onClick={onOpenReincarnation || onRestart}
+            onClick={() => {
+              if (character.isAlive) {
+                const confirmed = window.confirm("진행 중인 생애가 종료됩니다. 계속하시겠습니까?");
+                if (!confirmed) return;
+              }
+              if (onOpenReincarnation) onOpenReincarnation();
+              else onRestart();
+            }}
             className="flex items-center space-x-1 px-2 py-1 rounded text-xs bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/40 transition-all"
             title="운명 설계 및 새로운 생애 환생"
           >
@@ -263,7 +270,7 @@ export const PRTSTerminal: React.FC<Props> = ({
         </div>
 
         {/* HP Bar */}
-        <div className="space-y-1">
+        <div className="space-y-1" title="체력 (HP): 생명력 및 신체 활력 지표">
           <div className="flex justify-between text-[11px]">
             <span className="flex items-center space-x-1 text-emerald-400 font-bold">
               <Heart className="w-3.5 h-3.5" />
@@ -280,7 +287,7 @@ export const PRTSTerminal: React.FC<Props> = ({
         </div>
 
         {/* SAN Bar */}
-        <div className="space-y-1">
+        <div className="space-y-1" title="이성 (SAN): 정신적 안정도 및 아츠 영창 집중도">
           <div className="flex justify-between text-[11px]">
             <span className="flex items-center space-x-1 text-blue-400 font-bold">
               <Brain className="w-3.5 h-3.5" />
@@ -297,7 +304,7 @@ export const PRTSTerminal: React.FC<Props> = ({
         </div>
 
         {/* LMD & Upkeep */}
-        <div className="hidden md:flex items-center space-x-2 text-xs">
+        <div className="hidden md:flex items-center space-x-2 text-xs" title="용문폐(LMD): 보유 화폐 및 연간 생계비">
           <Coins className="w-4 h-4 text-yellow-400 shrink-0" />
           <div>
             <div className="text-[10px] text-slate-400">
@@ -307,8 +314,8 @@ export const PRTSTerminal: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* Oripathy Badge */}
-        <div className="text-right">
+        {/* Oripathy Badge & Originium Blood Density */}
+        <div className="text-right" title={`광석병 병리 지표 · 혈중 오리지늄 농도: ${(character.oripathy.originiumBloodDensity || 0).toFixed(2)} u/L`}>
           <div className="text-[10px] text-slate-400">
             광석병 병리 {character.oripathy.isInfected && character.oripathy.lesionSite !== '없음' ? `[${character.oripathy.lesionSite}]` : '지표'}
           </div>
@@ -318,6 +325,9 @@ export const PRTSTerminal: React.FC<Props> = ({
             </span>
             <span className="text-xs font-bold text-red-400">
               {character.oripathy.crystallizationRate}%
+            </span>
+            <span className="text-[10px] text-amber-300 font-mono">
+              ({(character.oripathy.originiumBloodDensity || 0).toFixed(2)} u/L)
             </span>
           </div>
         </div>
@@ -497,11 +507,17 @@ export const PRTSTerminal: React.FC<Props> = ({
               <div className="grid grid-cols-4 gap-1">
                 {FOCUS_STANCES.map(st => {
                   const active = (character.focusStance || 'survival') === st.id;
+                  const stanceDescriptions: Record<string, string> = {
+                    survival: '생존 우선: HP 및 이성 회복력 강화, 위기 방어',
+                    martial: '무예 연마: 물리 전투력(ATK) 수련 보정 및 백병전 판정 강화',
+                    arcane: '비전 탐구: 오리지늄 아츠(ARTS) 적성 집중 및 주술 우위',
+                    career: '입신양명: 승급 공적치(EXP) 및 명성 획득량 증가'
+                  };
                   return (
                     <button
                       key={st.id}
                       onClick={() => onChangeFocusStance?.(st.id)}
-                      title={`${st.name}: ${st.effectText}`}
+                      title={`${st.name} [${st.id}]: ${stanceDescriptions[st.id] || st.effectText}`}
                       className={`py-1 rounded text-[10px] font-bold border transition-all ${
                         active
                           ? 'bg-cyan-500 text-black border-cyan-400 shadow font-extrabold'
@@ -525,11 +541,11 @@ export const PRTSTerminal: React.FC<Props> = ({
               <span>핵심 역량 (한계 체감 적용)</span>
               <span>수치</span>
             </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between" title="전투력 (ATK): 신체 단련 및 물리 전투력 지표 (전투 피해량 및 무예 판정)">
               <span className="text-slate-400">전투력 (ATK)</span>
               <span className="font-bold text-amber-400">{character.stats.combat}</span>
             </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between" title="아츠 적성 (ARTS): 오리지늄 아츠 영창 및 조율 능력 (주술 공격력 및 결정화율 연동)">
               <span className="text-slate-400">아츠 적성 (ARTS)</span>
               <span className="font-bold text-cyan-400">
                 {character.stats.artsAptitude}
@@ -538,11 +554,11 @@ export const PRTSTerminal: React.FC<Props> = ({
                 )}
               </span>
             </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between" title="정세 감각 (INTEL): 외교 정세 분석, 협상력 및 학술 자문 역량">
               <span className="text-slate-400">정세 감각 (INTEL)</span>
               <span className="font-bold text-purple-400">{character.stats.intellect}</span>
             </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between" title="행운 (LUCK): 돌발 재앙 회피 및 운명의 갈림길 성공률 판정 보정">
               <span className="text-slate-400">행운 (LUCK)</span>
               <span className="font-bold text-emerald-400">{character.stats.luck}</span>
             </div>
@@ -683,6 +699,7 @@ export const PRTSTerminal: React.FC<Props> = ({
           <button
             onClick={onOpenActions}
             className="flex items-center space-x-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-cyan-600/30 hover:bg-cyan-500/40 border border-cyan-400/50 text-cyan-300 transition-all font-bold text-xs"
+            title="연간 활동 포인트 (연간 기본 1 AP, T2 이상 2 AP, T4 이상 3 AP 회복)"
           >
             <Sparkles className="w-4 h-4 text-cyan-400 shrink-0" />
             <span className="hidden xs:inline">활동·승급</span>

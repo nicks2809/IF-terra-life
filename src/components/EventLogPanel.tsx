@@ -2,7 +2,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { LogEntry, GameEvent, EventChoice, Character, ThemeMode, LogFilter } from '../types';
 import { GameEngine } from '../engine/gameEngine';
-import { Radio, AlertTriangle, Sparkles, Sword, Dices, ChevronRight, Bot, Play, FastForward, Filter, Lock, Clock } from 'lucide-react';
+import { Radio, AlertTriangle, Sparkles, Sword, Dices, ChevronRight, Bot, Play, FastForward, Filter, Lock, Clock, Search, ArrowDown } from 'lucide-react';
 
 interface Props {
   logs: LogEntry[];
@@ -33,9 +33,31 @@ export const EventLogPanel: React.FC<Props> = ({
 }) => {
   const logContainerRef = useRef<HTMLDivElement>(null);
   const [filter, setFilter] = useState<LogFilter>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [isAtBottom, setIsAtBottom] = useState<boolean>(true);
   const isPrts = theme === 'prts';
 
+  const handleScroll = () => {
+    if (!logContainerRef.current) return;
+    const { scrollTop, clientHeight, scrollHeight } = logContainerRef.current;
+    const atBottom = scrollTop + clientHeight >= scrollHeight - 20;
+    setIsAtBottom(atBottom);
+  };
+
+  const scrollToBottom = () => {
+    if (logContainerRef.current) {
+      logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
+      setIsAtBottom(true);
+    }
+  };
+
   const filteredLogs = logs.filter(entry => {
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      const matchText = (entry.text || '').toLowerCase().includes(q) || (entry.title || '').toLowerCase().includes(q);
+      const matchYear = String(entry.year).includes(q) || String(entry.age).includes(q);
+      if (!matchText && !matchYear) return false;
+    }
     if (filter === 'all') return true;
     if (filter === 'event') return entry.type === 'critical' || !!entry.rollDetails || entry.title.includes('【판정') || entry.title.includes('【업적') || entry.title.includes('【특수 직군') || entry.title.includes('【직급') || entry.title.includes('【생애 목표');
     if (filter === 'news') return entry.type === 'news';
@@ -45,10 +67,10 @@ export const EventLogPanel: React.FC<Props> = ({
   });
 
   useEffect(() => {
-    if (logContainerRef.current) {
+    if (isAtBottom && logContainerRef.current) {
       logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
     }
-  }, [logs, currentEvent, filter]);
+  }, [logs, currentEvent, filter, searchQuery, isAtBottom]);
 
   const getLogBadge = (type: LogEntry['type']) => {
     switch (type) {
@@ -120,14 +142,14 @@ export const EventLogPanel: React.FC<Props> = ({
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Top Filter Bar */}
-      <div className={`px-3 sm:px-4 py-2 border-b flex items-center justify-between gap-2 shrink-0 overflow-x-auto ${
+      <div className={`px-3 sm:px-4 py-2 border-b flex flex-wrap items-center justify-between gap-2 shrink-0 ${
         isPrts ? 'bg-[#0e121a] border-cyan-500/20' : 'bg-[#e8dcbe] border-[#5c4033]/30'
       }`}>
         <div className="flex items-center space-x-1.5 text-[11px] shrink-0">
           <Filter className={`w-3.5 h-3.5 ${isPrts ? 'text-cyan-400' : 'text-[#8b1e1e]'}`} />
           <span className="font-bold opacity-75 hidden sm:inline">일지 필터:</span>
         </div>
-        <div className="flex items-center space-x-1 shrink-0">
+        <div className="flex items-center space-x-1 shrink-0 overflow-x-auto py-0.5">
           {[
             { id: 'all', label: `전체 (${logs.length})` },
             { id: 'event', label: '주요 사건·판정' },
@@ -152,73 +174,106 @@ export const EventLogPanel: React.FC<Props> = ({
             </button>
           ))}
         </div>
+        <div className="relative flex items-center shrink-0">
+          <Search className={`w-3 h-3 absolute left-2 ${isPrts ? 'text-cyan-400' : 'text-[#8b1e1e]'}`} />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="연도/내용 검색..."
+            aria-label="로그 검색"
+            className={`text-[11px] pl-6 pr-2 py-0.5 rounded border outline-none transition-all w-28 sm:w-36 ${
+              isPrts
+                ? 'bg-slate-900/80 border-cyan-500/30 text-cyan-200 placeholder-slate-500 focus:border-cyan-400'
+                : 'bg-[#fbf7ed] border-[#5c4033]/40 text-[#1a1412] placeholder-[#8c7b75] focus:border-[#8b1e1e]'
+            }`}
+          />
+        </div>
       </div>
 
       {/* Scrollable Story Logs */}
-      <div
-        ref={logContainerRef}
-        className="grow overflow-y-auto space-y-2.5 p-3.5 sm:p-4 pr-2 font-mono scroll-smooth"
-      >
-        {filteredLogs.map((entry) => (
-          <div
-            key={entry.id}
-            className={`p-3.5 rounded-lg border text-xs leading-relaxed transition-all ${
-              entry.type === 'hazard'
-                ? isPrts ? 'bg-red-950/20 border-red-500/40 text-red-200' : 'bg-red-100 border-red-700 text-red-950'
-                : entry.type === 'critical'
-                ? isPrts ? 'bg-purple-950/20 border-purple-500/40 text-purple-200' : 'bg-purple-100 border-purple-700 text-purple-950'
-                : entry.type === 'news'
-                ? isPrts ? 'bg-amber-950/20 border-amber-500/40 text-amber-200' : 'bg-amber-100 border-amber-700 text-amber-950'
-                : entry.type === 'battle'
-                ? isPrts ? 'bg-rose-950/20 border-rose-500/40 text-rose-200' : 'bg-rose-100 border-rose-700 text-rose-950'
-                : isPrts
-                ? 'bg-slate-900/40 border-slate-800/80 text-slate-300'
-                : 'bg-[#f0e4c6] border-[#5c4033]/25 text-[#1a1412]'
+      <div className="relative grow flex flex-col min-h-0">
+        <div
+          ref={logContainerRef}
+          onScroll={handleScroll}
+          className="grow overflow-y-auto space-y-2.5 p-3.5 sm:p-4 pr-2 font-mono scroll-smooth"
+        >
+          {filteredLogs.map((entry) => (
+            <div
+              key={entry.id}
+              className={`p-3.5 rounded-lg border text-xs leading-relaxed transition-all ${
+                entry.type === 'hazard'
+                  ? isPrts ? 'bg-red-950/20 border-red-500/40 text-red-200' : 'bg-red-100 border-red-700 text-red-950'
+                  : entry.type === 'critical'
+                  ? isPrts ? 'bg-purple-950/20 border-purple-500/40 text-purple-200' : 'bg-purple-100 border-purple-700 text-purple-950'
+                  : entry.type === 'news'
+                  ? isPrts ? 'bg-amber-950/20 border-amber-500/40 text-amber-200' : 'bg-amber-100 border-amber-700 text-amber-950'
+                  : entry.type === 'battle'
+                  ? isPrts ? 'bg-rose-950/20 border-rose-500/40 text-rose-200' : 'bg-rose-100 border-rose-700 text-rose-950'
+                  : isPrts
+                  ? 'bg-slate-900/40 border-slate-800/80 text-slate-300'
+                  : 'bg-[#f0e4c6] border-[#5c4033]/25 text-[#1a1412]'
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2 mb-1.5">
+                <div className="flex items-center space-x-2 flex-wrap">
+                  <span className={`text-[10px] font-bold opacity-75 ${isPrts ? 'text-cyan-400' : 'text-[#8b1e1e]'}`}>
+                    [{entry.year}년{entry.season ? ` ${entry.season}` : ''} · {entry.age}세]
+                  </span>
+                  <span className="font-bold">{entry.title}</span>
+                </div>
+                {getLogBadge(entry.type)}
+              </div>
+
+              <p className="whitespace-pre-line opacity-90">{entry.text}</p>
+
+              {/* Stat / LMD / Effect Delta Badges */}
+              {entry.effectBadges && entry.effectBadges.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-2 pt-1.5 border-t border-white/5">
+                  {entry.effectBadges.map((badge, i) => (
+                    <span
+                      key={i}
+                      className={`text-[10px] px-2 py-0.5 rounded border font-extrabold ${getEffectBadgeStyle(badge)}`}
+                    >
+                      {badge}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {entry.rollDetails && (
+                <div className={`mt-2 pt-2 border-t flex items-center justify-between text-[11px] ${
+                  isPrts ? 'border-white/10 text-cyan-300' : 'border-[#5c4033]/20 text-[#8b1e1e]'
+                }`}>
+                  <span className="flex items-center space-x-1">
+                    <Dices className="w-3.5 h-3.5" />
+                    <span>
+                      판정: {entry.rollDetails.stat.toUpperCase()} | 주사위 {entry.rollDetails.roll} + 보정 = {entry.rollDetails.total} (목표: {entry.rollDetails.dc})
+                    </span>
+                  </span>
+                  <span className="font-bold underline">
+                    결과: {entry.rollDetails.result}
+                  </span>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Floating Return to Bottom Button */}
+        {!isAtBottom && (
+          <button
+            onClick={scrollToBottom}
+            className={`absolute bottom-3 right-5 z-20 px-3 py-1.5 rounded-full text-xs font-bold shadow-2xl flex items-center space-x-1.5 transition-all duration-200 animate-bounce ${
+              isPrts
+                ? 'bg-cyan-500 hover:bg-cyan-400 text-black shadow-cyan-500/30'
+                : 'bg-[#8b1e1e] hover:bg-[#a32828] text-white shadow-stone-800/40'
             }`}
           >
-            <div className="flex items-center justify-between gap-2 mb-1.5">
-              <div className="flex items-center space-x-2 flex-wrap">
-                <span className={`text-[10px] font-bold opacity-75 ${isPrts ? 'text-cyan-400' : 'text-[#8b1e1e]'}`}>
-                  [{entry.year}년{entry.season ? ` ${entry.season}` : ''} · {entry.age}세]
-                </span>
-                <span className="font-bold">{entry.title}</span>
-              </div>
-              {getLogBadge(entry.type)}
-            </div>
-
-            <p className="whitespace-pre-line opacity-90">{entry.text}</p>
-
-            {/* Stat / LMD / Effect Delta Badges */}
-            {entry.effectBadges && entry.effectBadges.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mt-2 pt-1.5 border-t border-white/5">
-                {entry.effectBadges.map((badge, i) => (
-                  <span
-                    key={i}
-                    className={`text-[10px] px-2 py-0.5 rounded border font-extrabold ${getEffectBadgeStyle(badge)}`}
-                  >
-                    {badge}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            {entry.rollDetails && (
-              <div className={`mt-2 pt-2 border-t flex items-center justify-between text-[11px] ${
-                isPrts ? 'border-white/10 text-cyan-300' : 'border-[#5c4033]/20 text-[#8b1e1e]'
-              }`}>
-                <span className="flex items-center space-x-1">
-                  <Dices className="w-3.5 h-3.5" />
-                  <span>
-                    판정: {entry.rollDetails.stat.toUpperCase()} | 주사위 {entry.rollDetails.roll} + 보정 = {entry.rollDetails.total} (목표: {entry.rollDetails.dc})
-                  </span>
-                </span>
-                <span className="font-bold underline">
-                  결과: {entry.rollDetails.result}
-                </span>
-              </div>
-            )}
-          </div>
-        ))}
+            <ArrowDown className="w-3.5 h-3.5" />
+            <span>최신 로그 보기 ↓</span>
+          </button>
+        )}
       </div>
 
       {/* Current Active Choice Decision Panel */}

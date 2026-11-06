@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { Character, LogEntry, GameEvent, EventChoice, GameSpeed, ThemeMode } from '../types';
+import { Character, LogEntry, GameEvent, EventChoice, GameSpeed, ThemeMode, FocusStance, Season } from '../types';
+import { evaluateLifeGoal, FOCUS_STANCES } from '../data/traits';
 import { GameEngine } from '../engine/gameEngine';
 import { EventLogPanel } from './EventLogPanel';
 import { 
@@ -20,7 +21,8 @@ import {
   Flame,
   Bot,
   Settings,
-  ShoppingBag
+  ShoppingBag,
+  Zap
 } from 'lucide-react';
 
 interface Props {
@@ -32,6 +34,9 @@ interface Props {
   onTogglePlay: () => void;
   speed: GameSpeed;
   onChangeSpeed: (speed: GameSpeed) => void;
+  yearProgress?: number;
+  currentSeason?: Season;
+  onChangeFocusStance?: (stance: FocusStance) => void;
   onNextYear: () => void;
   onSkipToNextEvent?: () => void;
   isAutoChoiceEnabled: boolean;
@@ -47,6 +52,7 @@ interface Props {
   onToggleMute: () => void;
   onSwitchTheme: () => void;
   theme: ThemeMode;
+  minorTimeoutRemainingSec?: number | null;
 }
 
 export const HistoryTome: React.FC<Props> = ({
@@ -58,6 +64,9 @@ export const HistoryTome: React.FC<Props> = ({
   onTogglePlay,
   speed,
   onChangeSpeed,
+  yearProgress = 0,
+  currentSeason = '봄',
+  onChangeFocusStance,
   onNextYear,
   onSkipToNextEvent,
   isAutoChoiceEnabled,
@@ -72,7 +81,8 @@ export const HistoryTome: React.FC<Props> = ({
   isMuted,
   onToggleMute,
   onSwitchTheme,
-  theme
+  theme,
+  minorTimeoutRemainingSec
 }) => {
   const [mobileTab, setMobileTab] = useState<'profile' | 'log'>('log');
 
@@ -85,6 +95,17 @@ export const HistoryTome: React.FC<Props> = ({
   const lifespanProfile = useMemo(() => {
     return GameEngine.getCharacterLifespanProfile(character);
   }, [character.race, character.subRace, character.oripathy.crystallizationRate, character.oripathy.suppressantDoseLeft]);
+
+  const goalEval = useMemo(() => {
+    return evaluateLifeGoal(character);
+  }, [character]);
+
+  const nextPromo = useMemo(() => GameEngine.getNextPromotionThreshold(character), [character]);
+  const promoCheck = useMemo(() => GameEngine.checkTierPromotionEligibility(character), [character]);
+
+  const activeStance = useMemo(() => {
+    return FOCUS_STANCES.find(s => s.id === (character.focusStance || 'survival')) || FOCUS_STANCES[0];
+  }, [character.focusStance]);
 
   return (
     <div className="flex flex-col h-screen bg-[#e8dcbe] text-[#1a1412] font-serif select-none overflow-hidden">
@@ -151,7 +172,14 @@ export const HistoryTome: React.FC<Props> = ({
           </button>
 
           <button
-            onClick={onOpenReincarnation || onRestart}
+            onClick={() => {
+              if (character.isAlive) {
+                const confirmed = window.confirm("진행 중인 생애가 종료됩니다. 계속하시겠습니까?");
+                if (!confirmed) return;
+              }
+              if (onOpenReincarnation) onOpenReincarnation();
+              else onRestart();
+            }}
             className="flex items-center space-x-1 px-2.5 py-1.5 rounded text-xs bg-[#2d5a27] text-white hover:bg-[#386d30] transition-all shadow"
             title="운명 설계 및 새로운 생애 환생"
           >
@@ -208,10 +236,39 @@ export const HistoryTome: React.FC<Props> = ({
             <div className="text-xs text-[#5c4d47]">
               환경: {character.environment}
             </div>
-            <div className="text-xs font-bold text-[#8b1e1e] mt-1">
-              직업: {character.career}
+            <div className="text-xs font-bold text-[#8b1e1e] mt-1 flex items-center justify-between">
+              <span>직업: {character.career} {character.careerRank && `(${character.careerRank})`}</span>
+              <span className="px-1.5 py-0.5 rounded bg-[#8b1e1e]/15 border border-[#8b1e1e]/30 text-[#8b1e1e] text-[10px] font-extrabold">
+                T{character.careerTier ?? 1}
+              </span>
             </div>
-            <div className="text-[11px] text-[#5c4d47] mt-1 pt-1 border-t border-[#5c4033]/20 flex items-center justify-between">
+
+            {/* Career Promotion Progress Bar */}
+            {character.age >= 15 && !character.specialCareerId && nextPromo && (
+              <div className="mt-2 pt-1.5 border-t border-[#5c4033]/20">
+                <div className="flex items-center justify-between text-[10px] mb-1">
+                  <span className="text-[#5c4d47]">승급 공적 (EXP): {character.careerExp || 0} / {nextPromo.reqExp}</span>
+                  {promoCheck.eligible ? (
+                    <button
+                      onClick={onOpenActions}
+                      className="text-[#8b1e1e] font-extrabold hover:underline animate-pulse"
+                      title="자율 행동 모달에서 직급 승급 심사를 신청할 수 있습니다"
+                    >
+                      승급 심사 가능 →
+                    </button>
+                  ) : (
+                    <span className="text-[#5c4d47]">목표 T{nextPromo.targetTier}</span>
+                  )}
+                </div>
+                <div className="w-full h-1.5 bg-[#d9c79f] rounded-full overflow-hidden border border-[#5c4033]/30" title="승급 공적치 (careerExp) 게이지">
+                  <div 
+                    className="bg-gradient-to-r from-[#8b1e1e] to-[#c99732] h-full transition-all duration-300"
+                    style={{ width: `${Math.min(100, Math.round(((character.careerExp || 0) / nextPromo.reqExp) * 100))}%` }}
+                  />
+                </div>
+              </div>
+            )}
+            <div className="text-[11px] text-[#5c4d47] mt-1.5 pt-1 border-t border-[#5c4033]/20 flex items-center justify-between">
               <span>기대 수명: <span className="font-bold text-[#8b1e1e]">{lifespanProfile.baseLifespan}세</span> (최대 {lifespanProfile.effectiveMaxLifespan}세)</span>
               {character.oripathy.isInfected && (
                 <span className="text-[10px] text-red-700 font-semibold">[광석병 감퇴]</span>
@@ -233,11 +290,16 @@ export const HistoryTome: React.FC<Props> = ({
           {(character.lifeGoal || (character.innateTraits && character.innateTraits.length > 0)) && (
             <div className="p-3.5 rounded-lg border border-[#5c4033]/40 bg-[#f4ebd0] space-y-1.5 text-xs shadow-sm">
               {character.lifeGoal && (
-                <div className="flex items-center justify-between text-[11px] pb-1 border-b border-[#5c4033]/20">
-                  <span className="font-bold text-[#8b1e1e]">생애 목표</span>
-                  <span className="font-bold text-[#2c1810]">
-                    {character.lifeGoal.title} {character.goalAchieved ? '★ 달성' : '진행 중'}
-                  </span>
+                <div className="pb-1 border-b border-[#5c4033]/20 space-y-0.5">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="font-bold text-[#8b1e1e]">생애 목표</span>
+                    <span className="font-bold text-[#2c1810]">
+                      {character.lifeGoal.title} {character.goalAchieved ? '★ 달성' : '진행 중'}
+                    </span>
+                  </div>
+                  <div className="text-[10px] text-[#5c4d47] leading-snug">
+                    진척도: <span className="font-semibold text-[#2c1810]">{goalEval.progressText}</span>
+                  </div>
                 </div>
               )}
               {character.innateTraits && character.innateTraits.length > 0 && (
@@ -259,6 +321,39 @@ export const HistoryTome: React.FC<Props> = ({
               )}
             </div>
           )}
+
+          {/* Focus Stance Switcher */}
+          <div className="p-3.5 rounded-lg border border-[#5c4033]/40 bg-[#f4ebd0] space-y-1.5 text-xs shadow-sm">
+            <div className="flex items-center justify-between mb-1">
+              <span className="font-bold text-[#8b1e1e] flex items-center space-x-1">
+                <Zap className="w-3.5 h-3.5 text-[#8b1e1e]" />
+                <span>연간 집중 태세</span>
+              </span>
+              <span className="text-[11px] text-[#5c4d47] font-semibold">{activeStance.name}</span>
+            </div>
+            <div className="grid grid-cols-4 gap-1">
+              {FOCUS_STANCES.map(st => {
+                const active = (character.focusStance || 'survival') === st.id;
+                return (
+                  <button
+                    key={st.id}
+                    onClick={() => onChangeFocusStance?.(st.id)}
+                    title={`${st.name} [${st.id}]: ${st.effectText}`}
+                    className={`py-1 rounded text-[10px] font-bold border transition-all ${
+                      active
+                        ? 'bg-[#8b1e1e] text-white border-[#8b1e1e] shadow font-extrabold'
+                        : 'bg-[#ebdcb9] text-[#5c4d47] border-[#5c4033]/30 hover:border-[#8b1e1e] hover:text-[#2c1810]'
+                    }`}
+                  >
+                    {st.shortLabel}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="text-[10px] text-[#5c4d47] mt-1 leading-tight">
+              {activeStance.effectText}
+            </div>
+          </div>
 
           {/* Bonds / Companions */}
           {character.bonds && character.bonds.length > 0 && (
@@ -423,6 +518,7 @@ export const HistoryTome: React.FC<Props> = ({
             character={character}
             onSelectChoice={onSelectChoice}
             autoChoicePendingId={autoChoicePendingId}
+            minorTimeoutRemainingSec={minorTimeoutRemainingSec}
             isPlaying={isPlaying}
             onNextYear={onNextYear}
             onSkipToNextEvent={onSkipToNextEvent}
@@ -432,6 +528,36 @@ export const HistoryTome: React.FC<Props> = ({
         </section>
       </main>
 
+      {/* Four-Season Antique Progression Ribbon */}
+      <div className="h-6 bg-[#d9c79f] border-t border-[#5c4033]/40 px-3 sm:px-4 flex items-center justify-between gap-3 shrink-0 text-[10px]">
+        <div className="flex items-center space-x-2 shrink-0">
+          <span className="text-[#8b1e1e] font-bold">
+            {character.year}년 · {currentSeason || '봄'}
+          </span>
+          <div className="hidden sm:flex items-center space-x-1 text-[#5c4d47]">
+            {(['봄', '여름', '가을', '겨울'] as Season[]).map(s => (
+              <span
+                key={s}
+                className={`px-1 rounded ${
+                  (currentSeason || '봄') === s ? 'bg-[#8b1e1e] text-white font-bold' : ''
+                }`}
+              >
+                {s}
+              </span>
+            ))}
+          </div>
+        </div>
+        <div className="grow bg-[#ebdcb9] h-1.5 rounded-full overflow-hidden border border-[#5c4033]/30">
+          <div
+            className="h-full bg-gradient-to-r from-[#8b1e1e] to-[#c99732] transition-[width] duration-75"
+            style={{ width: `${Math.max(0, Math.min(100, yearProgress || 0))}%` }}
+          />
+        </div>
+        <span className="text-[#5c4d47] shrink-0 font-bold">
+          {isPlaying && !currentEvent ? `${speed}x 진행 중` : currentEvent ? '사건 선택 대기' : '정지'}
+        </span>
+      </div>
+
       {/* Tome Bottom Dock */}
       <footer className="h-14 border-t-2 border-[#5c4033] bg-[#d9c79f] px-3 sm:px-6 flex items-center justify-between shrink-0 shadow-md gap-2 overflow-x-auto">
         {/* Action Points & Auto Choice Options */}
@@ -439,6 +565,7 @@ export const HistoryTome: React.FC<Props> = ({
           <button
             onClick={onOpenActions}
             className="flex items-center space-x-1.5 px-3 sm:px-4 py-1.5 rounded-lg bg-[#8b1e1e] hover:bg-[#a32828] text-white text-xs font-bold shadow transition-all shrink-0"
+            title="연간 활동 포인트 (연간 기본 1 AP, T2 이상 2 AP, T4 이상 3 AP 회복)"
           >
             <Feather className="w-4 h-4 shrink-0" />
             <span className="hidden xs:inline">자율 행동</span>

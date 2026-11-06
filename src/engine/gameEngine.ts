@@ -139,6 +139,8 @@ export class GameEngine {
       seed: character.seed || normalizeSeed(),
       careerTier: inferredTier,
       careerExp: typeof character.careerExp === 'number' ? character.careerExp : 0,
+      actionPoints: typeof character.actionPoints === 'number' ? character.actionPoints : 1,
+      titles: Array.isArray(character.titles) ? character.titles : [],
       focusStance: character.focusStance || 'survival',
       lifeGoal: character.lifeGoal || LIFE_GOALS[0],
       goalAchieved: !!character.goalAchieved,
@@ -147,6 +149,7 @@ export class GameEngine {
       milestones: Array.isArray(character.milestones) && character.milestones.length > 0
         ? character.milestones
         : [`테라력 ${character.year - character.age}년, ${character.nation}에서 ${character.race} 아이로 탄생`],
+      equipment: character.equipment ? { ...character.equipment } : {},
       bossKills: typeof character.bossKills === 'number' ? character.bossKills : 0,
       unlockedAchievements: Array.isArray(character.unlockedAchievements) ? character.unlockedAchievements : [],
       seenEventIds: Array.isArray(character.seenEventIds) ? character.seenEventIds : [],
@@ -203,16 +206,32 @@ export class GameEngine {
   }
 
   public static getSuppressantCost(char: Character): number {
+    let cost = 800;
     switch (char.oripathy.stage) {
       case 'Terminal':
-        return 1550;
+        cost = 1550;
+        break;
       case 'Severe':
-        return 1250;
+        cost = 1250;
+        break;
       case 'Mid':
-        return 1000;
+        cost = 1000;
+        break;
       default:
-        return 800;
+        cost = 800;
+        break;
     }
+
+    // F2: 로도스 아일랜드 세력 평판에 따른 정품 억제제 할인율 적용 (30 이상: 20% 할인, 60 이상 또는 소속: 40% 할인)
+    const rhodesRep = char.factions?.['로도스 아일랜드'] || 0;
+    const isRhodesStaff = char.career?.includes('로도스') || (char.environment === '이동기지 (로도스/블랙스틸)' && rhodesRep >= 20);
+    if (rhodesRep >= 60 || isRhodesStaff) {
+      cost = Math.round(cost * 0.6); // 40% discount
+    } else if (rhodesRep >= 30) {
+      cost = Math.round(cost * 0.8); // 20% discount
+    }
+
+    return cost;
   }
 
   public static getAnnualLivingExpense(char: Character): number {
@@ -220,7 +239,8 @@ export class GameEngine {
     let base = 180;
     switch (char.environment) {
       case '이동도시 상류층':
-        base = 460;
+        // F1: 초반 10년(15~24세) 청년기 가문 배당금 지원 (+200 LMD 상쇄)
+        base = (char.age >= 15 && char.age <= 24) ? 260 : 460;
         break;
       case '일반 거주구':
         base = 215;
@@ -880,8 +900,13 @@ export class GameEngine {
 
     const effectivePrice = item.id === 'med_rhodes_suppressant' ? this.getSuppressantCost(char) : item.price;
 
-    if (item.type === 'weapon' || item.type === 'armor') {
-      const currentEquipped = item.type === 'weapon' ? char.equipment.weapon : char.equipment.armor;
+    if (item.type === 'weapon' || item.type === 'armor' || item.type === 'accessory') {
+      const currentEquipped =
+        item.type === 'weapon'
+          ? char.equipment.weapon
+          : item.type === 'armor'
+          ? char.equipment.armor
+          : char.equipment.accessory;
       if (currentEquipped?.id === item.id) return char;
 
       if (char.stats.wealth < effectivePrice) return char;
@@ -897,8 +922,10 @@ export class GameEngine {
 
       if (item.type === 'weapon') {
         char.equipment.weapon = item;
-      } else {
+      } else if (item.type === 'armor') {
         char.equipment.armor = item;
+      } else {
+        char.equipment.accessory = item;
       }
 
       const badges: string[] = [`LMD -${effectivePrice.toLocaleString()}`];
@@ -1051,7 +1078,9 @@ export class GameEngine {
   public static getCareerAnnualSalary(char: Character): number {
     if (char.age < 15) return 0;
     const tier = char.specialCareerId ? 5 : Math.max(1, char.careerTier || 1);
-    const mainStat = char.career.includes('용병')
+    const careerName = typeof char.career === 'string' ? char.career : ((char.career as any)?.name || '');
+    const nationName = typeof char.nation === 'string' ? char.nation : '';
+    const mainStat = careerName.includes('용병')
       ? char.stats.combat
       : Math.max(char.stats.intellect, Math.round((char.stats.combat + char.stats.artsAptitude) * 0.5));
 
@@ -1063,11 +1092,30 @@ export class GameEngine {
     if (char.focusStance === 'career') salary = Math.round(salary * 1.2);
     if (this.hasTrait(char, 'flaw_marked_outcast')) salary = Math.round(salary * 0.85);
 
+    // F2: 세력 평판 보너스 (소속/관련 고용 세력 평판 50 이상 시 10~20% 보수 인상)
+    let repBonusMult = 1.0;
+    const factions = char.factions || {};
+    if ((careerName.includes('용문') || nationName.includes('용문')) && (factions['용문 근위국'] || 0) >= 50) {
+      repBonusMult = Math.max(repBonusMult, (factions['용문 근위국'] || 0) >= 80 ? 1.2 : 1.15);
+    }
+    if ((careerName.includes('블랙스틸') || careerName.includes('용병')) && (factions['블랙스틸'] || 0) >= 50) {
+      repBonusMult = Math.max(repBonusMult, (factions['블랙스틸'] || 0) >= 80 ? 1.2 : 1.15);
+    }
+    if ((careerName.includes('라인') || careerName.includes('연구')) && (factions['라인 생명'] || 0) >= 50) {
+      repBonusMult = Math.max(repBonusMult, (factions['라인 생명'] || 0) >= 80 ? 1.2 : 1.15);
+    }
+    if (careerName.includes('로도스') && (factions['로도스 아일랜드'] || 0) >= 50) {
+      repBonusMult = Math.max(repBonusMult, (factions['로도스 아일랜드'] || 0) >= 80 ? 1.2 : 1.15);
+    }
+    if (repBonusMult > 1.0) {
+      salary = Math.round(salary * repBonusMult);
+    }
+
     // 테라 현실의 감염자 임금 불이익 (중기 이상 광석병, 로도스 외 일반 사회)
-    const isProtected = char.career.includes('로도스') || char.environment === '이동기지 (로도스/블랙스틸)';
+    const isProtected = careerName.includes('로도스') || char.environment === '이동기지 (로도스/블랙스틸)';
     if (char.oripathy.isInfected && char.oripathy.stage !== 'Early' && !isProtected) {
       const harshNations = ['우르수스 제국', '이베리아', '빅토리아', '염국'];
-      const cutRatio = harshNations.some(n => char.nation.includes(n)) ? 0.65 : 0.75;
+      const cutRatio = harshNations.some(n => nationName.includes(n)) ? 0.65 : 0.75;
       salary = Math.round(salary * cutRatio);
     }
 
@@ -1105,7 +1153,6 @@ export class GameEngine {
 
     char.age += 1;
     char.year += 1;
-    char.actionPoints = (char.careerTier || 0) >= 3 && char.stats.intellect >= 82 ? 2 : 1;
 
     // 유년기 자연 신체 발육 (1~15세)
     if (char.age <= 15) {
@@ -1125,6 +1172,10 @@ export class GameEngine {
       }
       char.careerRank = getTierRankTitle(char.career, 1);
     }
+
+    // F3: 연간 가용 행동력(AP) 산출 (기본 1 AP, 직급 Tier 2 이상 2 AP, Tier 4 이상 3 AP)
+    const effectiveTier = char.specialCareerId ? 5 : (char.careerTier || (char.age >= 15 ? 1 : 0));
+    char.actionPoints = effectiveTier >= 4 ? 3 : effectiveTier >= 2 ? 2 : 1;
 
     // 집중 태세(/boost) 및 선천적 결점 연간 유지 효과
     if (char.age >= 12) {
@@ -1868,15 +1919,28 @@ export class GameEngine {
       }
     }
 
-    // 4. 잔여 AP 자동 사용
-    while (char.actionPoints > 0 && char.isAlive) {
-      const hasSuppressantItem = char.inventory.some(s => s.item.id === 'med_rhodes_suppressant' && s.count > 0);
-      const suppCost = this.getSuppressantCost(char);
-      if (char.oripathy.isInfected && char.oripathy.suppressantDoseLeft <= 0 && (hasSuppressantItem || char.stats.wealth >= suppCost)) {
-        char = this.executeAnnualAction(char, 'take_suppressant', addLog);
-        continue;
-      }
+    const budgetAfterArmor = char.stats.wealth - reserveLmd;
+    if (budgetAfterArmor >= 800 && !char.equipment.accessory) {
+      const affordableAccessories = ITEMS_DATA.filter(
+        i => i.type === 'accessory' && i.price <= budgetAfterArmor
+      ).sort((a, b) => b.price - a.price);
 
+      if (affordableAccessories.length > 0) {
+        char = this.buyOrEquipItem(char, affordableAccessories[0].id, addLog);
+      }
+    }
+
+    // 3.5. 억제제 투약 필요 시 0 AP로 선제 투약
+    const hasSuppressantItem = char.inventory.some(s => s.item.id === 'med_rhodes_suppressant' && s.count > 0);
+    const suppCost = this.getSuppressantCost(char);
+    if (char.oripathy.isInfected && char.oripathy.suppressantDoseLeft <= 0 && (hasSuppressantItem || char.stats.wealth >= suppCost)) {
+      char = this.executeAnnualAction(char, 'take_suppressant', addLog);
+    }
+
+    // 4. 잔여 AP 자동 사용
+    let apLoopGuard = 0;
+    while (char.actionPoints > 0 && char.isAlive && apLoopGuard < 10) {
+      apLoopGuard++;
       if (char.stats.sanity < 42 || char.stats.health < char.stats.maxHealth * 0.5) {
         char = this.executeAnnualAction(char, 'recreation', addLog);
         continue;
@@ -2147,9 +2211,12 @@ export class GameEngine {
 
     if (choice.diceCheck) {
       sound.playDiceRoll();
-      const rawRoll = Math.floor(Math.random() * 100) + 1;
+      // F5: 2d50 정규분포 주사위 (중앙값 51 집중)
+      const d1 = Math.floor(Math.random() * 50) + 1;
+      const d2 = Math.floor(Math.random() * 50) + 1;
+      const rawRoll = d1 + d2;
       const statVal = char.stats[choice.diceCheck.stat] || 30;
-      let statBonus = Math.floor(statVal / 4.5);
+      let statBonus = Math.floor(statVal / 2.5);
       if (
         char.focusStance === 'arcane' &&
         (choice.diceCheck.stat === 'artsAptitude' || choice.diceCheck.stat === 'intellect')
@@ -2162,6 +2229,9 @@ export class GameEngine {
       let resultOutcome: '대성공' | '성공' | '실패' | '대참사' = '실패';
       let outcomeData = choice.outcomes.failure || choice.outcomes.success;
 
+      // 달인 보호: 숙련도 90 이상 & 난이도 60 이하일 때 대참사(Critical Failure) 완전 면역
+      const isMasterProtected = statVal >= 90 && dc <= 60;
+
       if (rawRoll >= 96 || total >= dc + 25) {
         resultOutcome = '대성공';
         outcomeData = choice.outcomes.criticalSuccess || choice.outcomes.success;
@@ -2170,7 +2240,7 @@ export class GameEngine {
         resultOutcome = '성공';
         outcomeData = choice.outcomes.success;
         sound.playBeep(700, 0.08, 'sine');
-      } else if (rawRoll <= 5 || total < dc - 30) {
+      } else if (!isMasterProtected && (rawRoll <= 5 || total < dc - 30)) {
         resultOutcome = '대참사';
         outcomeData = choice.outcomes.criticalFailure || choice.outcomes.failure || choice.outcomes.success;
         sound.playHazardAlarm();
@@ -2431,7 +2501,9 @@ export class GameEngine {
     addLog: (entry: Omit<LogEntry, 'id' | 'timestamp'>) => void
   ): Character {
     const baseChar = this.ensureCharacterDefaults(character);
-    if (baseChar.actionPoints <= 0) return baseChar;
+    if (!baseChar.isAlive) return baseChar;
+    // F3: 의료 케어(take_suppressant)는 AP 0 소모(자금/약품만 소모), 일반 자율 행동은 AP 1 소모
+    if (actionType !== 'take_suppressant' && baseChar.actionPoints <= 0) return baseChar;
     const char: Character = {
       ...baseChar,
       stats: { ...baseChar.stats },
@@ -2440,7 +2512,9 @@ export class GameEngine {
       secretFlags: { ...baseChar.secretFlags },
       unlockedAchievements: [...(baseChar.unlockedAchievements || [])]
     };
-    char.actionPoints -= 1;
+    if (actionType !== 'take_suppressant') {
+      char.actionPoints -= 1;
+    }
 
     switch (actionType) {
       case 'cultivate_arts': {
@@ -2518,7 +2592,7 @@ export class GameEngine {
             title: '보유 정품 억제제 투약',
             text: '차가운 정제 억제제가 혈관을 순환하며 오리지늄 결정 확산을 3년간 억제합니다.',
             type: 'oripathy',
-            effectBadges: ['억제제 +3년', '결정화 -0.5%']
+            effectBadges: ['억제제 +3년', '결정화 -0.5%', 'AP 0 소모']
           });
         } else if (char.stats.wealth >= clinicCost) {
           char.stats.wealth -= clinicCost;
@@ -2533,7 +2607,7 @@ export class GameEngine {
             title: '이동 진료소 억제제 처방 투약',
             text: `현재 병기(${char.oripathy.stage}) 맞춤 처방비 ${clinicCost.toLocaleString()} LMD를 지불하고 정품 억제제를 투약했습니다.`,
             type: 'oripathy',
-            effectBadges: [`LMD -${clinicCost.toLocaleString()}`, '억제제 +3년', '결정화 -0.5%']
+            effectBadges: [`LMD -${clinicCost.toLocaleString()}`, '억제제 +3년', '결정화 -0.5%', 'AP 0 소모']
           });
         } else {
           addLog({
@@ -2544,7 +2618,6 @@ export class GameEngine {
             text: `LMD가 부족하여 억제제를 처방받지 못했습니다. (${clinicCost.toLocaleString()} LMD 필요)`,
             type: 'hazard'
           });
-          char.actionPoints += 1;
         }
         break;
       }
@@ -2603,6 +2676,58 @@ export class GameEngine {
     }
 
     return char;
+  }
+
+  // 연간 자율 행동 실행 전후 상태 비교를 통한 실시간 동적 피드백 문자열 산출
+  public static calculateAnnualActionFeedback(
+    actionType: 'cultivate_arts' | 'train_combat' | 'take_suppressant' | 'faction_bounty' | 'recreation' | 'study_lore',
+    before: Character,
+    after: Character
+  ): string {
+    const deltaHp = after.stats.health - before.stats.health;
+    const deltaSan = after.stats.sanity - before.stats.sanity;
+    const deltaWealth = after.stats.wealth - before.stats.wealth;
+    const deltaCombat = after.stats.combat - before.stats.combat;
+    const deltaArts = after.stats.artsAptitude - before.stats.artsAptitude;
+    const deltaIntel = after.stats.intellect - before.stats.intellect;
+    const deltaExp = (after.careerExp || 0) - (before.careerExp || 0);
+
+    if (actionType !== 'take_suppressant' && after.actionPoints === before.actionPoints) {
+      return '[실행 불가] 잔여 행동력(AP) 또는 실행 조건이 부족합니다.';
+    }
+
+    const fmtSign = (val: number) => (val >= 0 ? `+${val}` : `${val}`);
+
+    switch (actionType) {
+      case 'cultivate_arts':
+        return `[아츠 수련 완료] 아츠 적성 ${fmtSign(deltaArts)}, 이성 ${fmtSign(deltaSan)} (공적 EXP ${fmtSign(deltaExp)})`;
+      case 'train_combat':
+        return `[전술 훈련 완료] 전투력 ${fmtSign(deltaCombat)}, 체력 ${fmtSign(deltaHp)} (공적 EXP ${fmtSign(deltaExp)})`;
+      case 'study_lore':
+        return `[학술 자문 완료] 지략 ${fmtSign(deltaIntel)}, 이성 ${fmtSign(deltaSan)}, 자문료 +${deltaWealth.toLocaleString()} LMD (공적 EXP ${fmtSign(deltaExp)})`;
+      case 'take_suppressant': {
+        const beforeSupp = before.inventory.find(s => s.item.id === 'med_rhodes_suppressant')?.count || 0;
+        const afterSupp = after.inventory.find(s => s.item.id === 'med_rhodes_suppressant')?.count || 0;
+        const deltaDose = after.oripathy.suppressantDoseLeft - before.oripathy.suppressantDoseLeft;
+        const deltaCryst = Number((after.oripathy.crystallizationRate - before.oripathy.crystallizationRate).toFixed(1));
+        if (beforeSupp > afterSupp) {
+          return `[억제제 투약 완료] 보유 앰플 1개 소모 (0 LMD), 억제 기간 +${deltaDose}년, 결정화율 ${fmtSign(deltaCryst)}%`;
+        }
+        if (deltaWealth < 0) {
+          return `[억제제 처방 완료] 처방비 ${Math.abs(deltaWealth).toLocaleString()} LMD 소모, 억제 기간 +${deltaDose}년, 결정화율 ${fmtSign(deltaCryst)}%`;
+        }
+        return '[억제제 처방 실패] 자금 부족으로 처방을 받지 못했습니다.';
+      }
+      case 'faction_bounty':
+        return `[현상금 의뢰 완수] 보수 +${deltaWealth.toLocaleString()} LMD, 전투력 ${fmtSign(deltaCombat)}, 체력 ${fmtSign(deltaHp)}, 이성 ${fmtSign(deltaSan)} (공적 EXP ${fmtSign(deltaExp)})`;
+      case 'recreation':
+        if (deltaWealth < 0) {
+          return `[온천 휴양 완료] 이성 ${fmtSign(deltaSan)}, 체력 ${fmtSign(deltaHp)} (자금 -${Math.abs(deltaWealth).toLocaleString()} LMD)`;
+        }
+        return `[검소한 휴식 완료] 이성 ${fmtSign(deltaSan)}, 체력 ${fmtSign(deltaHp)} (0 LMD 소모)`;
+      default:
+        return '지시 실행 완료';
+    }
   }
 
   // 턴제 전투 엔진 초기화 (판정 실패 기습 페널티 지원)
@@ -2677,7 +2802,7 @@ export class GameEngine {
     switch (command) {
       case 'attack': {
         sound.playSlash();
-        const weaponBonus = char.equipment.weapon?.atkBonus || 0;
+        const weaponBonus = (char.equipment.weapon?.atkBonus || 0) + (char.equipment.accessory?.atkBonus || 0);
         let atkMult = 1.0;
         if (this.hasTrait(char, 'talent_combat_frame')) atkMult += 0.1;
         if (char.focusStance === 'martial') atkMult += 0.1;
@@ -2694,7 +2819,7 @@ export class GameEngine {
       case 'arts': {
         sound.playArtsExplosion();
         const artsAmp = (char.oripathy.isInfected ? char.oripathy.activeArtsMultiplier : 1.0) * (b.catalystActive ? 3.0 : 1.0);
-        const weaponArts = char.equipment.weapon?.artsBonus || 0;
+        const weaponArts = (char.equipment.weapon?.artsBonus || 0) + (char.equipment.accessory?.artsBonus || 0);
         const artsPower = Math.floor((char.stats.artsAptitude + weaponArts) * 1.5 * artsAmp);
         const effectiveDmg = Math.max(10, Math.floor(artsPower * (1 - b.enemy.artsRes / 100)));
         const actual = dealDamageToEnemy(effectiveDmg);
@@ -2708,7 +2833,7 @@ export class GameEngine {
       }
       case 'defend': {
         sound.playBeep(500, 0.1, 'triangle');
-        const armorDef = char.equipment.armor?.defBonus || 0;
+        const armorDef = (char.equipment.armor?.defBonus || 0) + (char.equipment.accessory?.defBonus || 0);
         b.playerShield = 38 + armorDef;
         b.log.unshift(`> 전술 방어 태세를 취했습니다. (방어 실드 +${b.playerShield} 전개)`);
         if (char.race.includes('포르테')) {
@@ -2847,7 +2972,7 @@ export class GameEngine {
 
       grantAch('common_first_victory');
       if ((b.damageTaken || 0) === 0) grantAch('rare_flawless_duel');
-      if (!char.equipment.weapon && !char.equipment.armor) grantAch('rare_barehand_brawler');
+      if (!char.equipment.weapon && !char.equipment.armor && !char.equipment.accessory) grantAch('rare_barehand_brawler');
       if (char.race.includes('펠린') && char.stats.health <= 5) grantAch('rare_feline_nine_lives');
       if (char.race.includes('우르수스') && char.stats.health <= 20) grantAch('rare_ursus_unbreakable_rage');
       if (char.race.includes('리베리')) grantAch('rare_liberi_stratosphere_flight');
@@ -2863,7 +2988,7 @@ export class GameEngine {
     // --- 적 턴 및 고유 필살기 발동 ---
     b.turn += 1;
     const isSpecialTurn = b.turn % 3 === 0 || (b.enemy.hp <= b.enemy.maxHp * 0.5 && b.turn === 2);
-    const playerDef = Math.max(0, (char.equipment.armor?.defBonus || 0) - (b.armorBreak || 0));
+    const playerDef = Math.max(0, (char.equipment.armor?.defBonus || 0) + (char.equipment.accessory?.defBonus || 0) - (b.armorBreak || 0));
 
     let enemyDmgRaw = Math.floor(b.enemy.atk * (0.85 + Math.random() * 0.35));
 

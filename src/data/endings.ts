@@ -176,11 +176,62 @@ export const ENDINGS_DATA: EndingDefinition[] = [
   // 커먼 (Common - 150 Pts Bonus)
   // ==========================================
   {
+    id: 'ending_lungmen_harbor',
+    title: '용문 항만의 황혼',
+    subtitle: '동방 무역항의 온화한 은퇴',
+    description: '분주한 용문 상업지구와 항만의 네온사인을 바라보며, 차 한 잔과 함께 평온하고 부유한 노후를 보낸 삶.',
+    epitaph: '황포강의 뱃고동 소리와 화려한 네온사인 아래, 치열했던 젊은 날을 뒤로하고 평온한 황혼을 맞이하다.',
+    rarity: 'Common',
+    scoreBonus: 150,
+    condition: (char) => {
+      const hasNation = !!char.nation;
+      const isLungmen = hasNation && char.nation.includes('용문');
+      const isYanSubdistrict = char.environment === '일반 거주구' && hasNation && char.nation.includes('염국');
+      return char.age >= 55 && char.stats.sanity >= 50 && (isLungmen || isYanSubdistrict);
+    }
+  },
+  {
+    id: 'ending_victoria_noble_rest',
+    title: '빅토리아 교외의 안식',
+    subtitle: '장미 정원의 전원생활',
+    description: '런디니움의 매연과 정쟁을 벗어나 빅토리아 교외의 고즈넉한 저택과 장미 정원에서 평화롭게 저물어간 삶.',
+    epitaph: '오후의 홍차와 향긋한 장미 덤불. 제국의 포화가 멎은 정원에서 마침내 영원한 안식을 얻다.',
+    rarity: 'Common',
+    scoreBonus: 150,
+    condition: (char) => {
+      return char.age >= 55 && char.stats.sanity >= 50 && Boolean(char.nation && char.nation.includes('빅토리아'));
+    }
+  },
+  {
+    id: 'ending_columbia_pioneer_lodge',
+    title: '개척지의 평화로운 농원',
+    subtitle: '신대륙의 풍요로운 황혼',
+    description: '끝없는 기회와 첨단 기술의 땅 컬럼비아의 외곽 개척지에서 드넓은 농원을 일구며 여유롭게 노후를 누린 삶.',
+    epitaph: '개척지의 석양 아래 황금빛 밀밭이 물결칠 때, 자유와 번영의 꿈을 품고 평화로이 눈을 감다.',
+    rarity: 'Common',
+    scoreBonus: 150,
+    condition: (char) => {
+      return char.age >= 55 && char.stats.sanity >= 50 && Boolean(char.nation && char.nation.includes('컬럼비아'));
+    }
+  },
+  {
     id: 'ending_kjerag_teacup',
     title: '성산의 따뜻한 찻잔',
     subtitle: '설산의 평화로운 여생',
     description: '가혹한 대지의 분쟁을 벗어나 쉐라그의 따뜻한 온천과 설산의 평화 속에서 천수를 누린 삶.',
     epitaph: '성산의 눈보라가 창문을 두드릴 때, 따뜻한 차 한 잔과 함께 평화로운 생애를 마감하다.',
+    rarity: 'Common',
+    scoreBonus: 150,
+    condition: (char) => {
+      return char.age >= 55 && char.stats.sanity >= 50 && Boolean(char.nation && char.nation.includes('쉐라그'));
+    }
+  },
+  {
+    id: 'ending_peaceful_twilight',
+    title: '대지의 평화로운 황혼',
+    subtitle: '모진 풍파를 견뎌낸 평온한 만년',
+    description: '수많은 재앙과 전란이 몰아친 테라의 대지에서, 천수를 다하고 평화롭게 황혼을 맞이한 삶.',
+    epitaph: '가혹한 대지의 부름을 뒤로하고, 평온한 노을빛 아래 영원한 안식에 들다.',
     rarity: 'Common',
     scoreBonus: 150,
     condition: (char) => {

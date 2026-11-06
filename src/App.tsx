@@ -23,12 +23,14 @@ import { HallOfFameModal } from './components/HallOfFameModal';
 import { AchievementBookModal } from './components/AchievementBookModal';
 import { AdvancedSettingsModal } from './components/AdvancedSettingsModal';
 import { ReincarnationModal } from './components/ReincarnationModal';
+import { ToastContainer, ToastMessage } from './components/ToastContainer';
+import { ACHIEVEMENTS_DATA } from './data/achievements';
 
 export const App: React.FC = () => {
   // --- 상태 관리 ---
   const [character, setCharacter] = useState<Character>(() => {
     const saved = storage.loadActiveCharacter();
-    if (saved && saved.isAlive) return saved;
+    if (saved && saved.isAlive) return GameEngine.ensureCharacterDefaults(saved);
     return GameEngine.createRandomCharacter();
   });
 
@@ -67,11 +69,23 @@ export const App: React.FC = () => {
   const [isMuted, setIsMuted] = useState<boolean>(() => storage.loadMuted());
   const [advancedSettings, setAdvancedSettings] = useState<AdvancedSettings>(() => storage.loadAdvancedSettings());
   const [yearProgress, setYearProgress] = useState<number>(0);
+  const [toastQueue, setToastQueue] = useState<ToastMessage[]>([]);
 
-  const handleChangeSpeed = (nextSpeed: GameSpeed) => {
+  const addToast = useCallback((toast: Omit<ToastMessage, 'id'>) => {
+    const id = 'toast_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+    const newToast: ToastMessage = { ...toast, id };
+    setToastQueue(prev => [...prev.slice(-4), newToast]);
+  }, []);
+
+  const removeToast = useCallback((id: string) => {
+    setToastQueue(prev => prev.filter(t => t.id !== id));
+  }, []);
+
+  // 시뮬레이션 배속 변경 및 로컬 스토리지 동기화
+  const handleChangeSpeed = useCallback((nextSpeed: GameSpeed) => {
     setSpeed(nextSpeed);
     storage.saveSpeed(nextSpeed);
-  };
+  }, []);
 
   const handleChangeFocusStance = (stance: any) => {
     setCharacter(prev => ({ ...prev, focusStance: stance }));
@@ -117,11 +131,23 @@ export const App: React.FC = () => {
     }
   }, [character]);
 
+  // 모달/오버레이 활성화 및 사망 상태 통합 감지
+  const isAnyModalOpen =
+    isActionsOpen ||
+    isHallOfFameOpen ||
+    isAchievementBookOpen ||
+    isSettingsOpen ||
+    isReincarnationOpen ||
+    Boolean(battleState) ||
+    !character.isAlive;
+
   // 1년 진행 로직
   const handleAdvanceYear = useCallback(() => {
-    if (!character.isAlive || currentEvent || battleState?.isActive) return;
+    if (!character.isAlive || currentEvent || battleState?.isActive || isAnyModalOpen) return;
 
+    setYearProgress(0);
     sound.playVitalPulse();
+    const prevAchIds = new Set(character.unlockedAchievements || []);
     const result = GameEngine.advanceOneYear(character, addLog, {
       autoManageApAndShop: isAutoChoiceEnabled && advancedSettings.autoUseApAndShop,
       aiStrategy: advancedSettings.aiStrategy
@@ -129,13 +155,64 @@ export const App: React.FC = () => {
     const nextChar = result.updatedChar;
     setCharacter(nextChar);
 
+    // 신규 업적 해금 토스트 알림
+    const newlyUnlocked = (nextChar.unlockedAchievements || []).filter(id => !prevAchIds.has(id));
+    newlyUnlocked.forEach(id => {
+      const ach = ACHIEVEMENTS_DATA.find(a => a.id === id);
+      addToast({
+        type: 'achievement',
+        title: '【업적 해금】',
+        description: ach ? `${ach.title}: ${ach.description}` : `신규 업적 달성: ${id}`,
+        icon: '🏆',
+        duration: 4000
+      });
+    });
+
+    // 생애 목표 달성 토스트 알림
+    if (!character.goalAchieved && nextChar.goalAchieved) {
+      addToast({
+        type: 'goal',
+        title: '【생애 목표 달성】',
+        description: `생애 숙원 [${nextChar.lifeGoal?.title || '생애 숙원'}] 목표를 완수하였습니다!`,
+        icon: '⭐',
+        duration: 5000
+      });
+    }
+
+    // 직급 승급 토스트 알림
+    const prevTier = character.careerTier || 1;
+    const nextTier = nextChar.careerTier || 1;
+    if (nextTier > prevTier || (nextChar.career !== character.career && character.age >= 15)) {
+      addToast({
+        type: 'promotion',
+        title: '【직급 승급 / 이직】',
+        description: `[T${nextTier}] ${nextChar.career}(으)로 승급되었습니다.`,
+        icon: '🎖️',
+        duration: 4500
+      });
+    }
+
     // 위기 감지 자동 브레이크 검사
     if (nextChar.isAlive) {
       if (advancedSettings.pauseOnLowHp && nextChar.stats.health <= nextChar.stats.maxHealth * 0.25) {
         setIsPlaying(false);
+        addToast({
+          type: 'crisis',
+          title: '【생명 징후 위급】',
+          description: `체력이 25% 이하(${nextChar.stats.health}/${nextChar.stats.maxHealth})로 급감하여 자동 정지합니다.`,
+          icon: '⚠️',
+          duration: 5000
+        });
       }
       if (advancedSettings.pauseOnOripathyCrisis && nextChar.oripathy.isInfected && nextChar.oripathy.crystallizationRate >= 70) {
         setIsPlaying(false);
+        addToast({
+          type: 'crisis',
+          title: '【광석병 위기 경보】',
+          description: `체세포 결정화율이 ${nextChar.oripathy.crystallizationRate.toFixed(1)}%로 임계치를 초과하여 자동 정지합니다.`,
+          icon: '☣️',
+          duration: 5000
+        });
       }
     }
 
@@ -149,11 +226,11 @@ export const App: React.FC = () => {
         setIsPlaying(false);
       }
     }
-  }, [character, currentEvent, battleState, addLog, isAutoChoiceEnabled, advancedSettings]);
+  }, [character, currentEvent, battleState, addLog, isAutoChoiceEnabled, advancedSettings, addToast, isAnyModalOpen]);
 
   // 다음 선택지(사건)가 발생할 때까지 즉시 건너뛰기
   const handleSkipToNextEvent = useCallback(() => {
-    if (!character.isAlive || currentEvent || battleState?.isActive) return;
+    if (!character.isAlive || currentEvent || battleState?.isActive || isAnyModalOpen) return;
 
     sound.playVitalPulse();
     let currentChar = character;
@@ -185,12 +262,12 @@ export const App: React.FC = () => {
       setCurrentEvent(foundEvent);
       setIsPlaying(false);
     }
-  }, [character, currentEvent, battleState, addLog, isAutoChoiceEnabled, advancedSettings]);
+  }, [character, currentEvent, battleState, addLog, isAutoChoiceEnabled, advancedSettings, isAnyModalOpen]);
 
   // 자동 진행 타이머
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   useEffect(() => {
-    if (isPlaying && character.isAlive && !currentEvent && !battleState) {
+    if (isPlaying && character.isAlive && !currentEvent && !battleState && !isAnyModalOpen) {
       const speedIntervalMap: Record<GameSpeed, number> = {
         1: 2400,
         2: 1600,
@@ -209,7 +286,65 @@ export const App: React.FC = () => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isPlaying, speed, character.isAlive, currentEvent, battleState, handleAdvanceYear]);
+  }, [isPlaying, speed, character.isAlive, currentEvent, battleState, isAnyModalOpen, handleAdvanceYear]);
+
+  // 선택지 선택
+  const handleSelectChoice = useCallback((choice: EventChoice) => {
+    // 요구 조건 검증 가드 (미충족 시 사건 임의 해제 방지)
+    const reqCheck = GameEngine.checkChoiceRequirements(character, choice);
+    if (!reqCheck.allowed) {
+      sound.playBeep(300, 0.08, 'sawtooth');
+      addToast({
+        type: 'info',
+        title: '【선택 불가】',
+        description: reqCheck.reason ? `요구 조건 미달: ${reqCheck.reason}` : '해당 선택지의 조건을 만족하지 못했습니다.',
+        icon: '🔒',
+        duration: 3500
+      });
+      return;
+    }
+
+    const result = GameEngine.resolveChoice(character, choice, addLog);
+    setCharacter(result.updatedChar);
+    setCurrentEvent(undefined);
+    setAutoChoicePendingId(null);
+
+    if (result.battleEnemy && result.updatedChar.isAlive) {
+      const newBattle = GameEngine.startBattle(result.battleEnemy, result.battleAmbushed);
+      setBattleState(newBattle);
+      if (!isAutoChoiceEnabled) {
+        setIsPlaying(false);
+      }
+    }
+  }, [character, addLog, isAutoChoiceEnabled, addToast]);
+
+  // 1년 진행 게이지 부드러운 인터벌 애니메이션
+  useEffect(() => {
+    if (isPlaying && character.isAlive && !currentEvent && !battleState && !isAnyModalOpen) {
+      const speedIntervalMap: Record<GameSpeed, number> = {
+        1: 2400,
+        2: 1600,
+        4: 1050,
+        8: 700,
+        16: 480,
+        32: 350
+      };
+      const totalMs = speedIntervalMap[speed] || 450;
+      const stepMs = 50;
+      const increment = (stepMs / totalMs) * 100;
+
+      const progressInterval = setInterval(() => {
+        setYearProgress(prev => {
+          if (prev >= 100) return 0;
+          return Math.min(100, prev + increment);
+        });
+      }, stepMs);
+
+      return () => clearInterval(progressInterval);
+    } else {
+      setYearProgress(0);
+    }
+  }, [isPlaying, speed, character.isAlive, currentEvent, battleState, isAnyModalOpen]);
 
   // 자동 진행 시 스토리 사건 자동 선택
   useEffect(() => {
@@ -239,7 +374,7 @@ export const App: React.FC = () => {
     } else {
       setAutoChoicePendingId(null);
     }
-  }, [isPlaying, currentEvent, character, speed, isAutoChoiceEnabled, advancedSettings.aiStrategy]);
+  }, [isPlaying, currentEvent, character, speed, isAutoChoiceEnabled, advancedSettings.aiStrategy, handleSelectChoice]);
 
   // 자동 진행 시 턴제 전투 자동 진행
   useEffect(() => {
@@ -277,6 +412,21 @@ export const App: React.FC = () => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName)) return;
 
+      // 모달/오버레이 활성화 시 모든 단축키 차단
+      if (isAnyModalOpen) return;
+
+      // 사건 활성화 상태 시 숫자키 1~4는 선택지 선택 우선 처리
+      if (currentEvent && currentEvent.choices && currentEvent.choices.length > 0) {
+        if (['1', '2', '3', '4'].includes(e.key)) {
+          const choiceIdx = parseInt(e.key, 10) - 1;
+          if (choiceIdx >= 0 && choiceIdx < currentEvent.choices.length) {
+            e.preventDefault();
+            handleSelectChoice(currentEvent.choices[choiceIdx]);
+          }
+          return;
+        }
+      }
+
       if (e.code === 'Space') {
         e.preventDefault();
         if (character.isAlive && !currentEvent && !battleState?.isActive) {
@@ -286,59 +436,56 @@ export const App: React.FC = () => {
         handleAdvanceYear();
       } else if (e.key === 's' || e.key === 'S') {
         handleSkipToNextEvent();
-      } else if (e.key === '1') {
-        setSpeed(1);
-      } else if (e.key === '2') {
-        setSpeed(2);
-      } else if (e.key === '4') {
-        setSpeed(4);
-      } else if (e.key === '8') {
-        setSpeed(8);
-      } else if (e.key === '6' || e.key === '0') {
-        setSpeed(16);
-      } else if (e.key === '3' || e.key === '5') {
-        setSpeed(32);
-      } else if (e.key === '[') {
-        const list: GameSpeed[] = [1, 2, 4, 8, 16, 32];
-        setSpeed(prev => {
-          const idx = list.indexOf(prev);
-          return idx > 0 ? list[idx - 1] : prev;
-        });
-      } else if (e.key === ']') {
-        const list: GameSpeed[] = [1, 2, 4, 8, 16, 32];
-        setSpeed(prev => {
-          const idx = list.indexOf(prev);
-          return idx < list.length - 1 ? list[idx + 1] : prev;
-        });
+      } else if (!currentEvent && !battleState?.isActive) {
+        if (e.key === '1') {
+          handleChangeSpeed(1);
+        } else if (e.key === '2') {
+          handleChangeSpeed(2);
+        } else if (e.key === '4') {
+          handleChangeSpeed(4);
+        } else if (e.key === '8') {
+          handleChangeSpeed(8);
+        } else if (e.key === '6' || e.key === '0') {
+          handleChangeSpeed(16);
+        } else if (e.key === '3' || e.key === '5') {
+          handleChangeSpeed(32);
+        } else if (e.key === '[') {
+          const list: GameSpeed[] = [1, 2, 4, 8, 16, 32];
+          const idx = list.indexOf(speed);
+          if (idx > 0) {
+            handleChangeSpeed(list[idx - 1]);
+          }
+        } else if (e.key === ']') {
+          const list: GameSpeed[] = [1, 2, 4, 8, 16, 32];
+          const idx = list.indexOf(speed);
+          if (idx < list.length - 1) {
+            handleChangeSpeed(list[idx + 1]);
+          }
+        }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [character.isAlive, currentEvent, battleState, handleAdvanceYear, handleSkipToNextEvent]);
+  }, [
+    character.isAlive,
+    currentEvent,
+    battleState,
+    speed,
+    isAnyModalOpen,
+    handleAdvanceYear,
+    handleSkipToNextEvent,
+    handleSelectChoice,
+    handleChangeSpeed
+  ]);
 
-  // 선택지 선택
-  const handleSelectChoice = (choice: EventChoice) => {
-    const result = GameEngine.resolveChoice(character, choice, addLog);
-    setCharacter(result.updatedChar);
-    setCurrentEvent(undefined);
-    setAutoChoicePendingId(null);
-
-    if (result.battleEnemy && result.updatedChar.isAlive) {
-      const newBattle = GameEngine.startBattle(result.battleEnemy);
-      setBattleState(newBattle);
-      if (!isAutoChoiceEnabled) {
-        setIsPlaying(false);
-      }
-    }
-  };
-
-  // 연간 자율 행동 실행
+  // 연간 자율 행동 실행 (동기적으로 갱신된 Character 반환)
   const handleAnnualAction = (
     actionType: 'cultivate_arts' | 'train_combat' | 'take_suppressant' | 'faction_bounty' | 'recreation' | 'study_lore'
-  ) => {
+  ): Character => {
     const updated = GameEngine.executeAnnualAction(character, actionType, addLog);
     setCharacter(updated);
+    return updated;
   };
 
   // 무기고 및 암시장 아이템 구매 / 장착
@@ -361,7 +508,7 @@ export const App: React.FC = () => {
 
   // 전투 커맨드 실행
   const handleBattleCommand = (command: 'attack' | 'arts' | 'defend' | 'item' | 'flee', itemId?: string) => {
-    if (!battleState) return;
+    if (!battleState || !battleState.isActive || !battleState.isPlayerTurn) return;
     const { updatedChar, updatedBattle } = GameEngine.executeBattleCommand(character, battleState, command, itemId, addLog);
     setCharacter(updatedChar);
     if (!updatedChar.isAlive) {
@@ -459,6 +606,9 @@ export const App: React.FC = () => {
           onTogglePlay={() => setIsPlaying(!isPlaying)}
           speed={speed}
           onChangeSpeed={handleChangeSpeed}
+          yearProgress={yearProgress}
+          currentSeason={GameEngine.pickSeason(character)}
+          onChangeFocusStance={handleChangeFocusStance}
           onNextYear={handleAdvanceYear}
           onSkipToNextEvent={handleSkipToNextEvent}
           isAutoChoiceEnabled={isAutoChoiceEnabled}
@@ -520,6 +670,7 @@ export const App: React.FC = () => {
         onClose={() => setIsReincarnationOpen(false)}
         onStartReincarnation={handleStartReincarnation}
         theme={theme}
+        isAlive={character.isAlive}
       />
 
       {/* Advanced Simulation & AI Settings Modal */}
@@ -548,6 +699,9 @@ export const App: React.FC = () => {
         onClose={() => setIsAchievementBookOpen(false)}
         theme={theme}
       />
+
+      {/* 글로벌 플로팅 토스트 알림 컨테이너 */}
+      <ToastContainer toasts={toastQueue} onDismiss={removeToast} />
     </div>
   );
 };

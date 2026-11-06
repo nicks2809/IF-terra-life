@@ -24,7 +24,7 @@ interface Props {
   character: Character;
   isOpen: boolean;
   onClose: () => void;
-  onAction: (actionType: 'cultivate_arts' | 'train_combat' | 'take_suppressant' | 'faction_bounty' | 'recreation' | 'study_lore') => void;
+  onAction: (actionType: 'cultivate_arts' | 'train_combat' | 'take_suppressant' | 'faction_bounty' | 'recreation' | 'study_lore') => Character | void;
   onBuyOrEquipItem: (itemId: string) => void;
   onUseInventoryItem: (itemId: string) => void;
   onPromoteCareer: (careerId: string) => void;
@@ -42,62 +42,69 @@ export const AnnualActionsModal: React.FC<Props> = ({
   theme
 }) => {
   const [activeTab, setActiveTab] = useState<'directives' | 'armory' | 'career'>('directives');
-  const [shopFilter, setShopFilter] = useState<'all' | 'weapon' | 'armor' | 'medicine'>('all');
+  const [shopFilter, setShopFilter] = useState<'all' | 'weapon' | 'armor' | 'accessory' | 'medicine'>('all');
+  // 연간 자율 행동 인라인 피드백 상태 (feedback / result state)
+  const [lastFeedback, setLastFeedback] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
   const isPrts = theme === 'prts';
   const annualSalary = GameEngine.getCareerAnnualSalary(character);
+  const suppressantCost = GameEngine.getSuppressantCost(character);
+  const hasArtsBlockage = GameEngine.hasTrait(character, 'flaw_arts_blockage');
+  const artsSanCost = hasArtsBlockage ? 9 : 6;
 
   const actions = [
     {
       id: 'cultivate_arts' as const,
       title: '오리지늄 아츠 수련',
       icon: <Sparkles className="w-5 h-5 text-cyan-400" />,
-      cost: 'AP 1 / 이성 -5',
-      desc: '아츠 유닛을 튜닝하고 고위 영창 식을 암송하여 아츠 적성(ARTS +4~8)을 수련합니다.',
-      disabled: character.actionPoints <= 0 || character.stats.sanity < 5,
+      cost: `AP 1 / 이성 -${artsSanCost}`,
+      desc: '아츠 유닛을 튜닝하고 고위 영창 식을 암송하여 아츠 적성(ARTS +3~5)을 수련합니다.',
+      disabled: character.actionPoints <= 0 || character.stats.sanity < artsSanCost,
     },
     {
       id: 'train_combat' as const,
       title: '전술 백병전 훈련',
       icon: <Shield className="w-5 h-5 text-amber-400" />,
-      cost: 'AP 1 / 체력 -5',
-      desc: '제식 무기 및 전술 사격을 연마하여 물리 전투력(ATK +4~8)을 단련합니다.',
+      cost: 'AP 1 / 체력 -7',
+      desc: '제식 무기 및 전술 사격을 연마하여 물리 전투력(ATK +3~5)을 단련합니다.',
       disabled: character.actionPoints <= 0 || character.stats.health < 10,
     },
     {
       id: 'study_lore' as const,
       title: '정세 분석 및 학술 자문',
       icon: <BookOpen className="w-5 h-5 text-indigo-400" />,
-      cost: 'AP 1 / 자문료 수입',
-      desc: '각 이동도시의 외교 동향과 오리지늄 공학을 연구하여 지략(INTEL +4~8)과 자문료(LMD)를 얻습니다.',
-      disabled: character.actionPoints <= 0,
+      cost: 'AP 1 / 이성 -4',
+      desc: '각 이동도시의 외교 동향과 오리지늄 공학을 연구하여 지략(INTEL +3~5)과 자문료(LMD)를 얻습니다.',
+      disabled: character.actionPoints <= 0 || character.stats.sanity < 5,
     },
     {
       id: 'take_suppressant' as const,
       title: '로도스 억제제 투약',
       icon: <HeartPulse className="w-5 h-5 text-emerald-400" />,
       cost: character.inventory.some(s => s.item.id === 'med_rhodes_suppressant' && s.count > 0)
-        ? 'AP 1 / 보유 앰플 1개'
-        : 'AP 1 / 800 LMD',
-      desc: '체세포 오리지늄 결정화율 진행을 3년간 동결하고 결정화율을 -0.5% 완화합니다.',
-      disabled: character.actionPoints <= 0 || (!character.inventory.some(s => s.item.id === 'med_rhodes_suppressant' && s.count > 0) && character.stats.wealth < 800),
+        ? '0 AP / 보유 앰플 1개 (0 LMD)'
+        : `0 AP / ${suppressantCost} LMD`,
+      desc: `체세포 오리지늄 결정화율 진행을 3년간 동결하고 결정화율을 -0.5% 완화합니다. (로도스 평판 반영: ${suppressantCost} LMD)`,
+      disabled: !character.inventory.some(s => s.item.id === 'med_rhodes_suppressant' && s.count > 0) && character.stats.wealth < suppressantCost,
     },
     {
       id: 'faction_bounty' as const,
       title: '현상금 및 특수 의뢰',
       icon: <Coins className="w-5 h-5 text-yellow-400" />,
-      cost: 'AP 1 / 체력 -10',
-      desc: '황야 약탈단 소탕 및 비밀 배송 임무를 수행하여 650~1,200 LMD와 실전 경험을 얻습니다.',
+      cost: 'AP 1 / 체력 -12 · 이성 -4',
+      desc: '황야 약탈단 소탕 및 비밀 배송 임무를 수행하여 위험 수당(LMD)과 실무 공적을 얻습니다.',
       disabled: character.actionPoints <= 0 || character.stats.health < 15,
     },
     {
       id: 'recreation' as const,
       title: '온천 휴양 및 문화생활',
       icon: <Coffee className="w-5 h-5 text-purple-400" />,
-      cost: character.stats.wealth >= 200 ? 'AP 1 / 200 LMD' : 'AP 1 / 무료 휴식',
-      desc: '온천욕과 오페라 공연을 감상하며 지친 이성(SAN +30)과 체력(HP +15)을 회복합니다.',
+      cost: character.stats.wealth >= 220 ? 'AP 1 / 220 LMD' : 'AP 1 / 무료 휴식 (0 LMD)',
+      desc: character.stats.wealth >= 220
+        ? '온천욕과 요양을 통해 지친 이성(SAN +26)과 체력(HP +16)을 회복합니다.'
+        : '거처에서 수면을 취하며 지친 이성(SAN +13)과 체력(HP +8)을 회복합니다.',
       disabled: character.actionPoints <= 0,
     }
   ];
@@ -111,6 +118,14 @@ export const AnnualActionsModal: React.FC<Props> = ({
   const usableInventory = character.inventory.filter(
     s => s.count > 0 && s.item.effectType && s.item.effectType !== 'boost_arts'
   );
+
+  const handleExecuteAction = (actionId: typeof actions[number]['id']) => {
+    const before = character;
+    const res = onAction(actionId);
+    const after = res || GameEngine.executeAnnualAction(before, actionId, () => {});
+    const fb = GameEngine.calculateAnnualActionFeedback(actionId, before, after);
+    setLastFeedback(fb);
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-3 sm:p-4">
@@ -232,6 +247,19 @@ export const AnnualActionsModal: React.FC<Props> = ({
               </div>
             )}
 
+            {/* Last Feedback Banner */}
+            {lastFeedback && (
+              <div className="p-3 rounded-lg bg-cyan-950/40 border border-cyan-500/40 text-xs font-bold text-cyan-300 flex items-center justify-between shadow">
+                <span>💡 실행 결과: {lastFeedback}</span>
+                <button
+                  onClick={() => setLastFeedback(null)}
+                  className="text-slate-400 hover:text-white text-[11px] px-2 py-0.5 rounded bg-black/40 border border-white/10"
+                >
+                  확인
+                </button>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
               {actions.map((act) => (
                 <div 
@@ -260,14 +288,20 @@ export const AnnualActionsModal: React.FC<Props> = ({
                   </div>
                   <button
                     disabled={act.disabled}
-                    onClick={() => onAction(act.id)}
+                    onClick={() => handleExecuteAction(act.id)}
                     className={`w-full py-1.5 rounded text-xs font-bold tracking-wider transition-all ${
                       isPrts
                         ? 'bg-cyan-500 hover:bg-cyan-400 text-black disabled:bg-slate-800 disabled:text-slate-500'
                         : 'bg-[#8b1e1e] hover:bg-[#a32828] text-white disabled:bg-stone-400'
                     }`}
                   >
-                    {character.actionPoints <= 0 ? '올해 AP 소진됨' : isPrts ? '지시 실행 (1 AP)' : '행동 실행 (1 AP)'}
+                    {act.id === 'take_suppressant'
+                      ? '억제제 투약 실행 (0 AP)'
+                      : character.actionPoints <= 0
+                      ? '올해 AP 소진됨'
+                      : isPrts
+                      ? '지시 실행 (1 AP)'
+                      : '행동 실행 (1 AP)'}
                   </button>
                 </div>
               ))}
@@ -278,8 +312,8 @@ export const AnnualActionsModal: React.FC<Props> = ({
         {/* Tab 2: Armory & Black Market */}
         {activeTab === 'armory' && (
           <div className="flex flex-col overflow-hidden grow">
-            {/* Current Equipment Banner */}
-            <div className={`p-3 rounded-lg border mb-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs shrink-0 ${
+            {/* Current Equipment Banner with Accessory Slot */}
+            <div className={`p-3 rounded-lg border mb-3 grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs shrink-0 ${
               isPrts ? 'bg-slate-900/90 border-cyan-500/30' : 'bg-[#e8dcbe] border-[#5c4033]/40'
             }`}>
               <div className="flex items-center justify-between">
@@ -287,7 +321,7 @@ export const AnnualActionsModal: React.FC<Props> = ({
                 <span className="font-bold text-cyan-400">
                   {character.equipment.weapon 
                     ? `${character.equipment.weapon.name} (ATK +${character.equipment.weapon.atkBonus})`
-                    : '맨손 (장착 없음)'}
+                    : '맨손 (미장착)'}
                 </span>
               </div>
               <div className="flex items-center justify-between">
@@ -295,23 +329,32 @@ export const AnnualActionsModal: React.FC<Props> = ({
                 <span className="font-bold text-emerald-400">
                   {character.equipment.armor
                     ? `${character.equipment.armor.name} (DEF +${character.equipment.armor.defBonus})`
-                    : '일반 평복 (장착 없음)'}
+                    : '평복 (미장착)'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="opacity-75">장착 장신구:</span>
+                <span className="font-bold text-amber-400">
+                  {character.equipment.accessory
+                    ? `${character.equipment.accessory.name}`
+                    : '미장착 (장신구 슬롯)'}
                 </span>
               </div>
             </div>
 
-            {/* Category Sub-Filters */}
-            <div className="flex space-x-1.5 mb-2.5 shrink-0">
+            {/* Category Sub-Filters including Accessory */}
+            <div className="flex space-x-1.5 mb-2.5 shrink-0 overflow-x-auto py-0.5">
               {[
                 { id: 'all', label: '전체 품목' },
                 { id: 'weapon', label: '전술 무기 (6)' },
                 { id: 'armor', label: '방어구 (5)' },
+                { id: 'accessory', label: '전술 장신구 (6)' },
                 { id: 'medicine', label: '의약품 · 촉매 (5)' }
               ].map(tab => (
                 <button
                   key={tab.id}
                   onClick={() => setShopFilter(tab.id as any)}
-                  className={`px-2.5 py-1 rounded text-[11px] font-bold transition-all ${
+                  className={`px-2.5 py-1 rounded text-[11px] font-bold transition-all shrink-0 ${
                     shopFilter === tab.id
                       ? isPrts ? 'bg-cyan-500/30 text-cyan-300 border border-cyan-400/50' : 'bg-[#5c4033] text-white'
                       : isPrts ? 'bg-slate-900 text-slate-400 hover:text-white' : 'bg-[#e0d3b4] text-[#5c4d47]'
@@ -325,7 +368,7 @@ export const AnnualActionsModal: React.FC<Props> = ({
             {/* Shop Items Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 overflow-y-auto pr-1 grow">
               {filteredItems.map(item => {
-                const isEquipped = character.equipment.weapon?.id === item.id || character.equipment.armor?.id === item.id;
+                const isEquipped = character.equipment.weapon?.id === item.id || character.equipment.armor?.id === item.id || character.equipment.accessory?.id === item.id;
                 const invSlot = character.inventory.find(s => s.item.id === item.id);
                 const canAfford = character.stats.wealth >= item.price;
 
@@ -401,7 +444,7 @@ export const AnnualActionsModal: React.FC<Props> = ({
                           ? '✓ 현재 장착 중'
                           : !canAfford
                             ? '용문폐(LMD) 부족'
-                            : item.type === 'weapon' || item.type === 'armor'
+                            : item.type === 'weapon' || item.type === 'armor' || item.type === 'accessory'
                               ? '구매 및 즉시 장착'
                               : '물자 구매 (+1)'}
                       </button>

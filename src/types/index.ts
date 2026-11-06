@@ -440,3 +440,13 @@ export interface DeathRecord {
   scoreBreakdown: ScoreBreakdown;
   unlockedAchievementsInRun: string[];
 }
+
+// --- 토스트 알림 시스템 (Toast Notification System) ---
+export interface ToastMessage {
+  id: string;
+  type: 'achievement' | 'goal' | 'promotion' | 'crisis' | 'info';
+  title: string;
+  description: string;
+  icon?: string;
+  duration?: number;
+}
