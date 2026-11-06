@@ -887,6 +887,7 @@ export class GameEngine {
     addLog: (entry: Omit<LogEntry, 'id' | 'timestamp'>) => void
   ): Character {
     const baseChar = this.ensureCharacterDefaults(character);
+    if (!baseChar.isAlive) return baseChar;
     const item = ITEMS_DATA.find(i => i.id === itemId);
     if (!item) return baseChar;
 
@@ -954,9 +955,15 @@ export class GameEngine {
       return char;
     } else {
       if (char.stats.wealth < effectivePrice) return char;
-      char.stats.wealth -= effectivePrice;
 
       const existing = char.inventory.find(s => s.item.id === item.id);
+      // 인벤토리 최대 슬롯(8개) 초과 시 신규 구매 차단 (자금 미차감, 슬롯 유지)
+      if (!existing && char.inventory.length >= 8) {
+        return char;
+      }
+
+      char.stats.wealth -= effectivePrice;
+
       if (existing) {
         existing.count += 1;
       } else {
@@ -1986,8 +1993,11 @@ export class GameEngine {
   // 선택지 요구 조건 검증 (비용/아이템/스탯/플래그)
   public static checkChoiceRequirements(
     char: Character,
-    choice: EventChoice
+    choice?: EventChoice
   ): { allowed: boolean; reason?: string } {
+    if (!choice) {
+      return { allowed: false, reason: '선택지 정보 없음' };
+    }
     const req = choice.requirements;
     if (!req) return { allowed: true };
 
@@ -2040,9 +2050,18 @@ export class GameEngine {
     event: GameEvent,
     strategy: AIStrategy = 'balanced'
   ): EventChoice {
-    const allChoices = event.choices;
+    const allChoices = event?.choices;
     if (!allChoices || allChoices.length === 0) {
-      throw new Error('Event has no choices');
+      return {
+        id: 'fallback_choice',
+        label: '상황 관망',
+        description: '특별한 결정을 내리지 않고 상황을 흘려보냅니다.',
+        outcomes: {
+          success: {
+            text: '선택지가 존재하지 않는 특이 사건에서 아무런 행동도 취하지 않고 조용히 상황을 흘려보냈습니다.'
+          }
+        }
+      };
     }
     const allowedChoices = allChoices.filter(c => this.checkChoiceRequirements(character, c).allowed);
     const pool = allowedChoices.length > 0 ? allowedChoices : [allChoices[allChoices.length - 1]];
@@ -2173,10 +2192,13 @@ export class GameEngine {
   // 선택지 판정 및 처리
   public static resolveChoice(
     character: Character,
-    choice: EventChoice,
-    addLog: (entry: Omit<LogEntry, 'id' | 'timestamp'>) => void
+    choice?: EventChoice,
+    addLog: (entry: Omit<LogEntry, 'id' | 'timestamp'>) => void = () => {}
   ): { updatedChar: Character; battleEnemy?: string; battleAmbushed?: boolean } {
     const baseChar = this.ensureCharacterDefaults(character);
+    if (!choice) {
+      return { updatedChar: baseChar };
+    }
     const reqCheck = this.checkChoiceRequirements(baseChar, choice);
     if (!reqCheck.allowed) {
       return { updatedChar: baseChar };
@@ -2289,7 +2311,7 @@ export class GameEngine {
         battleAmbushed: failedRoll && !!choice.triggerBattleEnemyId
       };
     } else {
-      const outcomeData = choice.outcomes.success;
+      const outcomeData = choice.outcomes?.success || { text: '사건이 무탈하게 지나갔습니다.' };
       const badges = this.buildOutcomeBadges(outcomeData, costBadges);
       sound.playBeep(600, 0.05, 'sine');
       addLog({

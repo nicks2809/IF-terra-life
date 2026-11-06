@@ -163,6 +163,7 @@ async function main() {
   const { ACHIEVEMENTS_DATA } = await runtime.executeUrl('./src/data/achievements.ts');
   const { sound } = await runtime.executeUrl('./src/services/sound.ts');
   const { storage } = await runtime.executeUrl('./src/services/storage.ts');
+  const { evaluateLifeGoal } = await runtime.executeUrl('./src/data/traits.ts');
 
   // 소스 파일 정적 분석용 읽기 헬퍼
   const readSrc = (relPath) => {
@@ -271,9 +272,16 @@ async function main() {
     c.nation = '용문';
     c.careerTier = 2;
     c.stats.combat = 50;
+    c.stats.intellect = 30;
+    c.stats.artsAptitude = 20;
+    c.focusStance = 'survival';
+    c.innateTraits = [];
+    c.factions['용문 근위국'] = 0;
+    const baseSalary = GameEngine.getCareerAnnualSalary(c);
     c.factions['용문 근위국'] = 60;
-    const salary = GameEngine.getCareerAnnualSalary(c);
-    assert(salary > 0, '급여가 정상 지급되어야 함');
+    const bonusSalary = GameEngine.getCareerAnnualSalary(c);
+    assertEqual(baseSalary, 336, '평판 0 기준 기본 급여 336 LMD (T2 기본 275 + mainStat 35 * 1.75)');
+    assertEqual(bonusSalary, 386, '평판 60일 때 1.15배 가산 급여 386 LMD (336 * 1.15)');
   });
 
   await runTest('F2-5: 적대 세력(평판 음수) 시 할인/보너스 미적용 확인', () => {
@@ -376,8 +384,21 @@ async function main() {
     assert(code.includes('/ 2.5') || code.includes('/ 2.50'), '스탯 보정 계수 statVal / 2.5 반영');
   });
 
-  await runTest('F5-3: 스탯 30 초보자 보정치는 +12 산출 확인', () => {
-    assertEqual(Math.floor(30 / 2.5), 12, '스탯 30 보정치는 12');
+  await runTest('F5-3: 스탯 30 초보자 보정치는 +12 산출 확인 (GameEngine.resolveChoice 실제 판정 로그 검증)', () => {
+    const c = GameEngine.createRandomCharacter();
+    c.stats.combat = 30;
+    c.focusStance = 'survival';
+    const testChoice = {
+      id: 'test_f5_3',
+      label: '보정치 검증',
+      description: '스탯 30 보정치 확인',
+      diceCheck: { stat: 'combat', difficulty: 50 },
+      outcomes: { success: { text: '성공' }, failure: { text: '실패' } }
+    };
+    let loggedEntry = null;
+    GameEngine.resolveChoice(c, testChoice, (e) => { loggedEntry = e; });
+    assert(!!loggedEntry && !!loggedEntry.rollDetails, '판정 로그 정상 생성');
+    assertEqual(loggedEntry.rollDetails.total - loggedEntry.rollDetails.roll, 12, '스탯 30 보정치는 정확히 +12 (30 / 2.5)');
   });
 
   await runTest('F5-4: 스탯 90 이상 & DC 60 이하 시 대참사(Critical Failure) 면제 로직 확인', () => {
@@ -385,15 +406,28 @@ async function main() {
     assert(code.includes('90') && (code.includes('60') || code.includes('dc')), '스탯 90 마스터 대참사 방어 로직');
   });
 
-  await runTest('F5-5: 2d50 시뮬레이션 10,000회 수행 시 평균값 51.0 근방 수렴 확인', () => {
+  await runTest('F5-5: GameEngine.resolveChoice 250회 판정 시 엔진 주사위 평균값 51.0 수렴 확인', () => {
+    const c = GameEngine.createRandomCharacter();
+    const testChoice = {
+      id: 'test_f5_5',
+      label: '수렴 검증',
+      description: '엔진 생성 주사위 대수의 법칙 검증',
+      diceCheck: { stat: 'combat', difficulty: 50 },
+      outcomes: { success: { text: '성공' }, failure: { text: '실패' } }
+    };
     let sum = 0;
-    for (let i = 0; i < 10000; i++) {
-      const d1 = Math.floor(Math.random() * 50) + 1;
-      const d2 = Math.floor(Math.random() * 50) + 1;
-      sum += (d1 + d2);
+    let count = 0;
+    for (let i = 0; i < 250; i++) {
+      GameEngine.resolveChoice(c, testChoice, (entry) => {
+        if (entry.rollDetails) {
+          sum += entry.rollDetails.roll;
+          count++;
+        }
+      });
     }
-    const avg = sum / 10000;
-    assertInRange(avg, 49.5, 52.5, '2d50 평균값은 51 근방이어야 함');
+    assertEqual(count, 250, '250회 엔진 주사위 판정 실행');
+    const avg = sum / count;
+    assertInRange(avg, 48.0, 54.0, '2d50 엔진 주사위 평균값 51.0 근방 수렴');
   });
 
   // --- F6: 장신구 장착 및 효과 적용 ---
@@ -483,14 +517,12 @@ async function main() {
   // --- F8: 토스트 알림 큐 & 메시지 전달 ---
   reporter.setSuite('F8: 토스트 알림 큐 & 메시지 전달');
   await runTest('F8-1: ToastMessage 인터페이스 규격 (id, type, title, description) 구조 검증', () => {
-    const toast = {
-      id: 't_1',
-      type: 'achievement',
-      title: '업적 해금',
-      description: '테스트 업적',
-      duration: 3000
-    };
-    assertEqual(toast.type, 'achievement', '토스트 타입 적합성');
+    const typesCode = readSrc('src/types/index.ts');
+    assert(typesCode.includes('export interface ToastMessage'), 'ToastMessage 인터페이스 선언 존재');
+    assert(typesCode.includes('id: string;'), 'id 필드 정의');
+    assert(typesCode.includes('title: string;'), 'title 필드 정의');
+    assert(typesCode.includes('description: string;'), 'description 필드 정의');
+    assert(typesCode.includes('duration?: number;'), '선택적 duration 필드 정의');
   });
 
   await runTest('F8-2: ToastContainer 컴포넌트 소스 존재 확인', () => {
@@ -503,35 +535,72 @@ async function main() {
     assert(code.includes('toast') || code.includes('Toast'), 'App.tsx 내 토스트 연동 확인');
   });
 
-  await runTest('F8-4: 5종 토스트 타입(achievement, goal, promotion, crisis, info) 지원', () => {
-    const types = ['achievement', 'goal', 'promotion', 'crisis', 'info'];
-    assertEqual(types.length, 5, '5종 알림 타입 지원');
+  await runTest('F8-4: 5종 토스트 타입(achievement, goal, promotion, crisis, info) 렌더링 스타일 지원', () => {
+    const containerCode = readSrc('src/components/ToastContainer.tsx');
+    const requiredTypes = ["'achievement'", "'goal'", "'promotion'", "'crisis'", "'info'"];
+    for (const t of requiredTypes) {
+      assert(containerCode.includes(t), `ToastContainer에서 ${t} 케이스 지원`);
+    }
   });
 
-  await runTest('F8-5: 토스트 자동 소멸 시간(duration) 설정 유효성 검증', () => {
-    const defaultDuration = 4000;
-    assertInRange(defaultDuration, 2000, 6000, '토스트 노출 시간 2~6초 범위');
+  await runTest('F8-5: 토스트 자동 소멸 기본 지속시간 4000ms 설정 검증', () => {
+    const containerCode = readSrc('src/components/ToastContainer.tsx');
+    assert(containerCode.includes('toast.duration ?? 4000') || containerCode.includes('duration = toast.duration || 4000'), '기본 지속시간 4000ms 폴백 구현');
   });
 
   // --- F9: 로그 패널 스마트 스크롤 & 필터 ---
   reporter.setSuite('F9: 로그 패널 스마트 스크롤 & 필터');
-  await runTest('F9-1: 카테고리 필터(all, event, news, combat, oripathy) 필터링 함수 검증', () => {
-    const logs = [
-      { id: '1', year: 1080, age: 5, title: '사건', text: '사건', type: 'general' },
-      { id: '2', year: 1081, age: 6, title: '전투', text: '전투', type: 'battle' }
+  await runTest('F9-1: 카테고리 필터(all, event, news, combat, oripathy) 복합 로그 필터링 검증', () => {
+    const panelCode = readSrc('src/components/EventLogPanel.tsx');
+    assert(panelCode.includes("filter === 'combat'"), 'combat 필터 조건 구현');
+    assert(panelCode.includes("entry.type === 'battle' || entry.type === 'hazard'"), '전투/위기 복합 판정');
+    assert(panelCode.includes("filter === 'oripathy'"), '광석병 필터 조건 구현');
+
+    const testLogs = [
+      { id: '1', year: 1080, age: 10, title: '【판정 결과】 성공', text: '위기 극복', type: 'critical', rollDetails: { roll: 55 } },
+      { id: '2', year: 1081, age: 11, title: '속보: 체르노보그', text: '재앙 발생', type: 'news' },
+      { id: '3', year: 1082, age: 12, title: '약탈단 격퇴', text: '전투 승리', type: 'battle' },
+      { id: '4', year: 1083, age: 13, title: '황야 기습', text: '위험 탈출', type: 'hazard' },
+      { id: '5', year: 1084, age: 14, title: '광석병 발병 경고', text: '결정화율 증가', type: 'oripathy' },
+      { id: '6', year: 1085, age: 15, title: '평범한 일상', text: '독립 생활', type: 'general' }
     ];
-    const filtered = logs.filter(l => l.type === 'battle');
-    assertEqual(filtered.length, 1, '전투 카테고리 필터링');
+
+    const filterFn = (logs, filter) => logs.filter(entry => {
+      if (filter === 'all') return true;
+      if (filter === 'event') return entry.type === 'critical' || !!entry.rollDetails || entry.title.includes('【판정');
+      if (filter === 'news') return entry.type === 'news';
+      if (filter === 'combat') return entry.type === 'battle' || entry.type === 'hazard';
+      if (filter === 'oripathy') return entry.type === 'oripathy' || entry.title.includes('광석병');
+      return true;
+    });
+
+    assertEqual(filterFn(testLogs, 'all').length, 6, 'all 필터는 전체 6건 반환');
+    assertEqual(filterFn(testLogs, 'event').length, 1, 'event 필터는 판정/크리티컬 1건 반환');
+    assertEqual(filterFn(testLogs, 'news').length, 1, 'news 필터는 속보 1건 반환');
+    assertEqual(filterFn(testLogs, 'combat').length, 2, 'combat 필터는 battle+hazard 2건 반환');
+    assertEqual(filterFn(testLogs, 'oripathy').length, 1, 'oripathy 필터는 광석병 1건 반환');
   });
 
-  await runTest('F9-2: 텍스트 검색 쿼리가 제목/본문과 매칭되는지 검증', () => {
-    const logs = [
-      { id: '1', year: 1080, age: 5, title: '용문 상단', text: '교역 완료', type: 'general' },
-      { id: '2', year: 1081, age: 6, title: '체르노보그', text: '재앙 경보', type: 'news' }
+  await runTest('F9-2: 텍스트 검색 쿼리가 제목/본문/연도/나이 다중 필드와 매칭되는지 검증', () => {
+    const testLogs = [
+      { id: '1', year: 1080, age: 15, title: '용문 상단', text: '교역 완료', type: 'general' },
+      { id: '2', year: 1085, age: 20, title: '체르노보그', text: '재앙 경보', type: 'news' },
+      { id: '3', year: 1092, age: 27, title: '로도스 아일랜드', text: '용문 방문', type: 'general' }
     ];
-    const q = '용문';
-    const res = logs.filter(l => l.title.includes(q) || l.text.includes(q));
-    assertEqual(res.length, 1, '검색어 매칭 필터');
+
+    const searchFn = (logs, query) => {
+      const q = query.trim().toLowerCase();
+      return logs.filter(entry => {
+        const matchText = (entry.text || '').toLowerCase().includes(q) || (entry.title || '').toLowerCase().includes(q);
+        const matchYear = String(entry.year).includes(q) || String(entry.age).includes(q);
+        return matchText || matchYear;
+      });
+    };
+
+    assertEqual(searchFn(testLogs, '용문').length, 2, '제목 또는 본문에 용문이 포함된 2건 매칭');
+    assertEqual(searchFn(testLogs, '1085').length, 1, '연도 1085 검색 매칭');
+    assertEqual(searchFn(testLogs, '27').length, 1, '나이 27세 검색 매칭');
+    assertEqual(searchFn(testLogs, '카시미어').length, 0, '미존재 키워드 0건 반환');
   });
 
   await runTest('F9-3: EventLogPanel 소스 내 스마트 스크롤(isAtBottom) 로직 존재 확인', () => {
@@ -589,10 +658,10 @@ async function main() {
     assert(code.includes('confirm') || code.includes('isAlive') || code.includes('Reincarnation'), '생존 환생 안전장치');
   });
 
-  await runTest('F11-2: 사망 상태에서는 추가 확인 없이 즉시 환생 허용', () => {
-    const c = GameEngine.createRandomCharacter();
-    c.isAlive = false;
-    assert(!c.isAlive, '사망 캐릭터는 즉시 환생 대상');
+  await runTest('F11-2: 사망 상태에서는 window.confirm 없이 즉시 환생 진행 및 생존 시에만 confirm 가드 적용 확인', () => {
+    const modalCode = readSrc('src/components/ReincarnationModal.tsx');
+    assert(modalCode.includes('if (isAlive) {'), '생존 시에만 confirm 가드 분기 존재');
+    assert(modalCode.includes('window.confirm("진행 중인 생애가 종료됩니다. 계속하시겠습니까?")'), '환생 확인 confirm 대화상자 호출');
   });
 
   await runTest('F11-3: 환생 시 캐릭터 기본 스탯 및 생애 초기화 정상 동작', () => {
@@ -607,9 +676,10 @@ async function main() {
     assertEqual(lmd, 500, '보유 자산 10% 유산 상속 자금 정상 로드 (5000 -> 500)');
   });
 
-  await runTest('F11-5: ReincarnationModal 내 생존 경고 텍스트 마크업 존재 확인', () => {
+  await runTest('F11-5: ReincarnationModal 내 생존 경고 텍스트 마크업 실존 확인', () => {
     const code = readSrc('src/components/ReincarnationModal.tsx');
-    assert(code.length > 0, 'ReincarnationModal 소스 확인');
+    assert(code.includes('{isAlive && ('), '생존 상태 조건부 렌더링 블록 존재');
+    assert(code.includes('현재 진행 중인 생애가 생존 상태입니다'), '생존 경고 안내문 마크업 실존');
   });
 
   // --- F12: 진행도 바 & 혈중 농도 지표 ---
@@ -630,19 +700,25 @@ async function main() {
     assert(density <= 0.1, `비감염자 혈중 농도는 0.1 이하 (실제: ${density})`);
   });
 
-  await runTest('F12-4: 감염 악화 시 혈중 농도 증가 일관성 검증', () => {
+  await runTest('F12-4: 억제제 소진 상태에서 advanceOneYear 진행 시 혈중 오리지늄 농도 정확히 +0.03 u/L 가산 검증', () => {
     const c = GameEngine.createRandomCharacter();
+    c.age = 20;
     c.oripathy.isInfected = true;
-    c.oripathy.stage = 'Terminal';
-    c.oripathy.originiumBloodDensity = 0.45;
-    assert(c.oripathy.originiumBloodDensity > 0.3, '말기 혈중 농도 고농도 확인');
+    c.oripathy.stage = 'Mid';
+    c.oripathy.suppressantDoseLeft = 0;
+    c.oripathy.originiumBloodDensity = 0.20;
+    c.stats.health = 80;
+    c.stats.sanity = 80;
+
+    const { updatedChar } = GameEngine.advanceOneYear(c, noopLog, { autoManageApAndShop: false });
+    assertEqual(updatedChar.oripathy.originiumBloodDensity, 0.23, '억제제 미투약 연간 경과 시 혈중 농도 +0.03 u/L 정확 가산');
   });
 
-  await runTest('F12-5: yearProgress 값의 0~100% 클램핑 로직 검증', () => {
-    const clamp = (val) => Math.min(100, Math.max(0, val));
-    assertEqual(clamp(-10), 0, '하한 클램핑');
-    assertEqual(clamp(120), 100, '상한 클램핑');
-    assertEqual(clamp(50), 50, '범위 내 유지');
+  await runTest('F12-5: PRTSTerminal 및 HistoryTome 진행도 바의 0~100% 클램핑 마크업 검증', () => {
+    const prtsCode = readSrc('src/components/PRTSTerminal.tsx');
+    const tomeCode = readSrc('src/components/HistoryTome.tsx');
+    assert(prtsCode.includes('Math.max(0, Math.min(100, yearProgress))'), 'PRTSTerminal 내 yearProgress 0~100% 클램핑 실존');
+    assert(tomeCode.includes('Math.max(0, Math.min(100, yearProgress'), 'HistoryTome 내 yearProgress 0~100% 클램핑 실존');
   });
 
   // --- F13: HistoryTome 인터랙션 동등성 ---
@@ -668,10 +744,25 @@ async function main() {
     assert(code.includes('<HistoryTome') && code.includes('onChangeFocusStance'), 'App.tsx에서 HistoryTome props 전달');
   });
 
-  await runTest('F13-5: HistoryTome과 PRTSTerminal 간 생애 목표 진행도 표기 동등성 확인', () => {
+  await runTest('F13-5: HistoryTome과 PRTSTerminal 간 생애 목표(evaluateLifeGoal) 평가 및 표기 동등성 확인', () => {
+    const tomeCode = readSrc('src/components/HistoryTome.tsx');
+    const prtsCode = readSrc('src/components/PRTSTerminal.tsx');
+    assert(tomeCode.includes('evaluateLifeGoal(character)'), 'HistoryTome에서 evaluateLifeGoal 연동');
+    assert(prtsCode.includes('evaluateLifeGoal(character)'), 'PRTSTerminal에서 evaluateLifeGoal 연동');
+    assert(tomeCode.includes('character.lifeGoal.title'), 'HistoryTome 내 목표 제목 바인딩');
+    assert(prtsCode.includes('character.lifeGoal.title'), 'PRTSTerminal 내 목표 제목 바인딩');
+
     const c = GameEngine.createRandomCharacter();
-    c.lifeGoal = { id: 'goal_test', name: '목표', category: 'career', bonusPoints: 500 };
-    assert(!!c.lifeGoal, '목표 객체 접근 동등성');
+    c.lifeGoal = {
+      id: 'goal_truth_observer',
+      title: '진실의 관측자',
+      category: 'arts',
+      targetText: '아츠 또는 지략 스탯 88 이상 달성',
+      bonusPoints: 300
+    };
+    c.stats.artsAptitude = 90;
+    const evalRes = evaluateLifeGoal(c);
+    assertEqual(evalRes.achieved, true, '아츠 90 달성 시 진실의 관측자 목표 달성 판정');
   });
 
   // --- F14: 자율 행동 인라인 피드백 ---
@@ -718,10 +809,16 @@ async function main() {
     assert(fbSupp.includes('0 LMD') && fbSupp.includes('보유 앰플 1개 소모'), '인벤토리 억제제 사용 시 0 LMD 피드백 검증');
   });
 
-  await runTest('F14-4: AP 소모 시 인라인 피드백 갱신 확인', () => {
+  await runTest('F14-4: AP 소모 시 인라인 피드백 갱신 확인 (executeAnnualAction 및 calculateAnnualActionFeedback 실제 호출)', () => {
     const c = GameEngine.createRandomCharacter();
     c.actionPoints = 1;
-    assert(c.actionPoints > 0, 'AP 잔여 시 행동 가능');
+    c.stats.health = 60;
+    const initialCombat = c.stats.combat;
+    const updated = GameEngine.executeAnnualAction(c, 'train_combat', noopLog);
+    assertEqual(updated.actionPoints, 0, '1회 실행 후 1 AP 완전 소진');
+    assert(updated.stats.combat > initialCombat, '전투력 스탯 증가 확인');
+    const fb = GameEngine.calculateAnnualActionFeedback('train_combat', c, updated);
+    assert(fb.includes('전투력 +') && fb.includes('체력 -7'), `훈련 결과 피드백 갱신 검증 (실제: ${fb})`);
   });
 
   await runTest('F14-5: 자율 행동 모달 장신구 장착 탭 또는 슬롯 렌더링 확인', () => {
@@ -736,14 +833,35 @@ async function main() {
     assert(code.includes('title=') || code.includes('tooltip') || code.includes('전투') || code.includes('판정'), '스탯 안내 툴팁');
   });
 
-  await runTest('F15-2: AP 회복 규칙(기본 1 AP, T2 2 AP, T4 3 AP) 안내 텍스트 검증', () => {
-    const text = '연간 기본 1 AP, T2 이상 2 AP, T4 이상 3 AP';
-    assert(text.includes('1 AP') && text.includes('2 AP'), 'AP 룰 설명');
+  await runTest('F15-2: AP 회복 규칙 및 AnnualActionsModal 행동력 안내 표기 검증', () => {
+    const modalCode = readSrc('src/components/AnnualActionsModal.tsx');
+    assert(modalCode.includes('잔여 행동력:'), 'AnnualActionsModal 내 행동력 안내 라벨 실존');
+    assert(modalCode.includes('{character.actionPoints} AP'), 'AP 실시간 바인딩 확인');
+
+    // 1티어 1 AP, 2티어 2 AP, 4티어 3 AP 규칙 실제 엔진 검증
+    const c1 = GameEngine.createRandomCharacter();
+    c1.age = 20;
+    c1.careerTier = 1;
+    const { updatedChar: res1 } = GameEngine.advanceOneYear(c1, noopLog, { autoManageApAndShop: false });
+    assertEqual(res1.actionPoints, 1, '1티어 연간 1 AP 지급');
+
+    const c2 = GameEngine.createRandomCharacter();
+    c2.age = 25;
+    c2.careerTier = 2;
+    const { updatedChar: res2 } = GameEngine.advanceOneYear(c2, noopLog, { autoManageApAndShop: false });
+    assertEqual(res2.actionPoints, 2, '2티어 연간 2 AP 지급');
+
+    const c4 = GameEngine.createRandomCharacter();
+    c4.age = 30;
+    c4.careerTier = 4;
+    const { updatedChar: res4 } = GameEngine.advanceOneYear(c4, noopLog, { autoManageApAndShop: false });
+    assertEqual(res4.actionPoints, 3, '4티어 연간 3 AP 지급');
   });
 
-  await runTest('F15-3: 광석병 억제제 효능 안내 텍스트 유효성 검증', () => {
-    const text = '체세포 결정화 진행을 3년간 동결하고 혈중 농도를 낮춥니다.';
-    assert(text.includes('3년'), '억제제 기간 명시');
+  await runTest('F15-3: 광석병 억제제 효능 안내 텍스트 AnnualActionsModal 실존 검증', () => {
+    const modalCode = readSrc('src/components/AnnualActionsModal.tsx');
+    assert(modalCode.includes('3년간 동결'), '억제제 3년 동결 효능 문구 실존');
+    assert(modalCode.includes('결정화율을 -0.5% 완화'), '결정화율 완화 문구 실존');
   });
 
   await runTest('F15-4: 집중 태세 4종 툴팁 정의 검증', () => {
@@ -751,9 +869,11 @@ async function main() {
     assert(code.includes('survival') && code.includes('martial'), '태세 버튼 툴팁 안내');
   });
 
-  await runTest('F15-5: 툴팁 한국어 인코딩 및 가독성 검증', () => {
-    const sample = '신체 단련 및 물리 전투력 지표';
-    assert(sample.length > 0 && !sample.includes('?'), '정상 한국어 툴팁');
+  await runTest('F15-5: PRTSTerminal 핵심 역량 스탯 툴팁 한국어 안내 실존 검증', () => {
+    const terminalCode = readSrc('src/components/PRTSTerminal.tsx');
+    assert(terminalCode.includes('신체 단련 및 물리 전투력 지표'), '전투력 ATK 한국어 툴팁 실존');
+    assert(terminalCode.includes('오리지늄 아츠 영창 및 조율 능력'), '아츠 적성 ARTS 한국어 툴팁 실존');
+    assert(terminalCode.includes('외교 정세 분석, 협상력 및 학술 자문 역량'), '정세 감각 INTEL 한국어 툴팁 실존');
   });
 
   // --- F16: 최상위 ErrorBoundary 방어벽 ---
@@ -870,16 +990,34 @@ async function main() {
     assert(code.includes('flaw_arts_blockage') || code.includes('sanity < (hasBlockage ? 11 : 8)') || code.includes('artsSanCost'), '동적 아츠 이성 조건');
   });
 
-  await runTest('F19-4: 이성이 9일 때 flaw_arts_blockage 보유 캐릭터는 아츠 버튼 비활성화', () => {
-    const reqSan = 11;
-    const currentSan = 9;
-    assert(currentSan < reqSan, '이성 9일 때 아츠 발동 불가');
+  await runTest('F19-4: 이성이 9일 때 flaw_arts_blockage 보유 캐릭터의 아츠 버튼 비활성화 및 키보드 가드 검증', () => {
+    const c = GameEngine.createRandomCharacter();
+    c.innateTraits = [{ id: 'flaw_arts_blockage', name: '아츠 조율 장애', type: 'flaw', description: '' }];
+    c.stats.sanity = 9;
+    const artsSanCost = GameEngine.hasTrait(c, 'flaw_arts_blockage') ? 11 : 8;
+    assertEqual(artsSanCost, 11, 'flaw_arts_blockage 결점 보유 시 요구 이성은 11');
+    const isArtsDisabled = c.stats.sanity < artsSanCost;
+    assertEqual(isArtsDisabled, true, '이성 9일 때 아츠 버튼 disabled 판정 활성화 (9 < 11)');
+
+    const modalCode = readSrc('src/components/CombatModal.tsx');
+    assert(modalCode.includes('character.stats.sanity < artsSanCost'), '버튼 disabled에 artsSanCost 조건 포함');
+    assert(modalCode.includes('character.stats.sanity >= artsSanCost'), '단축키 2번에 artsSanCost 가드 포함');
   });
 
-  await runTest('F19-5: 이성이 12일 때 flaw_arts_blockage 보유 캐릭터는 아츠 버튼 활성화', () => {
-    const reqSan = 11;
-    const currentSan = 12;
-    assert(currentSan >= reqSan, '이성 12일 때 아츠 발동 가능');
+  await runTest('F19-5: 이성이 12일 때 flaw_arts_blockage 보유 캐릭터의 아츠 버튼 활성화 및 엔진 영창 검증', () => {
+    const c = GameEngine.createRandomCharacter();
+    c.innateTraits = [{ id: 'flaw_arts_blockage', name: '아츠 조율 장애', type: 'flaw', description: '' }];
+    c.stats.sanity = 12;
+    const artsSanCost = GameEngine.hasTrait(c, 'flaw_arts_blockage') ? 11 : 8;
+    assertEqual(artsSanCost, 11, 'flaw_arts_blockage 결점 보유 시 요구 이성은 11');
+    const isArtsDisabled = c.stats.sanity < artsSanCost;
+    assertEqual(isArtsDisabled, false, '이성 12일 때 아츠 버튼 정상 활성화 (12 >= 11)');
+
+    const battle = GameEngine.startBattle('slug_swarm');
+    const beforeEnemyHp = battle.enemy.hp;
+    const { updatedBattle, updatedChar } = GameEngine.executeBattleCommand(c, battle, 'arts');
+    assertEqual(updatedChar.stats.sanity, 1, '아츠 발동 후 요구 이성 11 차감되어 1 잔여 (12 - 11 = 1)');
+    assert(updatedBattle.enemy.hp < beforeEnemyHp, '아츠 정상 발동으로 적에게 피해 적용');
   });
 
   // ===========================================================================
@@ -948,26 +1086,156 @@ async function main() {
   }
 
   reporter.setSuite('B5: AP 소진(0 AP) 및 상한 경계');
-  for (let i = 1; i <= 5; i++) {
-    await runTest(`B5-${i}: AP ${i - 1} 상태에서 자율 행동 실행 경계`, () => {
+  await runTest('B5-1: 0 AP 상태에서 전술 훈련(train_combat) 시도 시 거부 및 AP/스탯 불변 검증', () => {
+    const c = GameEngine.createRandomCharacter();
+    c.actionPoints = 0;
+    const initialCombat = c.stats.combat;
+    const initialHealth = c.stats.health;
+    let logCount = 0;
+    const updated = GameEngine.executeAnnualAction(c, 'train_combat', () => logCount++);
+    assertEqual(updated.actionPoints, 0, '0 AP에서 훈련 시도 후 AP는 0 유지 (음수 전락 방지)');
+    assertEqual(updated.stats.combat, initialCombat, '0 AP에서는 전투력 증가가 발생하지 않아야 함');
+    assertEqual(updated.stats.health, initialHealth, '0 AP에서는 체력 소모가 발생하지 않아야 함');
+    assertEqual(logCount, 0, '0 AP 거부 시 로그가 발행되지 않아야 함');
+  });
+
+  await runTest('B5-2: 0 AP 상태에서 아츠 수련(cultivate_arts) 및 학술 자문(study_lore) 거부 검증', () => {
+    const c = GameEngine.createRandomCharacter();
+    c.actionPoints = 0;
+    const initialArts = c.stats.artsAptitude;
+    const initialIntellect = c.stats.intellect;
+    const initialWealth = c.stats.wealth;
+    let logs = 0;
+    const logSpy = () => logs++;
+    const resArts = GameEngine.executeAnnualAction(c, 'cultivate_arts', logSpy);
+    const resLore = GameEngine.executeAnnualAction(c, 'study_lore', logSpy);
+    assertEqual(resArts.actionPoints, 0, '아츠 수련 시도 후 AP 0 유지');
+    assertEqual(resArts.stats.artsAptitude, initialArts, '0 AP에서 아츠 적성 불변');
+    assertEqual(resLore.actionPoints, 0, '학술 자문 시도 후 AP 0 유지');
+    assertEqual(resLore.stats.intellect, initialIntellect, '0 AP에서 지략 스탯 불변');
+    assertEqual(resLore.stats.wealth, initialWealth, '0 AP에서 원고료 LMD 불변');
+    assertEqual(logs, 0, '0 AP 시 모든 비의료 자율 행동 로그 미발행');
+  });
+
+  await runTest('B5-3: 1 AP에서 1회 자율 행동 후 AP 0 소진 및 2회차 연속 시도 시 차단 상태 전이 검증', () => {
+    const c = GameEngine.createRandomCharacter();
+    c.actionPoints = 1;
+    const initialCombat = c.stats.combat;
+    let logs = [];
+    const addLog = (entry) => logs.push(entry);
+
+    const after1 = GameEngine.executeAnnualAction(c, 'train_combat', addLog);
+    assertEqual(after1.actionPoints, 0, '1회 실행 후 1 AP 소진되어 0 AP가 되어야 함');
+    assert(after1.stats.combat > initialCombat, '정상 AP 행동 시 전투력 증가');
+    assertEqual(logs.length, 1, '정상 1회 행동 로그 1건 발행');
+
+    const combatAfter1 = after1.stats.combat;
+    const after2 = GameEngine.executeAnnualAction(after1, 'train_combat', addLog);
+    assertEqual(after2.actionPoints, 0, '소진 상태 추가 시도 시 AP 0 유지');
+    assertEqual(after2.stats.combat, combatAfter1, '소진 상태 2회차 시도 시 전투력 추가 증가 없음');
+    assertEqual(logs.length, 1, '추가 로그 없이 기존 1건 유지');
+  });
+
+  await runTest('B5-4: 음수 AP(-1) 비정상 상태 유입 시 추가 감산 방어 및 즉시 조기 반환 검증', () => {
+    const c = GameEngine.createRandomCharacter();
+    c.actionPoints = -1;
+    const initialCombat = c.stats.combat;
+    let logEmitted = false;
+    const updated = GameEngine.executeAnnualAction(c, 'train_combat', () => { logEmitted = true; });
+    assertEqual(updated.actionPoints, -1, '음수 AP 상태에서도 -2 등으로 추가 차감되지 않고 -1 유지');
+    assertEqual(updated.stats.combat, initialCombat, '음수 AP 상태에서 스탯 변동 차단');
+    assertEqual(logEmitted, false, '로그 미발행');
+  });
+
+  await runTest('B5-5: 티어별 연간 AP 상한 경계 검증 (1티어 1 AP, 2~3티어 2 AP, 4티어 이상/특수직 3 AP 상한 고정)', () => {
+    const testCases = [
+      { tier: 1, expectedAp: 1, desc: '1티어 기본 1 AP' },
+      { tier: 2, expectedAp: 2, desc: '2티어 2 AP' },
+      { tier: 3, expectedAp: 2, desc: '3티어 2 AP' },
+      { tier: 4, expectedAp: 3, desc: '4티어 3 AP' },
+      { tier: 10, expectedAp: 3, desc: '극단적 고위 티어(10티어)에서도 상한 3 AP 고정' }
+    ];
+    for (const tc of testCases) {
       const c = GameEngine.createRandomCharacter();
-      c.actionPoints = i - 1;
-      const canTrain = c.actionPoints > 0;
-      assert(typeof canTrain === 'boolean', 'AP 유효성 판정');
-    });
-  }
+      c.age = 25;
+      c.careerTier = tc.tier;
+      const { updatedChar } = GameEngine.advanceOneYear(c, noopLog, { autoManageApAndShop: false });
+      assertEqual(updatedChar.actionPoints, tc.expectedAp, tc.desc);
+    }
+  });
 
   reporter.setSuite('B6: 장비 슬롯 완전 비움 vs 풀장착 스탯 합산 경계');
-  for (let i = 1; i <= 5; i++) {
-    await runTest(`B6-${i}: 무기/방어구/장신구 ${i}단계 장착 조합 스탯 무결성`, () => {
-      const c = GameEngine.createRandomCharacter();
-      if (i >= 2) c.equipment.weapon = ITEMS_DATA[0];
-      if (i >= 3) c.equipment.armor = ITEMS_DATA[6] || ITEMS_DATA[1];
-      if (i >= 4) c.equipment.accessory = ITEMS_DATA.find(it => it.type === 'accessory') || undefined;
-      const normalized = GameEngine.ensureCharacterDefaults(c);
-      assert(!Number.isNaN(normalized.stats.health), '체력 스탯 무결성');
-    });
-  }
+  await runTest('B6-1: 무기/방어구/장신구 완전 비움 상태에서 기본 스탯 순수 반영 검증', () => {
+    const c = GameEngine.createRandomCharacter();
+    c.stats.combat = 40;
+    c.focusStance = 'survival';
+    c.innateTraits = [];
+    c.equipment = { weapon: undefined, armor: undefined, accessory: undefined };
+    const weapon = ITEMS_DATA.find(i => i.id === 'wp_guard_blade');
+    const weaponBonus = (c.equipment.weapon?.atkBonus || 0) + (c.equipment.accessory?.atkBonus || 0);
+    const armorDef = (c.equipment.armor?.defBonus || 0) + (c.equipment.accessory?.defBonus || 0);
+    assertEqual(weaponBonus, 0, '장비 미착용 시 무기 공격력 보너스는 0');
+    assertEqual(armorDef, 0, '장비 미착용 시 방어력 보너스는 0');
+    const totalDef = Math.floor(c.stats.combat * 0.35) + armorDef;
+    assertEqual(totalDef, 14, '순수 전투력 40 기준 방어력은 14 (40 * 0.35)');
+  });
+
+  await runTest('B6-2: 무기(wp_guard_blade, ATK +18) 단독 장착 시 공격력 가산 검증', () => {
+    const c = GameEngine.createRandomCharacter();
+    c.stats.combat = 40;
+    c.equipment.weapon = ITEMS_DATA.find(i => i.id === 'wp_guard_blade');
+    c.equipment.armor = undefined;
+    c.equipment.accessory = undefined;
+    const weaponBonus = (c.equipment.weapon?.atkBonus || 0) + (c.equipment.accessory?.atkBonus || 0);
+    assertEqual(weaponBonus, 18, '제식 도검 공격력 보너스 +18 적용');
+    const totalAtk = c.stats.combat + weaponBonus;
+    assertEqual(totalAtk, 58, '총 공격력 40 + 18 = 58');
+  });
+
+  await runTest('B6-3: 방어구(ar_kevlar_coat, DEF +22) 단독 장착 시 방어력 가산 검증', () => {
+    const c = GameEngine.createRandomCharacter();
+    c.stats.combat = 40;
+    c.equipment.weapon = undefined;
+    c.equipment.armor = ITEMS_DATA.find(i => i.id === 'ar_kevlar_coat');
+    c.equipment.accessory = undefined;
+    const armorDef = (c.equipment.armor?.defBonus || 0) + (c.equipment.accessory?.defBonus || 0);
+    assertEqual(armorDef, 22, '전술 방탄 코트 방어력 보너스 +22 적용');
+    const totalDef = Math.floor(c.stats.combat * 0.35) + armorDef;
+    assertEqual(totalDef, 36, '총 방어력 14 + 22 = 36');
+  });
+
+  await runTest('B6-4: 장신구(acc_blacksteel_comm, ATK +10, DEF +8) 단독 장착 시 공/방 동시 가산 검증', () => {
+    const c = GameEngine.createRandomCharacter();
+    c.stats.combat = 40;
+    c.equipment.weapon = undefined;
+    c.equipment.armor = undefined;
+    c.equipment.accessory = ITEMS_DATA.find(i => i.id === 'acc_blacksteel_comm');
+    const weaponBonus = (c.equipment.weapon?.atkBonus || 0) + (c.equipment.accessory?.atkBonus || 0);
+    const armorDef = (c.equipment.armor?.defBonus || 0) + (c.equipment.accessory?.defBonus || 0);
+    assertEqual(weaponBonus, 10, '장신구 공격력 보너스 +10');
+    assertEqual(armorDef, 8, '장신구 방어력 보너스 +8');
+  });
+
+  await runTest('B6-5: 무기+방어구+장신구 풀장착 시 3개 슬롯 공/방 합산 및 전투 커맨드 실행 검증', () => {
+    const c = GameEngine.createRandomCharacter();
+    c.stats.combat = 40;
+    c.focusStance = 'survival';
+    c.innateTraits = [];
+    c.equipment.weapon = ITEMS_DATA.find(i => i.id === 'wp_guard_blade'); // +18
+    c.equipment.armor = ITEMS_DATA.find(i => i.id === 'ar_kevlar_coat'); // +22
+    c.equipment.accessory = ITEMS_DATA.find(i => i.id === 'acc_blacksteel_comm'); // +10, +8
+
+    const weaponBonus = (c.equipment.weapon?.atkBonus || 0) + (c.equipment.accessory?.atkBonus || 0);
+    const armorDef = (c.equipment.armor?.defBonus || 0) + (c.equipment.accessory?.defBonus || 0);
+    assertEqual(weaponBonus, 28, '총 공격력 보너스 18 + 10 = 28');
+    assertEqual(armorDef, 30, '총 방어력 보너스 22 + 8 = 30');
+
+    // 실제 전투 실행하여 공격 명령 실행 무결성 검증
+    const battle = GameEngine.startBattle('slug_swarm');
+    const beforeEnemyHp = battle.enemy.hp;
+    const { updatedBattle: afterBattle } = GameEngine.executeBattleCommand(c, battle, 'attack');
+    assert(afterBattle.enemy.hp < beforeEnemyHp, '풀장착 타격으로 적 체력 정상 감소');
+  });
 
   reporter.setSuite('B7: 세력 평판 양극단 (-100 vs +100) 경계');
   for (let i = 1; i <= 5; i++) {
@@ -981,14 +1249,156 @@ async function main() {
   }
 
   reporter.setSuite('B8: 2d50 주사위 최소값(2) 및 최대값(100) 판정 경계');
-  for (let i = 1; i <= 5; i++) {
-    await runTest(`B8-${i}: 2d50 주사위 판정 시 최소값 2 및 최대값 100 범위 유지`, () => {
-      const rollMin = 1 + 1;
-      const rollMax = 50 + 50;
-      assertEqual(rollMin, 2, '주사위 최소 2');
-      assertEqual(rollMax, 100, '주사위 최대 100');
-    });
-  }
+  await runTest('B8-1: resolveChoice 실제 엔진 판정 200회 호출 시 모든 roll이 [2, 100] 정수 범위 내 엄격 존재 확인', () => {
+    const c = GameEngine.createRandomCharacter();
+    const testChoice = {
+      id: 'test_dice_b8_1',
+      label: '경계 주사위 판정',
+      description: '2d50 주사위 범위 검증',
+      diceCheck: { stat: 'combat', difficulty: 50 },
+      outcomes: {
+        success: { text: '성공' },
+        failure: { text: '실패' }
+      }
+    };
+    const rolls = [];
+    for (let i = 0; i < 200; i++) {
+      GameEngine.resolveChoice(c, testChoice, (entry) => {
+        if (entry.rollDetails) {
+          rolls.push(entry.rollDetails.roll);
+        }
+      });
+    }
+    assertEqual(rolls.length, 200, '200회 판정 로그 모두 수집');
+    for (const r of rolls) {
+      assert(Number.isInteger(r), `주사위 결과는 정수여야 함: ${r}`);
+      assert(r >= 2 && r <= 100, `주사위 결과는 [2, 100] 범위여야 함: ${r}`);
+    }
+    const minRoll = Math.min(...rolls);
+    const maxRoll = Math.max(...rolls);
+    assert(minRoll >= 2, `관측 최소값은 2 이상이어야 함: ${minRoll}`);
+    assert(maxRoll <= 100, `관측 최대값은 100 이하여야 함: ${maxRoll}`);
+  });
+
+  await runTest('B8-2: 2d50 주사위 500회 연속 엔진 판정 시 평균값이 중앙값 51.0 근방([47.5, 54.5])에 수렴하는 벨커브 특성 검증', () => {
+    const c = GameEngine.createRandomCharacter();
+    const testChoice = {
+      id: 'test_dice_b8_2',
+      label: '확률 수렴 판정',
+      description: '2d50 대수의 법칙 검증',
+      diceCheck: { stat: 'combat', difficulty: 50 },
+      outcomes: { success: { text: '성공' }, failure: { text: '실패' } }
+    };
+    let sum = 0;
+    let count = 0;
+    for (let i = 0; i < 500; i++) {
+      GameEngine.resolveChoice(c, testChoice, (entry) => {
+        if (entry.rollDetails) {
+          sum += entry.rollDetails.roll;
+          count++;
+        }
+      });
+    }
+    assertEqual(count, 500, '500회 주사위 굴림 수집');
+    const avg = sum / count;
+    assertInRange(avg, 47.5, 54.5, `500회 표본 평균(${avg.toFixed(2)})은 51.0 근방이어야 함`);
+  });
+
+  await runTest('B8-3: 극단 경계값(최소 2, 최대 100) 모의 주사위 주입 시 대참사/대성공 엔진 판정 분기 무결성 검증', () => {
+    const c = GameEngine.createRandomCharacter();
+    c.stats.combat = 30; // 보정치 30 / 2.5 = 12
+    const testChoice = {
+      id: 'test_dice_b8_3',
+      label: '극단 경계 판정',
+      description: '최소 2 및 최대 100 분기 검증',
+      diceCheck: { stat: 'combat', difficulty: 50 },
+      outcomes: {
+        criticalSuccess: { text: '대성공' },
+        success: { text: '성공' },
+        failure: { text: '실패' },
+        criticalFailure: { text: '대참사' }
+      }
+    };
+
+    const origRandom = Math.random;
+    try {
+      // 최소 경계값: Math.random() = 0 -> d1=1, d2=1 -> rawRoll = 2 (<= 5 대참사 조건)
+      Math.random = () => 0.0;
+      let minEntry = null;
+      GameEngine.resolveChoice(c, testChoice, (entry) => { minEntry = entry; });
+      assertEqual(minEntry.rollDetails.roll, 2, '최소 주사위 결과는 정확히 2');
+      assertEqual(minEntry.rollDetails.result, '대참사', 'rawRoll <= 5 일 때 대참사 분기');
+
+      // 최대 경계값: Math.random() = 0.99999999 -> d1=50, d2=50 -> rawRoll = 100 (>= 96 대성공 조건)
+      Math.random = () => 0.99999999;
+      let maxEntry = null;
+      GameEngine.resolveChoice(c, testChoice, (entry) => { maxEntry = entry; });
+      assertEqual(maxEntry.rollDetails.roll, 100, '최대 주사위 결과는 정확히 100');
+      assertEqual(maxEntry.rollDetails.result, '대성공', 'rawRoll >= 96 일 때 대성공 분기');
+    } finally {
+      Math.random = origRandom;
+    }
+  });
+
+  await runTest('B8-4: 2d50 중심 집중도 검증 (중앙 구간 [26, 75] 발생 빈도가 양 극단 구간 대비 압도적 높음)', () => {
+    const c = GameEngine.createRandomCharacter();
+    const testChoice = {
+      id: 'test_dice_b8_4',
+      label: '분포 집중도 판정',
+      description: '2d50 삼각분포 중심 집중 검증',
+      diceCheck: { stat: 'combat', difficulty: 50 },
+      outcomes: { success: { text: '성공' }, failure: { text: '실패' } }
+    };
+    let centerCount = 0; // [26, 75] (이론 확률 75%)
+    let edgeLowCount = 0; // [2, 25] (이론 확률 12.5%)
+    let edgeHighCount = 0; // [76, 100] (이론 확률 12.5%)
+    const sampleSize = 400;
+
+    for (let i = 0; i < sampleSize; i++) {
+      GameEngine.resolveChoice(c, testChoice, (entry) => {
+        if (entry.rollDetails) {
+          const r = entry.rollDetails.roll;
+          if (r >= 26 && r <= 75) centerCount++;
+          else if (r <= 25) edgeLowCount++;
+          else edgeHighCount++;
+        }
+      });
+    }
+
+    // 400회 중 중앙 구간이 최소 60%(240회) 이상이어야 함 (이론치 75% = 300회)
+    assert(centerCount >= 240, `중앙 구간 관측 빈도(${centerCount}/${sampleSize})는 60% 이상이어야 함`);
+    assert(centerCount > edgeLowCount * 2, '중앙 구간이 저위 극단보다 2배 이상 빈번해야 함');
+    assert(centerCount > edgeHighCount * 2, '중앙 구간이 고위 극단보다 2배 이상 빈번해야 함');
+  });
+
+  await runTest('B8-5: 달인 보호(Master Protection) 경계 검증 (스탯 90 이상 & DC 60 이하 시 roll=2 최저치에서도 대참사 면제)', () => {
+    const masterChar = GameEngine.createRandomCharacter();
+    masterChar.stats.combat = 95; // 달인 기준치(90) 충족
+    const masterChoice = {
+      id: 'test_dice_b8_5',
+      label: '달인 면역 판정',
+      description: '최저 주사위에서도 대참사 면역 검증',
+      diceCheck: { stat: 'combat', difficulty: 50 }, // DC 50 <= 60
+      outcomes: {
+        criticalSuccess: { text: '대성공' },
+        success: { text: '성공' },
+        failure: { text: '일반 실패' },
+        criticalFailure: { text: '대참사 발생', deathReason: '즉사' }
+      }
+    };
+
+    const origRandom = Math.random;
+    try {
+      Math.random = () => 0.0; // roll = 2
+      let entry = null;
+      const { updatedChar } = GameEngine.resolveChoice(masterChar, masterChoice, (e) => { entry = e; });
+      assertEqual(entry.rollDetails.roll, 2, '주사위 최저치 2');
+      assertEqual(entry.rollDetails.result, '실패', '달인 보호로 대참사가 아닌 일반 실패 처리');
+      assert(updatedChar.isAlive, '대참사 면제로 캐릭터 사망 차단');
+    } finally {
+      Math.random = origRandom;
+    }
+  });
 
   reporter.setSuite('B9: 0세 신생아 생성 초기치 경계');
   for (let i = 1; i <= 5; i++) {
@@ -1047,13 +1457,111 @@ async function main() {
   }
 
   reporter.setSuite('B14: 인벤토리 풀 슬롯(8개) 초과 구매 차단 경계');
-  for (let i = 1; i <= 5; i++) {
-    await runTest(`B14-${i}: 인벤토리 슬롯 8개 가득 찼을 때 안전 처리`, () => {
-      const c = GameEngine.createRandomCharacter();
-      c.inventory = Array.from({ length: 8 }, (_, idx) => ({ item: ITEMS_DATA[0], count: 1 }));
-      assertEqual(c.inventory.length, 8, '8개 풀 슬롯');
-    });
-  }
+  await runTest('B14-1: 8개 풀 슬롯 상태에서 신규 9번째 소모품 구매 거절 및 자금 보존', () => {
+    const c = GameEngine.createRandomCharacter();
+    c.stats.wealth = 5000;
+    c.inventory = [
+      { item: ITEMS_DATA.find(i => i.id === 'med_emergency_spray'), count: 1 },
+      { item: ITEMS_DATA.find(i => i.id === 'med_sanity_potion'), count: 1 },
+      { item: ITEMS_DATA.find(i => i.id === 'med_rhodes_suppressant'), count: 1 },
+      { item: ITEMS_DATA.find(i => i.id === 'med_blackmarket_fake'), count: 1 },
+      { item: { id: 'test_item_5', name: '테스트 물자 5', type: 'medicine', price: 100, rarity: 1 }, count: 1 },
+      { item: { id: 'test_item_6', name: '테스트 물자 6', type: 'medicine', price: 100, rarity: 1 }, count: 1 },
+      { item: { id: 'test_item_7', name: '테스트 물자 7', type: 'medicine', price: 100, rarity: 1 }, count: 1 },
+      { item: { id: 'test_item_8', name: '테스트 물자 8', type: 'medicine', price: 100, rarity: 1 }, count: 1 },
+    ];
+    assertEqual(c.inventory.length, 8, '초기 슬롯 8개 확인');
+
+    const beforeWealth = c.stats.wealth;
+    const res = GameEngine.buyOrEquipItem(c, 'med_originium_catalyst', noopLog);
+
+    assertEqual(res.inventory.length, 8, '8개 슬롯 초과 구매 시도 후 슬롯 수 유지');
+    assertEqual(res.stats.wealth, beforeWealth, '구매 실패 시 LMD 자금 미차감 보존');
+    assert(!res.inventory.some(s => s.item.id === 'med_originium_catalyst'), '초과 구매 품목은 인벤토리에 추가되지 않음');
+  });
+
+  await runTest('B14-2: 8개 풀 슬롯 상태에서도 기존 보유 소모품 구매 시 수량 중첩(+1) 허용', () => {
+    const c = GameEngine.createRandomCharacter();
+    c.stats.wealth = 5000;
+    c.inventory = [
+      { item: ITEMS_DATA.find(i => i.id === 'med_emergency_spray'), count: 2 },
+      { item: ITEMS_DATA.find(i => i.id === 'med_sanity_potion'), count: 1 },
+      { item: ITEMS_DATA.find(i => i.id === 'med_rhodes_suppressant'), count: 1 },
+      { item: ITEMS_DATA.find(i => i.id === 'med_blackmarket_fake'), count: 1 },
+      { item: { id: 'test_item_5', name: '테스트 물자 5', type: 'medicine', price: 100, rarity: 1 }, count: 1 },
+      { item: { id: 'test_item_6', name: '테스트 물자 6', type: 'medicine', price: 100, rarity: 1 }, count: 1 },
+      { item: { id: 'test_item_7', name: '테스트 물자 7', type: 'medicine', price: 100, rarity: 1 }, count: 1 },
+      { item: { id: 'test_item_8', name: '테스트 물자 8', type: 'medicine', price: 100, rarity: 1 }, count: 1 },
+    ];
+    const beforeWealth = c.stats.wealth;
+    const sprayPrice = ITEMS_DATA.find(i => i.id === 'med_emergency_spray').price;
+    const res = GameEngine.buyOrEquipItem(c, 'med_emergency_spray', noopLog);
+
+    assertEqual(res.inventory.length, 8, '기존 품목 중첩 구매 시 슬롯 수 8개 유지');
+    const slot = res.inventory.find(s => s.item.id === 'med_emergency_spray');
+    assertEqual(slot.count, 3, '기존 슬롯 수량 1개 증가');
+    assertEqual(res.stats.wealth, beforeWealth - sprayPrice, '기존 품목 구매 가격 정상 차감');
+  });
+
+  await runTest('B14-3: 7개 슬롯 상태에서 신규 품목 구매 시 8번째 슬롯 정상 확장', () => {
+    const c = GameEngine.createRandomCharacter();
+    c.stats.wealth = 5000;
+    c.inventory = [
+      { item: ITEMS_DATA.find(i => i.id === 'med_emergency_spray'), count: 1 },
+      { item: ITEMS_DATA.find(i => i.id === 'med_sanity_potion'), count: 1 },
+      { item: ITEMS_DATA.find(i => i.id === 'med_rhodes_suppressant'), count: 1 },
+      { item: { id: 'test_item_4', name: '테스트 물자 4', type: 'medicine', price: 100, rarity: 1 }, count: 1 },
+      { item: { id: 'test_item_5', name: '테스트 물자 5', type: 'medicine', price: 100, rarity: 1 }, count: 1 },
+      { item: { id: 'test_item_6', name: '테스트 물자 6', type: 'medicine', price: 100, rarity: 1 }, count: 1 },
+      { item: { id: 'test_item_7', name: '테스트 물자 7', type: 'medicine', price: 100, rarity: 1 }, count: 1 },
+    ];
+    assertEqual(c.inventory.length, 7, '초기 슬롯 7개');
+    const catalystPrice = ITEMS_DATA.find(i => i.id === 'med_originium_catalyst').price;
+    const beforeWealth = c.stats.wealth;
+    const res = GameEngine.buyOrEquipItem(c, 'med_originium_catalyst', noopLog);
+
+    assertEqual(res.inventory.length, 8, '8번째 슬롯 정상 등록');
+    assert(res.inventory.some(s => s.item.id === 'med_originium_catalyst'), '신규 품목 슬롯 추가 확인');
+    assertEqual(res.stats.wealth, beforeWealth - catalystPrice, '정상 가격 차감');
+  });
+
+  await runTest('B14-4: 8개 풀 슬롯 상태에서 자금 부족 시 슬롯 초과 및 자금 부족 이중 차단', () => {
+    const c = GameEngine.createRandomCharacter();
+    c.stats.wealth = 50; // med_originium_catalyst (600 LMD) 살 수 없는 부족 자금
+    c.inventory = Array.from({ length: 8 }, (_, idx) => ({
+      item: { id: `test_item_${idx + 1}`, name: `테스트 물자 ${idx + 1}`, type: 'medicine', price: 100, rarity: 1 },
+      count: 1
+    }));
+    const res = GameEngine.buyOrEquipItem(c, 'med_originium_catalyst', noopLog);
+
+    assertEqual(res.inventory.length, 8, '슬롯 수 변동 없음');
+    assertEqual(res.stats.wealth, 50, '자금 미차감 보존');
+  });
+
+  await runTest('B14-5: 8개 풀 슬롯에서 소모품 소진(useInventoryItem)으로 7개 감축 후 신규 구매 재개', () => {
+    const c = GameEngine.createRandomCharacter();
+    c.stats.wealth = 5000;
+    c.stats.health = 50;
+    c.stats.maxHealth = 100;
+    c.inventory = [
+      { item: ITEMS_DATA.find(i => i.id === 'med_emergency_spray'), count: 1 }, // 1개 소모품 사용 시 슬롯 삭제됨
+      { item: ITEMS_DATA.find(i => i.id === 'med_sanity_potion'), count: 1 },
+      { item: ITEMS_DATA.find(i => i.id === 'med_rhodes_suppressant'), count: 1 },
+      { item: { id: 'test_item_4', name: '테스트 물자 4', type: 'medicine', price: 100, rarity: 1 }, count: 1 },
+      { item: { id: 'test_item_5', name: '테스트 물자 5', type: 'medicine', price: 100, rarity: 1 }, count: 1 },
+      { item: { id: 'test_item_6', name: '테스트 물자 6', type: 'medicine', price: 100, rarity: 1 }, count: 1 },
+      { item: { id: 'test_item_7', name: '테스트 물자 7', type: 'medicine', price: 100, rarity: 1 }, count: 1 },
+      { item: { id: 'test_item_8', name: '테스트 물자 8', type: 'medicine', price: 100, rarity: 1 }, count: 1 },
+    ];
+    // 1개 보유 중인 스프레이 사용 -> 인벤토리 슬롯 7개로 감소
+    const usedChar = GameEngine.useInventoryItem(c, 'med_emergency_spray', noopLog);
+    assertEqual(usedChar.inventory.length, 7, '아이템 소진 후 7개 슬롯으로 정돈');
+
+    // 슬롯 1개 여유 발생 후 신규 아이템 구매 -> 성공하여 다시 8개 풀 슬롯
+    const res = GameEngine.buyOrEquipItem(usedChar, 'med_originium_catalyst', noopLog);
+    assertEqual(res.inventory.length, 8, '빈 슬롯에 신규 물자 정상 구매 장착');
+    assert(res.inventory.some(s => s.item.id === 'med_originium_catalyst'), '신규 물자 보유 확인');
+  });
 
   reporter.setSuite('B15: 특수문자 및 초장문 캐릭터 이름 인코딩 경계');
   for (let i = 1; i <= 5; i++) {
@@ -1081,12 +1589,82 @@ async function main() {
   }
 
   reporter.setSuite('B17: 선택지 0개 사건 유입 시 폴백 처리 경계');
-  for (let i = 1; i <= 5; i++) {
-    await runTest(`B17-${i}: choices가 빈 배열인 이벤트 안전 처리`, () => {
-      const emptyEvent = { id: 'empty', title: '빈 사건', description: '', category: 'life', minAge: 0, maxAge: 100, choices: [] };
-      assert(emptyEvent.choices.length === 0, '빈 선택지 객체');
-    });
-  }
+  await runTest('B17-1: choices가 빈 배열([])인 이벤트에 대해 selectAutoChoice가 안전한 기본 폴백 선택지 반환', () => {
+    const c = GameEngine.createRandomCharacter();
+    const emptyEvent = {
+      id: 'test_empty_event_1',
+      title: '선택지 없는 비정형 사건',
+      description: '사건 데이터 오류 또는 특수 환경으로 인해 선택지가 제공되지 않음',
+      category: 'life',
+      minAge: 0,
+      maxAge: 100,
+      choices: []
+    };
+    const choice = GameEngine.selectAutoChoice(c, emptyEvent);
+    assert(!!choice, '선택지 객체가 반환되어야 함');
+    assert(typeof choice.label === 'string' && choice.label.length > 0, '선택지 라벨 존재');
+    assert(!!choice.outcomes && !!choice.outcomes.success, '기본 성공 결과 객체 포함');
+  });
+
+  await runTest('B17-2: 0개 선택지 사건의 폴백 선택지를 resolveChoice에 전달 시 크래시 없이 정상 완료', () => {
+    const c = GameEngine.createRandomCharacter();
+    const emptyEvent = {
+      id: 'test_empty_event_2',
+      title: '빈 사건 2',
+      description: '',
+      category: 'life',
+      minAge: 0,
+      maxAge: 100,
+      choices: []
+    };
+    const fallbackChoice = GameEngine.selectAutoChoice(c, emptyEvent);
+    const initialWealth = c.stats.wealth;
+    const res = GameEngine.resolveChoice(c, fallbackChoice, noopLog);
+
+    assert(res.updatedChar.isAlive, '캐릭터 생존 상태 정상 유지');
+    assertEqual(res.updatedChar.stats.wealth, initialWealth, '불필요한 자산 변경 없음');
+  });
+
+  await runTest('B17-3: resolveChoice에 undefined 선택지 직접 전달 시 예외 없이 원본 캐릭터 반환', () => {
+    const c = GameEngine.createRandomCharacter();
+    const emptyEvent = {
+      id: 'test_empty_event_3',
+      title: '빈 사건 3',
+      description: '',
+      category: 'life',
+      minAge: 0,
+      maxAge: 100,
+      choices: []
+    };
+    // emptyEvent.choices[0] 은 undefined
+    const res = GameEngine.resolveChoice(c, emptyEvent.choices[0], noopLog);
+    assert(!!res && !!res.updatedChar, '결과 객체 및 캐릭터 안전 반환');
+    assertEqual(res.updatedChar.age, c.age, '캐릭터 나이 일치');
+    assertEqual(res.updatedChar.stats.health, c.stats.health, '체력 왜곡 없음');
+  });
+
+  await runTest('B17-4: checkChoiceRequirements에 undefined 선택지 전달 시 크래시 없이 안전 거절({ allowed: false })', () => {
+    const c = GameEngine.createRandomCharacter();
+    const check = GameEngine.checkChoiceRequirements(c, undefined);
+    assertEqual(check.allowed, false, 'undefined 선택지는 요구 조건 미충족 처리');
+    assert(typeof check.reason === 'string', '거절 사유 텍스트 반환');
+  });
+
+  await runTest('B17-5: choices 필드 자체가 누락된(undefined) 비정형 이벤트 유입 시 연속 방어 완주', () => {
+    const c = GameEngine.createRandomCharacter();
+    const malformedEvent = {
+      id: 'test_malformed_event',
+      title: 'choices 프로퍼티 누락 사건',
+      description: '비정형 데이터',
+      category: 'hazard',
+      minAge: 0,
+      maxAge: 100
+    };
+    const choice = GameEngine.selectAutoChoice(c, malformedEvent);
+    assert(!!choice, 'choices 필드 누락 시에도 안전 폴백 선택지 생성');
+    const res = GameEngine.resolveChoice(c, choice, noopLog);
+    assert(res.updatedChar.isAlive, '정상 실행 완료');
+  });
 
   reporter.setSuite('B18: 미등록 적 ID 전투 시작 시 slug_swarm 폴백 경계');
   for (let i = 1; i <= 5; i++) {
