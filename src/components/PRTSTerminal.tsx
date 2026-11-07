@@ -1,8 +1,10 @@
 import React, { useRef, useEffect, useMemo, useState } from 'react';
-import { Character, LogEntry, GameEvent, EventChoice, GameSpeed, ThemeMode, FocusStance, Season } from '../types';
+import { Character, LogEntry, GameEvent, EventChoice, GameSpeed, ThemeMode, FocusStance, Season, NationThemeId } from '../types';
 import { GameEngine } from '../engine/gameEngine';
 import { evaluateLifeGoal, FOCUS_STANCES } from '../data/traits';
 import { EventLogPanel } from './EventLogPanel';
+import { NationInsignia } from './NationInsignia';
+import { resolveNationId, getNationVisualIdentity } from '../utils/themeResolver';
 import {
   Heart,
   Brain,
@@ -31,6 +33,7 @@ import {
 
 interface Props {
   character: Character;
+  nationId?: NationThemeId;
   logs: LogEntry[];
   currentEvent?: GameEvent;
   onSelectChoice: (choice: EventChoice) => void;
@@ -40,10 +43,12 @@ interface Props {
   onChangeSpeed: (speed: GameSpeed) => void;
   yearProgress?: number;
   currentSeason?: Season;
+  season?: Season;
   minorTimeoutRemainingSec?: number | null;
   onChangeFocusStance?: (stance: FocusStance) => void;
   onNextYear: () => void;
   onSkipToNextEvent?: () => void;
+  onFlowThroughEvent?: () => void;
   isAutoChoiceEnabled: boolean;
   onToggleAutoChoice: () => void;
   autoChoicePendingId?: string | null;
@@ -60,8 +65,212 @@ interface Props {
   theme: ThemeMode;
 }
 
+export const evaluateSpecialtyMetric = (
+  widgetId: string,
+  char: Character
+): { value: string; hint: string; tone: string } => {
+  switch (widgetId) {
+    case 'victoria-steam':
+    case 'victoria-parliament-dial': {
+      const rep = char.factions['빅토리아 귀족원'] ?? (char.factions['빅토리아'] ?? 0);
+      const steamPsi = Math.min(120, Math.max(10, Math.round(50 + (char.stats.combat * 0.35) + (rep * 0.4))));
+      return {
+        value: `${steamPsi} PSI (${rep >= 0 ? '+' : ''}${rep} 議席)`,
+        hint: steamPsi >= 90 ? '초과열 고압 가동' : steamPsi >= 55 ? '황실 정격 순항' : '증기압 저하 감시',
+        tone: steamPsi >= 90 ? 'text-amber-400' : steamPsi >= 55 ? 'text-cyan-300' : 'text-rose-400'
+      };
+    }
+    case 'yan-tianji':
+    case 'yan-astrology-gauge': {
+      const balance = Math.round((char.stats.sanity * 0.5) + (char.stats.intellect * 0.5));
+      return {
+        value: `陰陽調和 ${balance}%`,
+        hint: balance >= 75 ? '大吉 (천기 순풍)' : balance >= 45 ? '平 (음양 화평)' : '大凶 (수이 요동)',
+        tone: balance >= 75 ? 'text-emerald-400' : balance >= 45 ? 'text-amber-400' : 'text-rose-400'
+      };
+    }
+    case 'ursus-cold-command':
+    case 'ursus-purge-risk-index': {
+      const healthPct = char.stats.maxHealth > 0 ? (char.stats.health / char.stats.maxHealth) * 100 : 50;
+      const frostEndurance = Math.min(100, Math.max(10, Math.round((healthPct * 0.6) + (char.stats.combat * 0.4))));
+      const purgeRisk = Math.max(0, Math.min(100, Math.round(100 - healthPct - Math.min(40, char.stats.wealth / 250))));
+      return {
+        value: `혹한 내구 ${frostEndurance}% (영하 ${Math.round(20 + (100 - frostEndurance) * 0.3)}°C)`,
+        hint: purgeRisk >= 60 ? '비밀경찰 주시' : frostEndurance >= 70 ? '동토 진군 사기 고양' : '혹한 전선 경계',
+        tone: purgeRisk >= 60 ? 'text-red-400' : frostEndurance >= 70 ? 'text-amber-300' : 'text-cyan-300'
+      };
+    }
+    case 'kazimierz-odds':
+    case 'kazimierz-honor-purse': {
+      const prestige = Math.round((char.stats.combat * 0.6) + (char.stats.wealth * 0.002) + (char.stats.luck * 0.3));
+      const odds = Math.max(1.05, Number((12.5 - Math.min(11.3, prestige * 0.11)).toFixed(2)));
+      return {
+        value: `1:${odds.toFixed(2)} (${prestige} pt)`,
+        hint: prestige >= 75 ? '메이저 챔피언 유력' : prestige >= 40 ? '본선 리그 시드권' : '지하 투기장 무명',
+        tone: prestige >= 75 ? 'text-amber-300' : prestige >= 40 ? 'text-yellow-400' : 'text-slate-400'
+      };
+    }
+    case 'columbia-telemetry':
+    case 'columbia-credit-rating': {
+      const score = Math.min(850, 450 + Math.floor(char.stats.wealth / 100) + char.stats.intellect * 2);
+      const grade = score >= 800 ? 'AAA' : score >= 730 ? 'AA' : score >= 660 ? 'A' : 'BBB';
+      return {
+        value: `${grade} (${score}점)`,
+        hint: score >= 750 ? '트라이마운츠 개척 특례' : score >= 650 ? '표준 신용 거래' : '투자 담보 한도 경고',
+        tone: score >= 750 ? 'text-emerald-300' : score >= 650 ? 'text-cyan-300' : 'text-amber-400'
+      };
+    }
+    case 'iberia-astrolabe':
+    case 'iberia-aegir-tide-sensor': {
+      const maxSan = Math.max(1, char.stats.maxSanity);
+      const abyssalPressure = Math.max(0, Math.min(100, Math.round(100 - (char.stats.sanity / maxSan) * 100)));
+      return {
+        value: `海嗣 潮汐 ${abyssalPressure}%`,
+        hint: abyssalPressure >= 60 ? '대침묵 심해 침식' : abyssalPressure >= 30 ? '등대 황금광 관측' : '성당 아스트롤라베 안정',
+        tone: abyssalPressure >= 60 ? 'text-rose-400' : abyssalPressure >= 30 ? 'text-amber-300' : 'text-cyan-300'
+      };
+    }
+    case 'laterano-halo':
+    case 'laterano-notarial-dispensation': {
+      const normArts = char.stats.artsAptitude > 5 ? 0.6 + char.stats.artsAptitude / 45 : char.stats.artsAptitude;
+      const haloResonance = Math.min(100, Math.max(20, Math.round((char.stats.sanity * 0.5) + (normArts * 25))));
+      const lawFaith = Math.min(100, Math.round((char.stats.sanity * 0.6) + (char.stats.combat * 0.4)));
+      return {
+        value: `${haloResonance}% (${(140 + haloResonance * 0.2).toFixed(1)} MHz)`,
+        hint: lawFaith >= 75 ? '수호총 축성 및 교령 공명' : lawFaith >= 45 ? '성율 준수 신민' : '공증소 심문 대상',
+        tone: lawFaith >= 75 ? 'text-yellow-300' : lawFaith >= 45 ? 'text-amber-200' : 'text-rose-400'
+      };
+    }
+    case 'leithanien-cadence':
+    case 'leithanien-harmonic-tuner': {
+      const art = char.stats.artsAptitude > 5 ? 0.6 + char.stats.artsAptitude / 45 : char.stats.artsAptitude;
+      const harmony = Math.min(100, Math.round(art * 40 + char.stats.intellect * 0.3));
+      return {
+        value: `${art.toFixed(1)} Octave (${harmony}%)`,
+        hint: art >= 1.6 ? '쌍둥이 첨탑 황금 협주' : art >= 1.0 ? '궁정 화음 정격 안착' : '음유 불협화음 감쇄',
+        tone: art >= 1.6 ? 'text-yellow-300' : art >= 1.0 ? 'text-purple-300' : 'text-slate-400'
+      };
+    }
+    case 'sami-collapse':
+    case 'sami-snow-corruption-totem': {
+      const maxSan = Math.max(1, char.stats.maxSanity);
+      const sanityLoss = Math.max(0, maxSan - char.stats.sanity);
+      const collapseRate = Math.min(100, Math.round((sanityLoss / maxSan) * 100));
+      const auraPurity = Math.max(0, 100 - collapseRate);
+      return {
+        value: `靈氣 ${auraPurity}% (붕괴 ${collapseRate}%)`,
+        hint: collapseRate >= 50 ? '붕괴 침식 경계' : collapseRate >= 20 ? '은빛 서리 성림 조율' : '빙원 정령 비호',
+        tone: collapseRate >= 50 ? 'text-purple-400' : collapseRate >= 20 ? 'text-teal-300' : 'text-emerald-300'
+      };
+    }
+    case 'siracusa-omerta':
+    case 'siracusa-vendetta-gauge': {
+      const familyRep = char.factions['시라쿠사 패밀리'] ?? (char.factions['시라쿠사'] ?? 10);
+      const omertaBond = Math.min(100, Math.max(0, Math.round(50 + familyRep * 0.5 + char.stats.intellect * 0.2)));
+      const vendetta = Math.max(0, 100 - omertaBond);
+      return {
+        value: `결속 ${omertaBond}% · 복수 ${vendetta}目`,
+        hint: omertaBond >= 75 ? '패밀리 핵심 간부 신뢰' : omertaBond >= 45 ? '침묵 서약 준수' : '오메르타 파기 암살 표적',
+        tone: omertaBond >= 75 ? 'text-rose-400' : omertaBond >= 45 ? 'text-amber-400' : 'text-red-500'
+      };
+    }
+    case 'sargon-tribute':
+    case 'sargon-sand-tribute-ledger': {
+      const tribute = Math.round(char.stats.combat * 8 + char.stats.wealth * 0.04);
+      const maxHp = Math.max(1, char.stats.maxHealth);
+      const climateTolerance = Math.min(100, Math.round((char.stats.health / maxHp) * 60 + char.stats.combat * 0.4));
+      return {
+        value: `열사 적응 ${climateTolerance}% (${tribute} 萬)`,
+        hint: tribute >= 450 ? '파디샤 친위 영예 공납' : climateTolerance >= 60 ? '오아시스 상단 번영' : '사막 열풍 조난 경계',
+        tone: tribute >= 450 ? 'text-yellow-400' : climateTolerance >= 60 ? 'text-amber-300' : 'text-orange-500'
+      };
+    }
+    case 'rim-billiton-depth':
+    case 'rim-billiton-mining-depth': {
+      const depth = 300 + Math.floor(char.stats.wealth / 50) + char.stats.health * 5;
+      return {
+        value: `지하 ${depth}m 갱도`,
+        hint: depth >= 1100 ? '심도 고순도 원암 광맥' : depth >= 600 ? '중층 리그 굴착 순항' : '표층 오리지늄 탐사',
+        tone: depth >= 1100 ? 'text-amber-400' : depth >= 600 ? 'text-yellow-500' : 'text-slate-400'
+      };
+    }
+    case 'lungmen-lgd': {
+      const rep = char.factions['용문근위국'] ?? (char.factions['용문'] ?? 0);
+      const security = Math.min(100, Math.max(15, Math.round(55 + rep * 0.4 + char.stats.combat * 0.2 + char.stats.intellect * 0.15)));
+      const fxRate = (1.0 + Math.min(0.35, (char.stats.wealth / 50000) * 0.15 + (char.stats.intellect / 100) * 0.1)).toFixed(2);
+      return {
+        value: `치안 ${security}% · 1 LMD : ${fxRate}`,
+        hint: security >= 80 ? '특별행정구 최고 안전령' : security >= 50 ? '근위국 통상 순찰망' : '외곽 슬럼가 소요 경계',
+        tone: security >= 80 ? 'text-emerald-300' : security >= 50 ? 'text-amber-300' : 'text-rose-400'
+      };
+    }
+    case 'kazdel-souls': {
+      const rep = char.factions['카즈델 군사위원회'] ?? (char.factions['카즈델'] ?? (char.factions['바벨'] ?? 0));
+      const cryst = char.oripathy?.crystallizationRate ?? 0;
+      const normArts = char.stats.artsAptitude > 5 ? 0.6 + char.stats.artsAptitude / 45 : char.stats.artsAptitude;
+      const resonance = Math.min(100, Math.max(10, Math.round(normArts * 35 + (cryst * 0.4) + (char.stats.combat * 0.2))));
+      const bulwark = Math.min(100, Math.max(10, Math.round(40 + rep * 0.5 + char.stats.combat * 0.3)));
+      return {
+        value: `萬魂 공명 ${resonance}% · 방어선 ${bulwark}%`,
+        hint: resonance >= 75 ? '고대 살카즈 원혼 합일' : bulwark >= 60 ? '폐허 결계선 견고' : '원혼의 통곡 잠식 경계',
+        tone: resonance >= 75 ? 'text-rose-400' : bulwark >= 60 ? 'text-purple-300' : 'text-amber-400'
+      };
+    }
+    case 'kjerag-bell':
+    case 'kjerag-prayer-mantle': {
+      const faith = Math.min(100, Math.max(20, Math.round((char.stats.sanity * 0.7) + (char.stats.intellect * 0.3))));
+      const purity = Math.min(100, Math.max(30, Math.round(faith * 0.8 + 20)));
+      return {
+        value: `순도 ${purity}% (종소리 공명)`,
+        hint: purity >= 85 ? '카를란 만년설 성산 가호' : purity >= 60 ? '카를란 무역연합 평온' : '성산 설봉 한파 경계',
+        tone: purity >= 85 ? 'text-sky-300' : purity >= 60 ? 'text-cyan-400' : 'text-slate-400'
+      };
+    }
+    case 'rhodes-prts':
+    case 'rhodes-medical-chart': {
+      const stage = char.oripathy?.stage ?? 'Clean';
+      const density = (char.oripathy?.originiumBloodDensity ?? 0).toFixed(2);
+      const doseLeft = char.oripathy?.suppressantDoseLeft ?? 0;
+      const maxSan = Math.max(1, char.stats.maxSanity);
+      const syncRate = Math.min(100, Math.max(10, Math.round((char.stats.sanity / maxSan) * 60 + char.stats.intellect * 0.4)));
+      return {
+        value: `동기화 ${syncRate}% · ${density}u/L`,
+        hint: doseLeft > 0 
+          ? `억제제 잔여 ${doseLeft}회 (PRTS 안정)` 
+          : stage === 'Terminal' 
+          ? '생체 신호 위험 임계' 
+          : '신경망 동기화 순항',
+        tone: stage === 'Terminal' ? 'text-rose-400' : stage === 'Severe' ? 'text-orange-400' : syncRate >= 80 ? 'text-cyan-300' : 'text-amber-300'
+      };
+    }
+    case 'higashi-blade-oath-seal': {
+      const honor = Math.round(char.stats.combat * 0.8 + char.stats.luck * 0.2);
+      return {
+        value: `無雙 拔刀 ${honor} 階`,
+        hint: honor >= 70 ? '가문의 명검 전수' : '도장 수련 방랑',
+        tone: honor >= 70 ? 'text-rose-400' : 'text-slate-300'
+      };
+    }
+    case 'minos-pantheon-hymn': {
+      const heroism = Math.round((char.stats.combat + char.stats.health) / 2);
+      return {
+        value: `英雄 詩篇 ${heroism} 頌`,
+        hint: heroism >= 75 ? '아테나 판테온 헌정' : '아크로폴리스 음유',
+        tone: heroism >= 75 ? 'text-yellow-400' : 'text-amber-200'
+      };
+    }
+    default:
+      return {
+        value: '시스템 정상',
+        hint: '표준 PRTS 연동',
+        tone: 'text-cyan-300'
+      };
+  }
+};
+
 export const PRTSTerminal: React.FC<Props> = ({
   character,
+  nationId,
   logs,
   currentEvent,
   onSelectChoice,
@@ -75,6 +284,7 @@ export const PRTSTerminal: React.FC<Props> = ({
   onChangeFocusStance,
   onNextYear,
   onSkipToNextEvent,
+  onFlowThroughEvent,
   isAutoChoiceEnabled,
   onToggleAutoChoice,
   autoChoicePendingId,
@@ -90,6 +300,31 @@ export const PRTSTerminal: React.FC<Props> = ({
   onSwitchTheme,
   theme
 }) => {
+  const activeNationId = useMemo(() => {
+    return nationId || resolveNationId(character?.nation);
+  }, [nationId, character?.nation]);
+
+  const nationIdentity = useMemo(() => {
+    return getNationVisualIdentity(activeNationId);
+  }, [activeNationId]);
+
+  const isRightSidebar = nationIdentity.sidebarPosition === 'right';
+
+  const cornerClass = useMemo(() => {
+    switch (nationIdentity.atmosphericDetails?.cornerStyle) {
+      case 'sharp': return 'rounded-none';
+      case 'round': return 'rounded-xl';
+      case 'chamfer': return 'rounded-md';
+      case 'filigree': return 'rounded-lg';
+      default: return 'rounded-lg';
+    }
+  }, [nationIdentity.atmosphericDetails?.cornerStyle]);
+
+  const specialtyMetric = useMemo(() => {
+    if (!nationIdentity.specialtyWidget) return null;
+    return evaluateSpecialtyMetric(nationIdentity.specialtyWidget.id, character);
+  }, [nationIdentity.specialtyWidget, character]);
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [seedCopied, setSeedCopied] = useState(false);
 
@@ -111,9 +346,9 @@ export const PRTSTerminal: React.FC<Props> = ({
 
       ctx.lineWidth = 1.5;
       const isLowHp = character.stats.health < 30;
-      ctx.strokeStyle = isLowHp ? '#ef4444' : '#00e5ff';
+      ctx.strokeStyle = isLowHp ? '#ef4444' : nationIdentity.colors.primary;
       ctx.shadowBlur = 4;
-      ctx.shadowColor = isLowHp ? '#ef4444' : '#00e5ff';
+      ctx.shadowColor = isLowHp ? '#ef4444' : nationIdentity.colors.primaryGlow;
 
       ctx.beginPath();
       const x = step % width;
@@ -134,7 +369,7 @@ export const PRTSTerminal: React.FC<Props> = ({
 
     render();
     return () => cancelAnimationFrame(animationId);
-  }, [character.stats.health, character.isAlive]);
+  }, [character.stats.health, character.isAlive, nationIdentity.colors.primary, nationIdentity.colors.primaryGlow]);
 
   const [mobileTab, setMobileTab] = useState<'profile' | 'log'>('log');
 
@@ -170,7 +405,10 @@ export const PRTSTerminal: React.FC<Props> = ({
   }[character.oripathy.stage];
 
   return (
-    <div className="flex flex-col h-screen bg-[#0b0d11] text-slate-100 font-mono select-none overflow-hidden relative">
+    <div 
+      className="flex flex-col h-screen bg-[#0b0d11] text-slate-100 font-mono select-none overflow-hidden relative"
+      style={{ backgroundColor: nationIdentity.colors.surface }}
+    >
       {/* Subtle CRT Scanline Overlay */}
       {crtEffect && (
         <div
@@ -182,15 +420,49 @@ export const PRTSTerminal: React.FC<Props> = ({
       )}
 
       {/* Top Bar Header */}
-      <header className="h-12 border-b border-cyan-500/30 bg-[#0f131a] px-3 sm:px-4 flex items-center justify-between shrink-0">
-        <div className="flex items-center space-x-2.5">
-          <div className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></div>
-          <span className="text-xs font-bold tracking-widest text-cyan-400 uppercase">
-            PRTS VITAL // TERRA OS
+      <header 
+        className="h-12 border-b px-3 sm:px-4 flex items-center justify-between shrink-0 transition-colors"
+        style={{ 
+          backgroundColor: nationIdentity.colors.card, 
+          borderColor: nationIdentity.colors.border 
+        }}
+      >
+        <div className="flex items-center space-x-2 sm:space-x-2.5 min-w-0">
+          <div 
+            className="w-2.5 h-2.5 rounded-full animate-pulse shrink-0"
+            style={{ backgroundColor: nationIdentity.colors.primary }}
+          />
+          <span 
+            className="text-xs font-bold tracking-widest uppercase shrink-0"
+            style={{ color: nationIdentity.colors.primary }}
+            title={nationIdentity.terminalHeader ? `${nationIdentity.terminalHeader.subtitle} (${nationIdentity.terminalHeader.inspiration})` : undefined}
+          >
+            {nationIdentity.terminalHeader?.title || nationIdentity.interfaceTitle || 'PRTS VITAL // TERRA OS'}
           </span>
-          <span className="text-[11px] text-slate-300 hidden sm:inline">
+          <span className="text-[11px] text-slate-300 hidden sm:inline shrink-0">
             [테라력 {character.year}년 {currentSeason} · {character.age}세]
           </span>
+
+          {/* 헤더 인시그니아 및 모토 반응형 노출 터치포인트 */}
+          <div className="flex items-center space-x-1.5 pl-2 border-l border-white/10 shrink-0 min-w-0">
+            <NationInsignia 
+              nationId={activeNationId} 
+              className="w-4 h-4 shrink-0" 
+              style={{ color: nationIdentity.colors.primary }} 
+            />
+            <span 
+              className="text-xs font-bold tracking-wide shrink-0"
+              style={{ color: nationIdentity.colors.badgeText }}
+            >
+              {nationIdentity.nameKo}
+            </span>
+            <span 
+              className="hidden xl:inline text-[10px] text-slate-400 italic max-w-[200px] 2xl:max-w-[280px] truncate" 
+              title={nationIdentity.motto}
+            >
+              "{nationIdentity.motto}"
+            </span>
+          </div>
         </div>
 
         {/* Global Action Icons */}
@@ -262,7 +534,15 @@ export const PRTSTerminal: React.FC<Props> = ({
       </header>
 
       {/* Vital & Medical Status Ribbon */}
-      <section className="h-16 border-b border-cyan-500/20 bg-[#121620] px-4 py-2 grid grid-cols-2 md:grid-cols-5 gap-3 shrink-0 items-center">
+      <section 
+        className={`h-16 border-b px-4 py-2 grid grid-cols-2 ${
+          nationIdentity.specialtyWidget?.position === 'header-ribbon' ? 'md:grid-cols-6' : 'md:grid-cols-5'
+        } gap-3 shrink-0 items-center transition-colors`}
+        style={{ 
+          backgroundColor: nationIdentity.colors.card, 
+          borderColor: nationIdentity.colors.border 
+        }}
+      >
         {/* ECG Canvas */}
         <div className="hidden md:flex items-center space-x-2 col-span-1 bg-black/40 rounded px-2 py-1 border border-cyan-500/20">
           <Activity className="w-4 h-4 text-cyan-400 shrink-0" />
@@ -331,6 +611,27 @@ export const PRTSTerminal: React.FC<Props> = ({
             </span>
           </div>
         </div>
+
+        {/* Regional Specialty Widget: Header Ribbon */}
+        {nationIdentity.specialtyWidget?.position === 'header-ribbon' && specialtyMetric && (
+          <div 
+            className="hidden md:flex flex-col justify-center px-2.5 py-1 rounded border text-xs shrink-0"
+            style={{ 
+              borderColor: nationIdentity.colors.border, 
+              backgroundColor: nationIdentity.colors.surface 
+            }}
+          >
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-[9px] uppercase tracking-wider font-bold truncate" style={{ color: nationIdentity.colors.badgeText }}>
+                {nationIdentity.specialtyWidget.title}
+              </span>
+              <span className="text-[9px] text-slate-400 shrink-0">({specialtyMetric.hint})</span>
+            </div>
+            <div className={`font-mono font-bold text-xs truncate ${specialtyMetric.tone}`}>
+              {specialtyMetric.value}
+            </div>
+          </div>
+        )}
       </section>
 
       {/* Mobile Screen Tab Switcher */}
@@ -362,14 +663,38 @@ export const PRTSTerminal: React.FC<Props> = ({
 
       {/* Main Grid: Left Profile & Right Logs */}
       <main className="grow grid grid-cols-1 md:grid-cols-12 overflow-hidden">
-        {/* Left Column: Character Sheet (4 cols) */}
-        <aside className={`md:col-span-4 border-r border-cyan-500/20 bg-[#0e1219] p-3.5 flex-col overflow-y-auto space-y-3 ${
+        {/* Character Sheet (4 cols) */}
+        <aside className={`md:col-span-4 ${
+          isRightSidebar ? 'md:order-2 md:border-l' : 'md:order-1 md:border-r'
+        } border-cyan-500/20 bg-[#0e1219] p-3.5 flex-col overflow-y-auto space-y-3 ${
           mobileTab === 'profile' ? 'flex' : 'hidden md:flex'
-        }`}>
+        }`}
+        style={{ 
+          backgroundColor: nationIdentity.colors.surface, 
+          borderColor: nationIdentity.colors.border 
+        }}>
           {/* Identity Box */}
-          <div className="p-3.5 rounded-lg border border-cyan-500/30 bg-slate-900/60 relative overflow-hidden">
-            <div className="flex items-center justify-between mb-1 gap-2">
-              <span className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider">
+          <div 
+            className={`p-3.5 ${cornerClass} border bg-slate-900/60 relative overflow-hidden transition-colors`}
+            style={{ 
+              borderColor: nationIdentity.colors.border,
+              boxShadow: `0 0 14px ${nationIdentity.colors.scanlineTint}`
+            }}
+          >
+            {/* 아크나이츠풍 배경 인시그니아 워터마크 */}
+            <div className="absolute right-0 bottom-0 pointer-events-none opacity-[0.08] translate-x-3 translate-y-3">
+              <NationInsignia 
+                nationId={activeNationId} 
+                className="w-28 h-28" 
+                style={{ color: nationIdentity.colors.primary }} 
+              />
+            </div>
+
+            <div className="flex items-center justify-between mb-1 gap-2 relative z-10">
+              <span 
+                className="text-[10px] font-bold uppercase tracking-wider"
+                style={{ color: nationIdentity.colors.badgeText }}
+              >
                 SUBJECT DOSSIER
               </span>
               {character.seed && (
@@ -384,7 +709,7 @@ export const PRTSTerminal: React.FC<Props> = ({
               )}
             </div>
 
-            <div className="flex items-baseline justify-between gap-2">
+            <div className="flex items-baseline justify-between gap-2 relative z-10">
               <h2 className="text-lg font-bold tracking-wider text-slate-100">
                 {character.name}
               </h2>
@@ -393,12 +718,31 @@ export const PRTSTerminal: React.FC<Props> = ({
               </span>
             </div>
 
-            <div className="text-xs text-slate-300 mt-1 flex items-center justify-between">
-              <span>소속: <span className="text-amber-400">{character.nation}</span></span>
+            {/* 소속 국가 & 뱃지 */}
+            <div className="text-xs text-slate-300 mt-1 flex items-center justify-between relative z-10">
+              <span className="flex items-center space-x-1.5">
+                <span>소속:</span>
+                <span 
+                  className="font-bold flex items-center space-x-1"
+                  style={{ color: nationIdentity.colors.badgeText }}
+                >
+                  <NationInsignia nationId={activeNationId} className="w-3.5 h-3.5 inline" />
+                  <span>{character.nation}</span>
+                </span>
+              </span>
               <span className="text-[11px] text-slate-400">{character.environment}</span>
             </div>
 
-            <div className="text-xs text-slate-300 mt-1 flex items-center justify-between">
+            {/* 공식 국가 모토 */}
+            <div 
+              className="text-[10px] text-slate-400 italic pl-2 my-1.5 line-clamp-1 border-l-2 relative z-10"
+              style={{ borderColor: nationIdentity.colors.primary }}
+              title={nationIdentity.motto}
+            >
+              "{nationIdentity.motto}"
+            </div>
+
+            <div className="text-xs text-slate-300 mt-1 flex items-center justify-between relative z-10">
               <span>
                 직위: <span className="text-cyan-300 font-bold">{character.career}</span>
                 <span className="text-slate-400"> · {character.careerRank}</span>
@@ -467,6 +811,25 @@ export const PRTSTerminal: React.FC<Props> = ({
                     {t}
                   </span>
                 ))}
+              </div>
+            )}
+
+            {/* Regional Specialty Widget: Dossier Crest */}
+            {nationIdentity.specialtyWidget?.position === 'dossier-crest' && specialtyMetric && (
+              <div 
+                className="mt-2 pt-2 border-t text-xs flex items-center justify-between relative z-10"
+                style={{ borderColor: nationIdentity.colors.border }}
+              >
+                <div className="flex items-center space-x-1.5 min-w-0">
+                  <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: nationIdentity.colors.primary }} />
+                  <span className="text-[10px] font-bold truncate" style={{ color: nationIdentity.colors.badgeText }}>
+                    {nationIdentity.specialtyWidget.title}
+                  </span>
+                </div>
+                <div className="text-right shrink-0">
+                  <span className={`font-bold font-mono ${specialtyMetric.tone}`}>{specialtyMetric.value}</span>
+                  <span className="text-[10px] text-slate-400 ml-1">[{specialtyMetric.hint}]</span>
+                </div>
               </div>
             )}
           </div>
@@ -642,14 +1005,39 @@ export const PRTSTerminal: React.FC<Props> = ({
           </div>
         </aside>
 
-        {/* Right Column: Event Log Stream (8 cols) */}
-        <section className={`md:col-span-8 flex-col h-full overflow-hidden bg-[#0b0d11] ${
-          mobileTab === 'log' ? 'flex' : 'hidden md:flex'
-        }`}>
+        {/* Event Log Stream (8 cols) */}
+        <section 
+          className={`md:col-span-8 ${
+            isRightSidebar ? 'md:order-1' : 'md:order-2'
+          } flex-col h-full overflow-hidden bg-[#0b0d11] ${
+            mobileTab === 'log' ? 'flex' : 'hidden md:flex'
+          }`}
+          style={{ backgroundColor: nationIdentity.colors.surface }}
+        >
+          {/* Regional Specialty Widget: Chronicle Banner */}
+          {nationIdentity.specialtyWidget?.position === 'chronicle-banner' && specialtyMetric && (
+            <div 
+              className="px-3 py-1.5 border-b text-xs flex items-center justify-between shrink-0"
+              style={{ 
+                borderColor: nationIdentity.colors.border, 
+                backgroundColor: nationIdentity.colors.card 
+              }}
+            >
+              <div className="flex items-center space-x-1.5 min-w-0">
+                <span className="text-[10px] font-bold uppercase tracking-wider truncate" style={{ color: nationIdentity.colors.badgeText }}>
+                  {nationIdentity.specialtyWidget.title}
+                </span>
+                <span className="text-slate-400 text-[10px] shrink-0">· {specialtyMetric.hint}</span>
+              </div>
+              <span className={`font-mono font-bold shrink-0 ${specialtyMetric.tone}`}>{specialtyMetric.value}</span>
+            </div>
+          )}
+
           <EventLogPanel
             logs={logs}
             currentEvent={currentEvent}
             character={character}
+            nationId={activeNationId}
             onSelectChoice={onSelectChoice}
             autoChoicePendingId={autoChoicePendingId}
             minorTimeoutRemainingSec={minorTimeoutRemainingSec}
@@ -657,13 +1045,17 @@ export const PRTSTerminal: React.FC<Props> = ({
             onNextYear={onNextYear}
             onSkipToNextEvent={onSkipToNextEvent}
             onTogglePlay={onTogglePlay}
+            onFlowThroughEvent={onFlowThroughEvent}
             theme={theme}
           />
         </section>
       </main>
 
       {/* Four-Season Smooth Time Progression Ribbon */}
-      <div className="h-6 bg-[#0b0f17] border-t border-cyan-500/20 px-3 sm:px-4 flex items-center justify-between gap-3 shrink-0 text-[10px]">
+      <div
+        className="season-indicator h-6 bg-[#0b0f17] border-t border-cyan-500/20 px-3 sm:px-4 flex items-center justify-between gap-3 shrink-0 text-[10px]"
+        data-season={currentSeason}
+      >
         <div className="flex items-center space-x-2 shrink-0">
           <span className="text-cyan-400 font-bold">
             {character.year}년 · {currentSeason}

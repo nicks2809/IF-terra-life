@@ -1,8 +1,10 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { Character, LogEntry, GameEvent, EventChoice, GameSpeed, ThemeMode, FocusStance, Season } from '../types';
+import { Character, LogEntry, GameEvent, EventChoice, GameSpeed, ThemeMode, FocusStance, Season, NationThemeId } from '../types';
 import { evaluateLifeGoal, FOCUS_STANCES } from '../data/traits';
 import { GameEngine } from '../engine/gameEngine';
 import { EventLogPanel } from './EventLogPanel';
+import { NationInsignia } from './NationInsignia';
+import { resolveNationId, getNationVisualIdentity } from '../utils/themeResolver';
 import { 
   Heart, 
   Brain, 
@@ -27,6 +29,7 @@ import {
 
 interface Props {
   character: Character;
+  nationId?: NationThemeId;
   logs: LogEntry[];
   currentEvent?: GameEvent;
   onSelectChoice: (choice: EventChoice) => void;
@@ -36,6 +39,7 @@ interface Props {
   onChangeSpeed: (speed: GameSpeed) => void;
   yearProgress?: number;
   currentSeason?: Season;
+  season?: Season;
   onChangeFocusStance?: (stance: FocusStance) => void;
   onNextYear: () => void;
   onSkipToNextEvent?: () => void;
@@ -53,10 +57,12 @@ interface Props {
   onSwitchTheme: () => void;
   theme: ThemeMode;
   minorTimeoutRemainingSec?: number | null;
+  onFlowThroughEvent?: () => void;
 }
 
 export const HistoryTome: React.FC<Props> = ({
   character,
+  nationId,
   logs,
   currentEvent,
   onSelectChoice,
@@ -82,8 +88,17 @@ export const HistoryTome: React.FC<Props> = ({
   onToggleMute,
   onSwitchTheme,
   theme,
-  minorTimeoutRemainingSec
+  minorTimeoutRemainingSec,
+  onFlowThroughEvent
 }) => {
+  const activeNationId = useMemo(() => {
+    return nationId || resolveNationId(character?.nation);
+  }, [nationId, character?.nation]);
+
+  const nationIdentity = useMemo(() => {
+    return getNationVisualIdentity(activeNationId);
+  }, [activeNationId]);
+
   const [mobileTab, setMobileTab] = useState<'profile' | 'log'>('log');
 
   useEffect(() => {
@@ -120,6 +135,19 @@ export const HistoryTome: React.FC<Props> = ({
             <span className="text-[11px] text-[#5c4d47]">
               제 {character.year}년의 기록 · {character.name}의 생애 ({character.age}세)
             </span>
+          </div>
+
+          {/* 고서적 왁스 인장 및 연대기 라벨 */}
+          <div className="hidden sm:flex items-center space-x-2 pl-3 border-l border-[#5c4033]/30">
+            <div className="p-1 rounded-full bg-[#8b1e1e]/10 border border-[#8b1e1e]/30 shadow-inner flex items-center justify-center">
+              <NationInsignia nationId={activeNationId} className="w-4 h-4 text-[#8b1e1e]" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-xs font-bold text-[#5c4033]">{nationIdentity.nameKo} 연대기</span>
+              <span className="text-[10px] text-[#8c7b75] italic hidden lg:inline max-w-[200px] truncate" title={nationIdentity.motto}>
+                "{nationIdentity.motto}"
+              </span>
+            </div>
           </div>
         </div>
 
@@ -223,18 +251,33 @@ export const HistoryTome: React.FC<Props> = ({
           mobileTab === 'profile' ? 'flex' : 'hidden md:flex'
         }`}>
           {/* Identity Scroll */}
-          <div className="p-4 rounded-lg border border-[#5c4033]/40 bg-[#f4ebd0] shadow-sm">
-            <span className="text-[10px] text-[#8b1e1e] font-bold block mb-1">
+          <div className="p-4 rounded-lg border border-[#5c4033]/40 bg-[#f4ebd0] shadow-sm relative overflow-hidden">
+            {/* 고서적 왁스 인장 워터마크 */}
+            <div className="absolute right-2 top-2 pointer-events-none opacity-[0.12] text-[#8b1e1e]">
+              <NationInsignia nationId={activeNationId} className="w-20 h-20" />
+            </div>
+
+            <span className="text-[10px] text-[#8b1e1e] font-bold block mb-1 relative z-10">
               [인물 약력]
             </span>
-            <h2 className="text-2xl font-bold tracking-wide text-[#2c1810]">
+            <h2 className="text-2xl font-bold tracking-wide text-[#2c1810] relative z-10">
               {character.name}
             </h2>
-            <div className="text-xs text-[#5c4d47] mt-1">
-              {character.nation} 출신 · {character.race} {character.subRace && `(${character.subRace})`}
+            <div className="text-xs text-[#5c4d47] mt-1 flex items-center space-x-1.5 relative z-10">
+              <NationInsignia nationId={activeNationId} className="w-3.5 h-3.5 inline text-[#8b1e1e]" />
+              <span className="font-bold text-[#2c1810]">{character.nation}</span>
+              <span>출신 · {character.race} {character.subRace && `(${character.subRace})`}</span>
             </div>
-            <div className="text-xs text-[#5c4d47]">
+            <div className="text-xs text-[#5c4d47] relative z-10">
               환경: {character.environment}
+            </div>
+
+            {/* 고서적 모토 표기 */}
+            <div 
+              className="text-[11px] text-[#5c4033] italic border-l-2 border-[#8b1e1e]/50 pl-2.5 my-1.5 relative z-10 line-clamp-1"
+              title={nationIdentity.motto}
+            >
+              "{nationIdentity.motto}"
             </div>
             <div className="text-xs font-bold text-[#8b1e1e] mt-1 flex items-center justify-between">
               <span>직업: {character.career} {character.careerRank && `(${character.careerRank})`}</span>
@@ -516,6 +559,7 @@ export const HistoryTome: React.FC<Props> = ({
             logs={logs}
             currentEvent={currentEvent}
             character={character}
+            nationId={activeNationId}
             onSelectChoice={onSelectChoice}
             autoChoicePendingId={autoChoicePendingId}
             minorTimeoutRemainingSec={minorTimeoutRemainingSec}
@@ -523,13 +567,17 @@ export const HistoryTome: React.FC<Props> = ({
             onNextYear={onNextYear}
             onSkipToNextEvent={onSkipToNextEvent}
             onTogglePlay={onTogglePlay}
+            onFlowThroughEvent={onFlowThroughEvent}
             theme={theme}
           />
         </section>
       </main>
 
       {/* Four-Season Antique Progression Ribbon */}
-      <div className="h-6 bg-[#d9c79f] border-t border-[#5c4033]/40 px-3 sm:px-4 flex items-center justify-between gap-3 shrink-0 text-[10px]">
+      <div
+        className="season-indicator h-6 bg-[#d9c79f] border-t border-[#5c4033]/40 px-3 sm:px-4 flex items-center justify-between gap-3 shrink-0 text-[10px]"
+        data-season={currentSeason || '봄'}
+      >
         <div className="flex items-center space-x-2 shrink-0">
           <span className="text-[#8b1e1e] font-bold">
             {character.year}년 · {currentSeason || '봄'}

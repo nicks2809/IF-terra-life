@@ -14,6 +14,7 @@ interface Props {
   onOpenReincarnation?: () => void;
   onOpenHallOfFame: () => void;
   onOpenAchievementBook?: () => void;
+  onReturnToLanding?: () => void;
   theme: ThemeMode;
 }
 
@@ -24,6 +25,7 @@ export const MemorialModal: React.FC<Props> = ({
   onOpenReincarnation,
   onOpenHallOfFame,
   onOpenAchievementBook,
+  onReturnToLanding,
   theme
 }) => {
   const cardRef = useRef<HTMLDivElement>(null);
@@ -368,6 +370,17 @@ ${record.notableAchievements.map(a => `• ${a}`).join('\n')}
             >
               <Sparkles className="w-4 h-4" />
               <span>운명 설계 환생</span>
+            </button>
+          )}
+
+          {onReturnToLanding && (
+            <button
+              onClick={onReturnToLanding}
+              className="flex items-center space-x-1.5 px-4 py-2 rounded-lg text-xs font-bold bg-slate-700 hover:bg-slate-600 text-slate-100 border border-slate-500/50 shadow-md transition-all"
+              title="시작 화면으로 돌아가 출생 설정을 새로 지정합니다"
+            >
+              <RotateCcw className="w-4 h-4 text-cyan-400" />
+              <span>시작 화면으로 (새 탄생 설정)</span>
             </button>
           )}
 

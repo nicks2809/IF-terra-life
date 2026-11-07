@@ -45,3 +45,228 @@
   background-size: 100% 3px, 3px 100%;
   pointer-events: none;
 }
+
+/* ========================================================================== */
+/* 15개 테라 국가 + 로도스 아일랜드 동적 테마 CSS 변수 체계 (R2/M2) */
+/* ========================================================================== */
+
+:root {
+  --nation-primary: #00e5ff;
+  --nation-primary-glow: rgba(0, 229, 255, 0.4);
+  --nation-secondary: #00838f;
+  --nation-surface: #0e1219;
+  --nation-card: #131722;
+  --nation-border: rgba(0, 229, 255, 0.3);
+  --nation-accent: #f59e0b;
+  --nation-badge-bg: rgba(0, 229, 255, 0.15);
+  --nation-badge-text: #00e5ff;
+  --nation-scanline: rgba(0, 229, 255, 0.05);
+}
+
+[data-nation="victoria"] {
+  --nation-primary: #c5283d;
+  --nation-primary-glow: rgba(197, 40, 61, 0.45);
+  --nation-secondary: #d4af37;
+  --nation-surface: #10121a;
+  --nation-card: #171b26;
+  --nation-border: rgba(212, 175, 55, 0.35);
+  --nation-accent: #e5b842;
+  --nation-badge-bg: rgba(197, 40, 61, 0.2);
+  --nation-badge-text: #fca5a5;
+  --nation-scanline: rgba(212, 175, 55, 0.04);
+}
+
+[data-nation="yan"] {
+  --nation-primary: #c83c23;
+  --nation-primary-glow: rgba(200, 60, 35, 0.45);
+  --nation-secondary: #3a7d69;
+  --nation-surface: #0c1212;
+  --nation-card: #121c1c;
+  --nation-border: rgba(58, 125, 105, 0.4);
+  --nation-accent: #e5c158;
+  --nation-badge-bg: rgba(58, 125, 105, 0.25);
+  --nation-badge-text: #6ee7b7;
+  --nation-scanline: rgba(58, 125, 105, 0.04);
+}
+
+[data-nation="ursus"] {
+  --nation-primary: #d9822b;
+  --nation-primary-glow: rgba(217, 130, 43, 0.45);
+  --nation-secondary: #7b8c9e;
+  --nation-surface: #0e1117;
+  --nation-card: #151a24;
+  --nation-border: rgba(123, 140, 158, 0.35);
+  --nation-accent: #c92a2a;
+  --nation-badge-bg: rgba(217, 130, 43, 0.2);
+  --nation-badge-text: #fcd34d;
+  --nation-scanline: rgba(123, 140, 158, 0.04);
+}
+
+[data-nation="kazimierz"] {
+  --nation-primary: #f59e0b;
+  --nation-primary-glow: rgba(245, 158, 11, 0.5);
+  --nation-secondary: #00e5ff;
+  --nation-surface: #0f121a;
+  --nation-card: #161c28;
+  --nation-border: rgba(245, 158, 11, 0.4);
+  --nation-accent: #fef08a;
+  --nation-badge-bg: rgba(245, 158, 11, 0.2);
+  --nation-badge-text: #fde047;
+  --nation-scanline: rgba(245, 158, 11, 0.05);
+}
+
+[data-nation="columbia"] {
+  --nation-primary: #1e88e5;
+  --nation-primary-glow: rgba(30, 136, 229, 0.45);
+  --nation-secondary: #ff7043;
+  --nation-surface: #0a101d;
+  --nation-card: #121b2d;
+  --nation-border: rgba(56, 189, 248, 0.35);
+  --nation-accent: #38bdf8;
+  --nation-badge-bg: rgba(30, 136, 229, 0.2);
+  --nation-badge-text: #93c5fd;
+  --nation-scanline: rgba(56, 189, 248, 0.04);
+}
+
+[data-nation="iberia"] {
+  --nation-primary: #1e3a5f;
+  --nation-primary-glow: rgba(30, 58, 95, 0.5);
+  --nation-secondary: #d4af37;
+  --nation-surface: #080f17;
+  --nation-card: #101a26;
+  --nation-border: rgba(212, 175, 55, 0.3);
+  --nation-accent: #22d3ee;
+  --nation-badge-bg: rgba(34, 211, 238, 0.15);
+  --nation-badge-text: #67e8f9;
+  --nation-scanline: rgba(34, 211, 238, 0.04);
+}
+
+[data-nation="laterano"] {
+  --nation-primary: #ffd54f;
+  --nation-primary-glow: rgba(255, 213, 79, 0.55);
+  --nation-secondary: #f8fafc;
+  --nation-surface: #0f1219;
+  --nation-card: #171c26;
+  --nation-border: rgba(255, 213, 79, 0.4);
+  --nation-accent: #a78bfa;
+  --nation-badge-bg: rgba(255, 213, 79, 0.2);
+  --nation-badge-text: #fef08a;
+  --nation-scanline: rgba(255, 213, 79, 0.05);
+}
+
+[data-nation="leithanien"] {
+  --nation-primary: #e6a122;
+  --nation-primary-glow: rgba(230, 161, 34, 0.5);
+  --nation-secondary: #6b1426;
+  --nation-surface: #0e0f16;
+  --nation-card: #161824;
+  --nation-border: rgba(230, 161, 34, 0.35);
+  --nation-accent: #fde68a;
+  --nation-badge-bg: rgba(230, 161, 34, 0.2);
+  --nation-badge-text: #fde68a;
+  --nation-scanline: rgba(230, 161, 34, 0.04);
+}
+
+[data-nation="sami"] {
+  --nation-primary: #10b981;
+  --nation-primary-glow: rgba(16, 185, 129, 0.45);
+  --nation-secondary: #38bdf8;
+  --nation-surface: #081116;
+  --nation-card: #0f1d26;
+  --nation-border: rgba(56, 189, 248, 0.35);
+  --nation-accent: #67e8f9;
+  --nation-badge-bg: rgba(16, 185, 129, 0.2);
+  --nation-badge-text: #6ee7b7;
+  --nation-scanline: rgba(16, 185, 129, 0.04);
+}
+
+[data-nation="siracusa"] {
+  --nation-primary: #991b1b;
+  --nation-primary-glow: rgba(153, 27, 27, 0.5);
+  --nation-secondary: #78350f;
+  --nation-surface: #0c0c0e;
+  --nation-card: #151518;
+  --nation-border: rgba(153, 27, 27, 0.4);
+  --nation-accent: #e4e4e7;
+  --nation-badge-bg: rgba(153, 27, 27, 0.25);
+  --nation-badge-text: #fca5a5;
+  --nation-scanline: rgba(153, 27, 27, 0.04);
+}
+
+[data-nation="sargon"] {
+  --nation-primary: #d97706;
+  --nation-primary-glow: rgba(217, 119, 6, 0.45);
+  --nation-secondary: #0d9488;
+  --nation-surface: #120e0a;
+  --nation-card: #1d1712;
+  --nation-border: rgba(217, 119, 6, 0.35);
+  --nation-accent: #ea580c;
+  --nation-badge-bg: rgba(217, 119, 6, 0.2);
+  --nation-badge-text: #fcd34d;
+  --nation-scanline: rgba(217, 119, 6, 0.04);
+}
+
+[data-nation="rim_billiton"] {
+  --nation-primary: #f59e0b;
+  --nation-primary-glow: rgba(245, 158, 11, 0.45);
+  --nation-secondary: #c2410c;
+  --nation-surface: #0e0e11;
+  --nation-card: #17181f;
+  --nation-border: rgba(194, 65, 12, 0.4);
+  --nation-accent: #fb923c;
+  --nation-badge-bg: rgba(245, 158, 11, 0.2);
+  --nation-badge-text: #fdba74;
+  --nation-scanline: rgba(245, 158, 11, 0.04);
+}
+
+[data-nation="lungmen"] {
+  --nation-primary: #10b981;
+  --nation-primary-glow: rgba(16, 185, 129, 0.5);
+  --nation-secondary: #f59e0b;
+  --nation-surface: #091312;
+  --nation-card: #10201e;
+  --nation-border: rgba(16, 185, 129, 0.4);
+  --nation-accent: #fbbf24;
+  --nation-badge-bg: rgba(16, 185, 129, 0.2);
+  --nation-badge-text: #6ee7b7;
+  --nation-scanline: rgba(16, 185, 129, 0.04);
+}
+
+[data-nation="kazdel"] {
+  --nation-primary: #dc2626;
+  --nation-primary-glow: rgba(220, 38, 38, 0.5);
+  --nation-secondary: #7c3aed;
+  --nation-surface: #0e0a12;
+  --nation-card: #181120;
+  --nation-border: rgba(124, 58, 237, 0.4);
+  --nation-accent: #f43f5e;
+  --nation-badge-bg: rgba(220, 38, 38, 0.2);
+  --nation-badge-text: #fca5a5;
+  --nation-scanline: rgba(220, 38, 38, 0.05);
+}
+
+[data-nation="kjerag"] {
+  --nation-primary: #38bdf8;
+  --nation-primary-glow: rgba(56, 189, 248, 0.45);
+  --nation-secondary: #94a3b8;
+  --nation-surface: #0a111a;
+  --nation-card: #121c2a;
+  --nation-border: rgba(56, 189, 248, 0.35);
+  --nation-accent: #e0f2fe;
+  --nation-badge-bg: rgba(56, 189, 248, 0.2);
+  --nation-badge-text: #7dd3fc;
+  --nation-scanline: rgba(56, 189, 248, 0.04);
+}
+
+[data-nation="rhodes_island"] {
+  --nation-primary: #00e5ff;
+  --nation-primary-glow: rgba(0, 229, 255, 0.4);
+  --nation-secondary: #00838f;
+  --nation-surface: #0e1219;
+  --nation-card: #131722;
+  --nation-border: rgba(0, 229, 255, 0.3);
+  --nation-accent: #f59e0b;
+  --nation-badge-bg: rgba(0, 229, 255, 0.15);
+  --nation-badge-text: #00e5ff;
+  --nation-scanline: rgba(0, 229, 255, 0.05);
+}

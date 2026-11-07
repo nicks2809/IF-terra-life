@@ -15,10 +15,14 @@ import {
   AIStrategy,
   SpecialCareer,
   FocusStance,
-  Season
+  Season,
+  NationData,
+  ScheduledAnnualItem
 } from '../types';
 import { RACES_DATA } from '../data/races';
 import { NATIONS_DATA } from '../data/nations';
+import { getRoutineLifeLine } from '../data/routineLife';
+import { resolveNationId } from '../utils/themeResolver';
 import { WORLD_TIMELINE } from '../data/timeline';
 import { ITEMS_DATA } from '../data/items';
 import { ENEMIES_DATA } from '../data/enemies';
@@ -406,6 +410,312 @@ export class GameEngine {
     };
   }
 
+  /**
+   * 테라 대륙 인구통계 고증 가중치(demographicWeight)에 따라 무작위 국가를 추첨합니다.
+   */
+  public static pickWeightedNation(rng: () => number = Math.random): NationData {
+    const totalWeight = NATIONS_DATA.reduce((sum, n) => sum + (n.demographicWeight || 1), 0);
+    let r = rng() * totalWeight;
+    for (const nation of NATIONS_DATA) {
+      const weight = nation.demographicWeight || 1;
+      if (r < weight) {
+        return nation;
+      }
+      r -= weight;
+    }
+    return NATIONS_DATA[0];
+  }
+
+  /**
+   * 1년(60초 진행) 동안 사계절에 걸쳐 순차 배출될 연간 스케줄 아이템 큐를 생성합니다.
+   * 기존 하위 호환성 및 테스트 하네스를 위해 4분기 시그니처를 유지합니다.
+   */
+  public static generateAnnualSchedule(char: Character): ScheduledAnnualItem[] {
+    const isNewborn = char.age === 0;
+    return [
+      {
+        id: `sched_${char.year}_spring_vital`,
+        triggerProgress: 0.10,
+        season: '봄',
+        month: 2,
+        category: 'routine',
+        execute: (c, addLog) => {
+          if (isNewborn && addLog) {
+            addLog({
+              year: c.year,
+              age: c.age,
+              season: '봄',
+              title: '【테라의 일상】 생명의 고동',
+              text: `${c.nation}의 대지 위에서 첫 봄을 맞이하며 작은 숨을 내쉽니다.`,
+              type: 'general'
+            });
+          }
+          return { updatedChar: c };
+        }
+      },
+      {
+        id: isNewborn ? `sched_${char.year}_routine_summer` : `sched_${char.year}_summer_news`,
+        triggerProgress: 0.35,
+        season: '여름',
+        month: 5,
+        category: isNewborn ? 'routine' : 'news',
+        execute: (c, addLog) => {
+          if (isNewborn && addLog) {
+            addLog({
+              year: c.year,
+              age: c.age,
+              season: '여름',
+              title: '【테라의 일상】 유아기의 여명',
+              text: `따스한 햇살 아래 보살핌을 받으며 건강하게 첫 해를 살아갑니다.`,
+              type: 'general'
+            });
+          } else {
+            const worldNews = WORLD_TIMELINE.find(t => t.year === c.year);
+            if (worldNews && addLog) {
+              addLog({
+                year: c.year,
+                age: c.age,
+                season: '여름',
+                title: `【라디오 속보】 ${worldNews.title}`,
+                text: `${worldNews.broadcastText}\n(효과: ${worldNews.inGameEffectText})`,
+                type: 'news'
+              });
+            }
+          }
+          return { updatedChar: c };
+        }
+      },
+      {
+        id: `sched_${char.year}_autumn_event`,
+        triggerProgress: 0.60,
+        season: '가을',
+        month: 8,
+        category: 'event',
+        execute: (c, _addLog) => ({ updatedChar: c })
+      },
+      {
+        id: `sched_${char.year}_winter_hazard`,
+        triggerProgress: 0.85,
+        season: '겨울',
+        month: 11,
+        category: 'hazard',
+        execute: (c, _addLog) => ({ updatedChar: c })
+      }
+    ];
+  }
+
+  /**
+   * 연간 발생 로그 및 사건을 사계절 대역폭 용량(봄 2, 여름 3, 가을 3, 겨울 2)에 맞추어
+   * 계절 범위([min, max])를 엄격히 준수하고, 과밀 시 인접 계절로 안전하게 재배치하며,
+   * 최소 간격(>= 6%p)을 유지하는 오름차순 시차 큐로 분산 배치합니다.
+   */
+  public static buildRandomizedYearlyQueue(
+    char: Character,
+    bufferedLogs: Array<Omit<LogEntry, 'id' | 'timestamp'>>,
+    triggeredEvent?: GameEvent,
+    rng: () => number = Math.random
+  ): ScheduledAnnualItem[] {
+    const queue: ScheduledAnnualItem[] = [];
+    const minGap = 0.06;
+
+    // 사계절 허용 구간, 최대 수용 용량(Capacity) 및 대역폭(Span)
+    const seasonRanges: Record<Season, { min: number; max: number; capacity: number; span: number }> = {
+      '봄': { min: 0.06, max: 0.22, capacity: 2, span: 0.16 },
+      '여름': { min: 0.28, max: 0.47, capacity: 3, span: 0.19 },
+      '가을': { min: 0.53, max: 0.72, capacity: 3, span: 0.19 },
+      '겨울': { min: 0.78, max: 0.94, capacity: 2, span: 0.16 }
+    };
+    const seasonsList: Season[] = ['봄', '여름', '가을', '겨울'];
+
+    // 계절 초과 유입 시 인접 계절 분산 우선순위 매핑
+    const adjacentPreferences: Record<Season, Season[]> = {
+      '겨울': ['가을', '여름', '봄'],
+      '가을': ['여름', '겨울', '봄'],
+      '여름': ['가을', '봄', '겨울'],
+      '봄': ['여름', '가을', '겨울']
+    };
+
+    // 연간 최대 수용 용량 (2 + 3 + 3 + 2 = 10개)
+    const maxAnnualCapacity = 10;
+    const maxLogs = triggeredEvent ? maxAnnualCapacity - 1 : maxAnnualCapacity;
+
+    // 비정상적 과밀 유입 방어: 중요도(위험/병리/치명/속보 > 일반) 기준 정렬 후 상위 로그 채택
+    let sanitizedLogs = bufferedLogs;
+    if (bufferedLogs.length > maxLogs) {
+      const priorityWeight = (l: Omit<LogEntry, 'id' | 'timestamp'>) => {
+        if (l.type === 'hazard') return 4;
+        if (l.type === 'oripathy') return 3;
+        if (l.type === 'critical') return 2;
+        if (l.type === 'news') return 1;
+        return 0;
+      };
+      sanitizedLogs = [...bufferedLogs]
+        .sort((a, b) => priorityWeight(b) - priorityWeight(a))
+        .slice(0, maxLogs);
+    }
+
+    // 1. 발생 항목(로그 + 사건) 분류 버킷 초기화
+    const seasonalBuckets: Record<Season, Array<{
+      type: 'log' | 'event';
+      logEntry?: Omit<LogEntry, 'id' | 'timestamp'>;
+      event?: GameEvent;
+      originalSeason: Season;
+    }>> = {
+      '봄': [],
+      '여름': [],
+      '가을': [],
+      '겨울': []
+    };
+
+    // 로그 항목 배정 (기존 지정 season이 있으면 따르고, 없으면 균등 분산)
+    sanitizedLogs.forEach((log, idx) => {
+      const assignedSeason: Season = log.season && seasonsList.includes(log.season)
+        ? log.season
+        : seasonsList[idx % 4];
+      seasonalBuckets[assignedSeason].push({
+        type: 'log',
+        logEntry: log,
+        originalSeason: assignedSeason
+      });
+    });
+
+    // 사건 배정 (preferredSeason이 있으면 따르고, 없으면 가을/여름 우선)
+    if (triggeredEvent) {
+      const eventSeason: Season = triggeredEvent.preferredSeason && seasonsList.includes(triggeredEvent.preferredSeason)
+        ? triggeredEvent.preferredSeason
+        : (rng() < 0.5 ? '가을' : '여름');
+      seasonalBuckets[eventSeason].push({
+        type: 'event',
+        event: triggeredEvent,
+        originalSeason: eventSeason
+      });
+    }
+
+    // 2. 계절별 대역폭 수용 한계(Capacity) 초과 시 인접 계절 분산 재배치 (Overflow Redistribution)
+    while (true) {
+      const overflowingSeason = seasonsList.find(
+        s => seasonalBuckets[s].length > seasonRanges[s].capacity
+      );
+      if (!overflowingSeason) break;
+
+      const targetSeason = adjacentPreferences[overflowingSeason].find(
+        s => seasonalBuckets[s].length < seasonRanges[s].capacity
+      );
+      if (!targetSeason) break; // 전 계절 만석 시 루프 종료
+
+      // 사건의 원래 선호 계절을 우선 보존하기 위해 로그 우선 이동
+      let moveIdx = seasonalBuckets[overflowingSeason].findIndex(it => it.type !== 'event');
+      if (moveIdx === -1) moveIdx = seasonalBuckets[overflowingSeason].length - 1;
+
+      const [movedItem] = seasonalBuckets[overflowingSeason].splice(moveIdx, 1);
+      seasonalBuckets[targetSeason].push(movedItem);
+    }
+
+    // 3. 계절별 진행률 지터(Jitter) 산출 및 큐 생성
+    for (const season of seasonsList) {
+      const range = seasonRanges[season];
+      const bucket = seasonalBuckets[season];
+      if (bucket.length === 0) continue;
+
+      const count = bucket.length;
+      const span = range.span;
+      const progressList: number[] = [];
+
+      if (count === 1) {
+        // 1건: [min + 0.02, max - 0.02] 내부 안전 배정
+        const lower = range.min + 0.02;
+        const upper = range.max - 0.02;
+        const rawP = lower + rng() * (upper - lower);
+        progressList.push(parseFloat(rawP.toFixed(3)));
+      } else if (count === 2) {
+        // 2건: item 0 in [min, min + (span - 0.06)/2], item 1 in [item0 + 0.06, max]
+        const halfSlack = (span - minGap) / 2;
+        const rawP0 = range.min + rng() * halfSlack;
+        const p0 = parseFloat(rawP0.toFixed(3));
+        progressList.push(p0);
+
+        const minP1 = parseFloat((p0 + minGap).toFixed(3));
+        const rawP1 = minP1 + rng() * (range.max - minP1);
+        let p1 = parseFloat(Math.min(range.max, Math.max(minP1, rawP1)).toFixed(3));
+        if (p1 < minP1) p1 = minP1;
+        if (p1 > range.max) p1 = range.max;
+        progressList.push(p1);
+      } else if (count === 3) {
+        // 3건 (여름/가을): 총 여유 공간 (span - 2 * minGap) 3분할 순차 배정
+        const slack = (span - 2 * minGap) / 3;
+        const rawP0 = range.min + rng() * slack;
+        const p0 = parseFloat(rawP0.toFixed(3));
+        progressList.push(p0);
+
+        const minP1 = parseFloat((p0 + minGap).toFixed(3));
+        const rawP1 = minP1 + rng() * slack;
+        let p1 = parseFloat(Math.max(minP1, rawP1).toFixed(3));
+        if (p1 < minP1) p1 = minP1;
+        progressList.push(p1);
+
+        const minP2 = parseFloat((p1 + minGap).toFixed(3));
+        const rawP2 = minP2 + rng() * (range.max - minP2);
+        let p2 = parseFloat(Math.min(range.max, Math.max(minP2, rawP2)).toFixed(3));
+        if (p2 < minP2) p2 = minP2;
+        if (p2 > range.max) p2 = range.max;
+        progressList.push(p2);
+      }
+
+      bucket.forEach((item, i) => {
+        const targetP = progressList[i];
+        const month = season === '봄' ? 3 : season === '여름' ? 6 : season === '가을' ? 9 : 12;
+
+        let category: ScheduledAnnualItem['category'] = 'routine';
+        if (item.type === 'event') category = 'event';
+        else if (item.logEntry?.type === 'news') category = 'news';
+        else if (item.logEntry?.type === 'hazard') category = 'hazard';
+        else if (item.logEntry?.type === 'oripathy') category = 'health';
+
+        const itemId = item.type === 'event'
+          ? `sched_${char.year}_${season}_event_${item.event?.id || i}`
+          : `sched_${char.year}_${season}_log_${i}_${item.logEntry?.type || 'general'}`;
+
+        queue.push({
+          id: itemId,
+          triggerProgress: targetP,
+          season,
+          month,
+          category,
+          execute: (c, addLog) => {
+            if (item.type === 'log' && item.logEntry && addLog) {
+              addLog({ ...item.logEntry, season });
+              return { updatedChar: c };
+            }
+            if (item.type === 'event' && item.event) {
+              return {
+                updatedChar: c,
+                triggeredEvent: item.event,
+                isMajor: item.event.isMajor
+              };
+            }
+            return { updatedChar: c };
+          }
+        });
+      });
+    }
+
+    // 4. 진행률 기준 오름차순 정렬 및 최종 무결성 보장
+    queue.sort((a, b) => a.triggerProgress - b.triggerProgress);
+
+    // 사후 최소 간격 및 계절 범위 초과 방어 (0.96 절대 사용 금지, 각 계절의 range.max 엄격 준수)
+    for (let i = 1; i < queue.length; i++) {
+      const prev = queue[i - 1];
+      const curr = queue[i];
+      const r = seasonRanges[curr.season];
+
+      if (curr.triggerProgress < prev.triggerProgress + minGap) {
+        curr.triggerProgress = Math.min(r.max, parseFloat((prev.triggerProgress + minGap).toFixed(3)));
+      }
+    }
+
+    return queue;
+  }
+
   // 캐릭터 생성 (운명 시드 결정론적 난수 및 유년기 현실적 초기치 반영)
   public static createRandomCharacter(config?: ReincarnationConfig): Character {
     const perks = config?.perkIds || [];
@@ -435,8 +745,8 @@ export class GameEngine {
     const gender = config?.gender || (rng() < 0.5 ? '남성' : '여성');
     const name = config?.name?.trim() ? config.name.trim() : this.getRandomName(rng);
 
-    // 2. 국가 결정
-    let nation = NATIONS_DATA[Math.floor(rng() * NATIONS_DATA.length)];
+    // 2. 국가 결정 (인구통계 고증 가중치 적용)
+    let nation = this.pickWeightedNation(rng);
     if (config?.nationId && config.nationId !== 'random') {
       nation = NATIONS_DATA.find(n => n.id === config.nationId) || nation;
     }
@@ -1517,11 +1827,11 @@ export class GameEngine {
       if (char.environment === '슬럼가 및 암시장' || char.environment === '황야의 노마드 캠프') {
         riskThreshold = 0.048;
       }
-      const nationObj = NATIONS_DATA.find(n => char.nation.includes(n.name));
+      const nationObj = NATIONS_DATA.find(n => char.nation?.includes(n.name) || n.id === resolveNationId(char.nation));
       if (nationObj?.riskLevel === '극도로 위험') riskThreshold += 0.018;
       else if (nationObj?.riskLevel === '위험') riskThreshold += 0.01;
 
-      if (char.secretFlags['pure_immunity']) riskThreshold *= 0.3;
+      if (char.secretFlags?.['pure_immunity']) riskThreshold *= 0.3;
       if (this.hasTrait(char, 'talent_oripathy_tolerance')) riskThreshold *= 0.65;
       if (this.hasTrait(char, 'flaw_originium_sensitive')) riskThreshold *= 1.6;
 
@@ -1754,11 +2064,11 @@ export class GameEngine {
   }
 
   // 선택지 사건이 없는 해의 일상 성장 및 인연 교류 기록
-  private static processPeacefulYear(
+  public static processPeacefulYear(
     char: Character,
-    annualSalary: number,
-    annualLivingCost: number,
-    addLog: (entry: Omit<LogEntry, 'id' | 'timestamp'>) => void
+    annualSalary: number = 0,
+    annualLivingCost: number = 0,
+    addLog: (entry: Omit<LogEntry, 'id' | 'timestamp'>) => void = () => {}
   ) {
     const badges: string[] = [];
 
@@ -1776,19 +2086,16 @@ export class GameEngine {
       }
       char.stats.sanity = Math.min(char.stats.maxSanity, char.stats.sanity + 2);
 
-      const childActivities = [
-        `${char.nation}의 거리를 뛰어다니며 세상 물정을 조금씩 익혔습니다.`,
-        `${char.environment}에서 또래 아이들과 어울리며 기초 체력과 감각을 길렀습니다.`,
-        `어른들의 어깨너머로 오리지늄 기기와 생존 기술을 관찰하며 사계절을 보냈습니다.`
-      ];
+      const season = this.pickSeason(char);
+      const routineLine = getRoutineLifeLine(char, season);
       addLog({
         year: char.year,
         age: char.age,
-        season: this.pickSeason(char),
-        title: `【유년기 일상】 ${char.age}세의 사계절`,
-        text: childActivities[char.age % childActivities.length],
+        season,
+        title: `【테라의 일상】 ${char.age}세, ${season}의 나날`,
+        text: routineLine,
         type: 'general',
-        effectBadges: badges
+        effectBadges: ['테라의 일상', ...badges]
       });
     } else {
       const net = annualSalary - annualLivingCost;
@@ -1850,14 +2157,16 @@ export class GameEngine {
         }
       }
 
+      const season = this.pickSeason(char);
+      const routineLine = getRoutineLifeLine(char, season);
       addLog({
         year: char.year,
         age: char.age,
-        season: this.pickSeason(char),
-        title: `【연간 생업 결산】 ${char.career} (${char.careerRank})`,
-        text: `${char.nation}에서 [${char.career}] 실무를 수행하며 한 해를 버텨냈습니다. (순수지: ${net >= 0 ? '+' : ''}${net.toLocaleString()} LMD)`,
+        season,
+        title: `【테라의 일상】 ${char.age}세, ${season}의 나날`,
+        text: `${routineLine} [${char.career}] 실무 수행 (순수지: ${net >= 0 ? '+' : ''}${net.toLocaleString()} LMD)`,
         type: 'general',
-        effectBadges: badges
+        effectBadges: ['테라의 일상', ...badges]
       });
     }
   }
@@ -3221,3 +3530,8 @@ export class GameEngine {
     };
   }
 }
+
+export const pickWeightedNation = GameEngine.pickWeightedNation.bind(GameEngine);
+export const generateAnnualSchedule = GameEngine.generateAnnualSchedule.bind(GameEngine);
+export const buildRandomizedYearlyQueue = GameEngine.buildRandomizedYearlyQueue.bind(GameEngine);
+export const processPeacefulYear = GameEngine.processPeacefulYear.bind(GameEngine);

@@ -2,6 +2,58 @@
 
 export type ThemeMode = 'prts' | 'tome';
 
+export type NationThemeId = 
+  | 'victoria' | 'yan' | 'ursus' | 'kazimierz' | 'columbia' | 'iberia'
+  | 'laterano' | 'leithanien' | 'sami' | 'siracusa' | 'sargon' | 'rim_billiton'
+  | 'lungmen' | 'kazdel' | 'kjerag' | 'rhodes_island';
+
+export interface NationColorPalette {
+  primary: string;
+  primaryGlow: string;
+  secondary: string;
+  surface: string;
+  card: string;
+  border: string;
+  accent: string;
+  badgeBg: string;
+  badgeText: string;
+  scanlineTint: string;
+}
+
+export type SidebarPosition = 'left' | 'right';
+
+export type SpecialtyWidgetPosition = 'header-ribbon' | 'dossier-crest' | 'chronicle-banner';
+
+export interface RegionalSpecialtyWidget {
+  id: string;
+  title: string;
+  subtitle?: string;
+  position: SpecialtyWidgetPosition;
+  metricLabel: string;
+}
+
+export interface NationVisualIdentity {
+  id: NationThemeId;
+  nameKo: string;
+  nameEn: string;
+  colors: NationColorPalette;
+  motto: string;
+  insigniaTitle: string;
+  terminalHeader: {
+    title: string;       // 인게임 이벤트 영감 시스템 타이틀
+    subtitle: string;    // 이벤트 부제
+    inspiration: string; // 영감 모티브
+  };
+  interfaceTitle?: string;
+  sidebarPosition: SidebarPosition;
+  specialtyWidget: RegionalSpecialtyWidget;
+  atmosphericDetails: {
+    scanlineOpacity: number;
+    cornerStyle: 'chamfer' | 'round' | 'sharp' | 'filigree';
+    glowIntensity: 'subtle' | 'medium' | 'vibrant';
+  };
+}
+
 export type GameSpeed = 1 | 2 | 4 | 8 | 16 | 32;
 
 export type Season = '봄' | '여름' | '가을' | '겨울';
@@ -116,6 +168,7 @@ export interface NationData {
   factions: string[];
   specialty: string;
   riskLevel: '안전' | '경계' | '위험' | '극도로 위험';
+  demographicWeight: number;
 }
 
 export type EnvironmentType = 
@@ -321,9 +374,11 @@ export interface GameEvent {
   id: string;
   title: string;
   description: string;
-  category: 'life' | 'oripathy' | 'world_news' | 'combat' | 'fateful' | 'career';
+  category: 'life' | 'oripathy' | 'world_news' | 'combat' | 'fateful' | 'career' | 'catastrophe';
   minAge: number;
   maxAge: number;
+  isMajor?: boolean;
+  preferredSeason?: Season;
   conditions?: {
     isInfected?: boolean;
     race?: string[];
@@ -397,6 +452,19 @@ export interface LogEntry {
   };
   effectBadges?: string[];
   timestamp: string;
+}
+
+export interface ScheduledAnnualItem {
+  id: string;
+  triggerProgress: number; // 0.0 ~ 1.0 (연간 발생 시점)
+  season: Season;
+  month: number;
+  category: 'settlement' | 'news' | 'event' | 'routine' | 'hazard' | 'health';
+  execute: (char: Character, addLog: (entry: Omit<LogEntry, 'id' | 'timestamp'>) => void) => {
+    updatedChar: Character;
+    triggeredEvent?: GameEvent;
+    isMajor?: boolean;
+  };
 }
 
 export interface ScoreBreakdown {

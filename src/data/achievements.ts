@@ -104,6 +104,17 @@ export const ACHIEVEMENTS_DATA: Achievement[] = [
     icon: 'radio',
     hint: '지략 90 이상의 상태에서 고대 문명 발굴 이벤트 중 비밀 식별 코드를 해독하십시오.'
   },
+  {
+    id: 'legend_calamity_slayer',
+    title: '재앙을 베어낸 자',
+    description: '극북의 붕괴체 핵을 꿰뚫어 현실 왜곡을 저지하거나, 황혼에 대지를 덮친 재앙 구름을 일격에 양단하다.',
+    loreQuote: '"하늘이 무너지고 현실이 일그러질지라도, 우리의 칼날은 대지의 재앙을 끝내 가르리라."',
+    tier: 'Legendary',
+    points: 1000,
+    category: 'combat',
+    icon: 'swords',
+    hint: '성인기 사미 북방에서 붕괴체 핵을 분쇄하거나, 황혼기에 모든 힘을 쏟아부어 재앙 구름을 양단하십시오.'
+  },
 
   // ==========================================
   // 유니크 (Unique - 500 Pts)
@@ -294,6 +305,17 @@ export const ACHIEVEMENTS_DATA: Achievement[] = [
     category: 'survival',
     icon: 'coins',
     hint: '보유 자산 50,000 LMD 이상을 달성하십시오.'
+  },
+  {
+    id: 'unique_silver_lance',
+    title: '은창의 돌격',
+    description: '카시미어 기사 결투에서 전설적인 은창 페가수스의 전광석화 돌격을 완벽히 재현하여 승리를 쟁취하다.',
+    loreQuote: '"은빛 창날이 번뜩이며 지축을 흔들 때, 카시미어 기사의 긍지는 영원히 꺾이지 않는다."',
+    tier: 'Unique',
+    points: 500,
+    category: 'combat',
+    icon: 'shield',
+    hint: '카시미어 기사 예선 결투에서 전광석화의 돌격으로 상대를 제압하고 은창 기사의 기개를 증명하십시오.'
   },
 
   // ==========================================
@@ -496,6 +518,17 @@ export const ACHIEVEMENTS_DATA: Achievement[] = [
     category: 'career',
     icon: 'mountain',
     hint: '쉐라그 평판 70 이상을 달성하고 카를란 무역 특별 협정에 서명하십시오.'
+  },
+  {
+    id: 'mystic_precursor_archive',
+    title: '선구자의 아카이브',
+    description: '지하 벙커의 양자 코어와 검은 관 콘솔을 해독하여 테라 이전 고대 인류의 행성 개척 기록을 복원하다.',
+    loreQuote: '"만 년 전 별들의 바다를 건너온 이들의 기록... 푸른 별의 마지막 유언이 여기에 잠들어 있다."',
+    tier: 'Mystic',
+    points: 300,
+    category: 'secret',
+    icon: 'database',
+    hint: '고대 문명 유적의 양자 터미널을 복원하거나, 황혼기에 검은 관의 마지막 시스템 로그를 열람하십시오.'
   },
 
   // ==========================================
@@ -819,6 +852,28 @@ export const ACHIEVEMENTS_DATA: Achievement[] = [
     category: 'survival',
     icon: 'alert-circle',
     hint: '자산이 0으로 떨어진 뒤 재기 이벤트에서 다시 살아남으십시오.'
+  },
+  {
+    id: 'rare_lone_wolf',
+    title: '고독한 구원의 늑대',
+    description: '무너져 내리는 재앙의 잔해 속에서 목숨을 건 단독 돌입으로 매몰된 시민 14명을 기적적으로 구출하다.',
+    loreQuote: '"잔해 속 어둠 속에서 마주한 그 눈빛은, 그 어떤 구원자보다도 따뜻하고 고결했다."',
+    tier: 'Rare',
+    points: 150,
+    category: 'survival',
+    icon: 'heart',
+    hint: '성인기 재앙 구호 전진기지에서 위험을 무릅쓰고 붕괴 건물에 선봉으로 돌입하여 시민들을 구출하십시오.'
+  },
+  {
+    id: 'rare_living_legend',
+    title: '등불을 건넨 전설',
+    description: '황혼의 나이에 평생 갈고닦은 비전의 정수를 후계자에게 온전히 전수하여 대륙의 미래를 밝힐 제자를 길러내다.',
+    loreQuote: '"내가 걸어온 길은 끝났으나, 나의 등불을 든 아이가 더 먼 새벽을 향해 걸어갈 것이다."',
+    tier: 'Rare',
+    points: 150,
+    category: 'story',
+    icon: 'award',
+    hint: '황혼기에 찾아온 마지막 제자에게 일체의 숨김없이 비전의 정수를 쏟아부어 전수하십시오.'
   },
 
   // ==========================================

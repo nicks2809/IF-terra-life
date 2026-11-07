@@ -26,7 +26,23 @@ export default {
           subtext: '#5c4d47',
           wax: '#8b1e1e',
           gold: '#b8860b'
+        },
+        nation: {
+          primary: 'var(--nation-primary)',
+          'primary-glow': 'var(--nation-primary-glow)',
+          secondary: 'var(--nation-secondary)',
+          surface: 'var(--nation-surface)',
+          card: 'var(--nation-card)',
+          border: 'var(--nation-border)',
+          accent: 'var(--nation-accent)',
+          'badge-bg': 'var(--nation-badge-bg)',
+          'badge-text': 'var(--nation-badge-text)',
+          scanline: 'var(--nation-scanline)',
         }
+      },
+      boxShadow: {
+        'nation-glow': '0 0 15px var(--nation-primary-glow)',
+        'nation-glow-sm': '0 0 8px var(--nation-primary-glow)',
       },
       fontFamily: {
         mono: ['JetBrains Mono', 'Fira Code', 'Consolas', 'monospace'],
