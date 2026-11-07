@@ -25,3 +25,5 @@ dist-ssr
 
 # Teamwork and AI agent workspace metadata
 .agents/
+
+HANDOFF.md

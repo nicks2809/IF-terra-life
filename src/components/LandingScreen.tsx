@@ -480,6 +480,52 @@ export const LandingScreen: React.FC<LandingScreenProps> = ({
             이 작품은 명일방주(Arknights) 세계관을 기반으로 한 비상업적 비공식 팬메이드 2차 창작물이며 원작 및 원작사(Hypergryph / Yostar)와 관련이 없습니다. 모든 수치와 사건은 이 시뮬레이션을 위해 만든 허구입니다.
           </p>
 
+          {/* 원작 및 영감 작품 외부 바로가기 링크 */}
+          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 text-xs text-slate-400 pt-1">
+            <span>
+              원작 IP —{' '}
+              <a
+                href="https://arknights.kr/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-amber-400 hover:text-amber-300 underline underline-offset-2 transition-colors"
+              >
+                명일방주(Arknights) 공식 홈페이지
+              </a>
+            </span>
+            <span className="text-slate-600">·</span>
+            <span>
+              영감 —{' '}
+              <a
+                href="https://project-moon-life.cityborn.workers.dev/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-cyan-400 hover:text-cyan-300 underline underline-offset-2 transition-colors"
+              >
+                도시의 한 사람으로 태어나
+              </a>
+              {' '}(
+              <a
+                href="https://x.com/_ryo_man"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-slate-300 hover:text-white underline underline-offset-2 transition-colors"
+              >
+                @_ryo_man
+              </a>
+              )
+            </span>
+            <span className="text-slate-600">·</span>
+            <a
+              href="https://github.com/nicks2809/IF-terra-life"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-slate-300 hover:text-white underline underline-offset-2 transition-colors"
+            >
+              GitHub
+            </a>
+          </div>
+
           <p className="text-[11px] font-mono text-slate-400 tracking-wider">
             PRTS Protocol Life Simulator · Non-Commercial Fan Project
           </p>
