@@ -44,9 +44,9 @@ export const SPECIAL_CAREERS_DATA: SpecialCareer[] = [
   },
   {
     id: 'yan_censor',
-    name: '염국 대리 사법 감찰사 (Yan High Censorate)',
-    rank: '대리 정3품 감찰관',
-    description: '황제의 직속 사법기관 대리(司)의 특파 감찰관. 각 주의 관리들을 사찰하고 수이(Sui)의 준동을 감시하는 암행의 칼날.',
+    name: '염국 대리사 사법 감찰사 (Yan High Censorate)',
+    rank: '대리사 정3품 감찰관',
+    description: '황제의 직속 사법기관 대리사(大理寺)의 특파 감찰관. 각 주의 관리들을 사찰하고 쉐이(Sui)의 준동을 감시하는 암행의 칼날.',
     loreSecret: '동방의 유구한 법도와 내공 아츠를 품고, 나라를 뒤흔들려는 거대한 음모를 추적합니다.',
     category: 'intellect',
     allowedNations: ['염국'],

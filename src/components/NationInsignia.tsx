@@ -148,7 +148,7 @@ const NATION_SVG_PATHS: Record<NationThemeId, InsigniaPaths> = {
     accent: 'M12 12 C13 11 15 11 16 12 C17 13 16 14 15 14 Z',
   },
 
-  // 11. 사르고: 타오르는 태양 원반과 사막의 곡도
+  // 11. 사르곤: 타오르는 태양 원반과 사막의 곡도
   sargon: {
     primary:
       'M6 19 C8 15 12 12 17 12 M7 18 L8 20 M18 19 C16 15 12 12 7 12 M17 18 L16 20 M12 14 V19 M12 2.5 V3.5 M7 8 H8 M16 8 H17 M8.5 4.5 L9.2 5.2 M15.5 4.5 L14.8 5.2',

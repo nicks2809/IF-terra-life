@@ -122,14 +122,14 @@ export const ROUTINE_LIFE_ENTRIES: RoutineLifeEntry[] = [
     nationId: 'yan',
     lifeStage: 'youth',
     season: '봄',
-    text: '대리(司)의 사서들이 거니는 관청 누각 아래서, 죽간과 고서의 구절을 외우며 세상의 도리를 탐구했습니다.'
+    text: '대리사(大理寺)의 사서들이 거니는 관청 누각 아래서, 죽간과 고서의 구절을 외우며 세상의 도리를 탐구했습니다.'
   },
   {
     id: 'yan_youth_02',
     nationId: 'yan',
     lifeStage: 'youth',
     season: '가을',
-    text: '단풍 든 계곡 정자에서 친구들과 국화주를 나누며, 수이(Sui)의 전설과 대륙의 평안을 기원했습니다.'
+    text: '단풍 든 계곡 정자에서 친구들과 국화주를 나누며, 쉐이(Sui)의 전설과 대륙의 평안을 기원했습니다.'
   },
   {
     id: 'yan_adult_01',
@@ -592,7 +592,7 @@ export const ROUTINE_LIFE_ENTRIES: RoutineLifeEntry[] = [
   },
 
   // ==========================================
-  // 사르고 (Sargon)
+  // 사르곤 (Sargon)
   // ==========================================
   {
     id: 'sar_child_01',

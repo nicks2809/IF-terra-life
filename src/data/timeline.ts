@@ -41,7 +41,7 @@ export const WORLD_TIMELINE: WorldTimelineEvent[] = [
     year: 1097,
     title: '제24회 카시미어 기사 메이저 대회',
     region: '카시미어',
-    broadcastText: '【스포츠 중계】 카바레리에키 스타디움! 명문 니어 가문의 "블레미샤인" 출전 및 감염자 기사단 피나카의 깜짝 활약으로 열광의 도가니!',
+    broadcastText: '【스포츠 중계】 카바레리에키 스타디움! 명문 니어 가문의 "블레미샤인" 출전 및 감염자 기사단 피누스 실베스트리스(소나무 기사단)의 깜짝 활약으로 열광의 도가니!',
     inGameEffectText: '카시미어 지역에서 기사 결투 대회 참가 및 고액 상금 획득 이벤트 해금.'
   },
   {

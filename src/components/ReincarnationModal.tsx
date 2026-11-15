@@ -1,13 +1,15 @@
 // src/components/ReincarnationModal.tsx
 import React, { useState, useMemo } from 'react';
-import { EnvironmentType, Gender, ReincarnationConfig, ThemeMode } from '../types';
+import { EnvironmentType, Gender, NationThemeId, ReincarnationConfig, ThemeMode } from '../types';
 import { RACES_DATA } from '../data/races';
 import { NATIONS_DATA } from '../data/nations';
 import { REINCARNATION_PERKS } from '../data/perks';
 import { LIFE_GOALS } from '../data/traits';
 import { GameEngine } from '../engine/gameEngine';
 import { storage } from '../services/storage';
-import { Sparkles, Dices, Trophy, Lock, CheckCircle2, RotateCcw, X, Target, Key } from 'lucide-react';
+import { NationInsignia } from './NationInsignia';
+import { getNationVisualIdentity } from '../utils/themeResolver';
+import { Sparkles, Dices, Trophy, Lock, CheckCircle2, RotateCcw, X, Target, Key, ChevronDown } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
@@ -32,6 +34,7 @@ export const ReincarnationModal: React.FC<Props> = ({
   const [goalId, setGoalId] = useState<string>('random');
   const [customSeed, setCustomSeed] = useState<string>('');
   const [selectedPerks, setSelectedPerks] = useState<string[]>(['perk_merchant_heir']);
+  const [openDropdown, setOpenDropdown] = useState<'race' | 'nation' | 'env' | 'goal' | null>(null);
 
   const achStats = useMemo(() => storage.getAchievementCollectionStats(), [isOpen]);
   const totalPoints = achStats.totalPoints;
@@ -40,6 +43,10 @@ export const ReincarnationModal: React.FC<Props> = ({
   if (!isOpen) return null;
 
   const isPrts = theme === 'prts';
+
+  const selectedRaceObj = RACES_DATA.find(r => r.id === raceId);
+  const selectedNationObj = NATIONS_DATA.find(n => n.id === nationId);
+  const selectedGoalObj = LIFE_GOALS.find(g => g.id === goalId);
 
   const togglePerk = (perkId: string, reqPoints: number) => {
     if (totalPoints < reqPoints) return;
@@ -165,7 +172,7 @@ export const ReincarnationModal: React.FC<Props> = ({
                 />
                 <button
                   type="button"
-                  onClick={() => setName(GameEngine.getRandomName())}
+                  onClick={() => setName(GameEngine.getRandomName(Math.random, nationId === 'random' ? undefined : nationId, gender))}
                   className={`px-2.5 py-1.5 rounded-lg border text-xs font-bold shrink-0 flex items-center space-x-1 ${
                     isPrts ? 'bg-slate-800 hover:bg-slate-700 border-slate-600 text-cyan-300' : 'bg-[#e8dcbe] border-[#5c4033] text-[#2c1810]'
                   }`}
@@ -198,86 +205,242 @@ export const ReincarnationModal: React.FC<Props> = ({
             </div>
           </div>
 
-          {/* Row 2: Race & Nation & Environment */}
+          {/* Row 2: Race & Nation & Environment (전용 커스텀 선택기) */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
+            {/* 종족 선택 */}
+            <div className="relative">
               <label className="text-xs font-bold block mb-1 opacity-80">종족 선택</label>
-              <select
-                value={raceId}
-                onChange={(e) => setRaceId(e.target.value)}
-                className={`w-full px-2.5 py-1.5 rounded-lg border text-xs font-bold ${
-                  isPrts ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white/80 border-[#5c4033] text-black'
+              <button
+                type="button"
+                onClick={() => setOpenDropdown(openDropdown === 'race' ? null : 'race')}
+                className={`w-full px-3 py-2 rounded-lg border text-xs font-bold flex items-center justify-between transition-all ${
+                  isPrts
+                    ? 'bg-slate-900 border-slate-700 hover:border-cyan-500/60 text-white'
+                    : 'bg-white/80 border-[#5c4033] text-black'
                 }`}
               >
-                <option value="random">🎲 무작위 종족</option>
-                {RACES_DATA.map(r => {
-                  const isAncient = r.id === 'draco' || r.id === 'aslan';
-                  const locked = isAncient && !canPickAncient;
-                  return (
-                    <option key={r.id} value={r.id} disabled={locked}>
-                      {r.name} {isAncient ? (locked ? '🔒(450 PTS 필요)' : '👑(고대종)') : `(수명 ~${r.lifespan.baseLifespan}세)`}
-                    </option>
-                  );
-                })}
-              </select>
+                <span className="truncate">
+                  {selectedRaceObj ? `${selectedRaceObj.name} (~${selectedRaceObj.lifespan.baseLifespan}세)` : '🎲 무작위 종족'}
+                </span>
+                <ChevronDown className="w-3.5 h-3.5 opacity-70 shrink-0 ml-1" />
+              </button>
+              {openDropdown === 'race' && (
+                <div className={`mt-1.5 p-2 rounded-lg border max-h-48 overflow-y-auto space-y-1 shadow-xl ${
+                  isPrts ? 'bg-[#090d14] border-cyan-500/40' : 'bg-[#f8f1de] border-[#5c4033]'
+                }`}>
+                  <button
+                    type="button"
+                    onClick={() => { setRaceId('random'); setOpenDropdown(null); }}
+                    className={`w-full text-left px-2.5 py-1.5 rounded text-xs font-bold ${
+                      raceId === 'random'
+                        ? isPrts ? 'bg-cyan-500/20 text-cyan-300' : 'bg-[#8b1e1e]/20 text-[#8b1e1e]'
+                        : 'hover:bg-white/5'
+                    }`}
+                  >
+                    🎲 무작위 종족
+                  </button>
+                  {RACES_DATA.map(r => {
+                    const isAncient = r.id === 'draco' || r.id === 'aslan';
+                    const locked = isAncient && !canPickAncient;
+                    return (
+                      <button
+                        key={r.id}
+                        type="button"
+                        disabled={locked}
+                        onClick={() => { setRaceId(r.id); setOpenDropdown(null); }}
+                        className={`w-full text-left px-2.5 py-1.5 rounded text-xs flex items-center justify-between ${
+                          locked
+                            ? 'opacity-40 cursor-not-allowed'
+                            : raceId === r.id
+                              ? isPrts ? 'bg-cyan-500/20 text-cyan-300 font-bold' : 'bg-[#8b1e1e]/20 text-[#8b1e1e] font-bold'
+                              : 'hover:bg-white/5'
+                        }`}
+                      >
+                        <span>{r.name}</span>
+                        <span className="text-[10px] opacity-75">
+                          {isAncient ? (locked ? '🔒 450P' : '👑 고대종') : `~${r.lifespan.baseLifespan}세`}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
-            <div>
+            {/* 출신 국가 */}
+            <div className="relative">
               <label className="text-xs font-bold block mb-1 opacity-80">출신 국가</label>
-              <select
-                value={nationId}
-                onChange={(e) => setNationId(e.target.value)}
-                className={`w-full px-2.5 py-1.5 rounded-lg border text-xs font-bold ${
-                  isPrts ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white/80 border-[#5c4033] text-black'
+              <button
+                type="button"
+                onClick={() => setOpenDropdown(openDropdown === 'nation' ? null : 'nation')}
+                className={`w-full px-3 py-2 rounded-lg border text-xs font-bold flex items-center justify-between transition-all ${
+                  isPrts
+                    ? 'bg-slate-900 border-slate-700 hover:border-cyan-500/60 text-white'
+                    : 'bg-white/80 border-[#5c4033] text-black'
                 }`}
               >
-                <option value="random">🎲 무작위 국가</option>
-                {NATIONS_DATA.map(n => (
-                  <option key={n.id} value={n.id}>
-                    {n.name} ({n.riskLevel})
-                  </option>
-                ))}
-              </select>
+                <span className="flex items-center space-x-1.5 truncate">
+                  {selectedNationObj ? (
+                    <>
+                      <NationInsignia nationId={selectedNationObj.id} size="sm" />
+                      <span>{selectedNationObj.name} ({selectedNationObj.riskLevel})</span>
+                    </>
+                  ) : (
+                    <span>🎲 무작위 국가</span>
+                  )}
+                </span>
+                <ChevronDown className="w-3.5 h-3.5 opacity-70 shrink-0 ml-1" />
+              </button>
+              {openDropdown === 'nation' && (
+                <div className={`mt-1.5 p-2 rounded-lg border max-h-48 overflow-y-auto space-y-1 shadow-xl ${
+                  isPrts ? 'bg-[#090d14] border-cyan-500/40' : 'bg-[#f8f1de] border-[#5c4033]'
+                }`}>
+                  <button
+                    type="button"
+                    onClick={() => { setNationId('random'); setOpenDropdown(null); }}
+                    className={`w-full text-left px-2.5 py-1.5 rounded text-xs font-bold ${
+                      nationId === 'random'
+                        ? isPrts ? 'bg-cyan-500/20 text-cyan-300' : 'bg-[#8b1e1e]/20 text-[#8b1e1e]'
+                        : 'hover:bg-white/5'
+                    }`}
+                  >
+                    🎲 무작위 국가 (인구 가중치)
+                  </button>
+                  {NATIONS_DATA.map(n => {
+                    const nTheme = getNationVisualIdentity(n.id as NationThemeId);
+                    return (
+                      <button
+                        key={n.id}
+                        type="button"
+                        onClick={() => { setNationId(n.id); setOpenDropdown(null); }}
+                        className={`w-full text-left px-2.5 py-1.5 rounded text-xs flex items-center justify-between gap-2 ${
+                          nationId === n.id
+                            ? isPrts ? 'bg-cyan-500/20 text-cyan-300 font-bold' : 'bg-[#8b1e1e]/20 text-[#8b1e1e] font-bold'
+                            : 'hover:bg-white/5'
+                        }`}
+                      >
+                        <span className="flex items-center space-x-1.5 min-w-0 truncate">
+                          <NationInsignia nationId={n.id} size="sm" style={isPrts ? { color: nTheme.colors.primary } : undefined} />
+                          <span className="truncate">{n.name}</span>
+                          {nTheme.eventRefs && nTheme.eventRefs[0] && (
+                            <span className="text-[10px] opacity-65 truncate hidden sm:inline">
+                              · {nTheme.eventRefs[0]}
+                            </span>
+                          )}
+                        </span>
+                        <span className="text-[10px] opacity-75 shrink-0">{n.riskLevel}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
-            <div>
+            {/* 성장 환경 */}
+            <div className="relative">
               <label className="text-xs font-bold block mb-1 opacity-80">성장 환경</label>
-              <select
-                value={environment}
-                onChange={(e) => setEnvironment(e.target.value)}
-                className={`w-full px-2.5 py-1.5 rounded-lg border text-xs font-bold ${
-                  isPrts ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white/80 border-[#5c4033] text-black'
+              <button
+                type="button"
+                onClick={() => setOpenDropdown(openDropdown === 'env' ? null : 'env')}
+                className={`w-full px-3 py-2 rounded-lg border text-xs font-bold flex items-center justify-between transition-all ${
+                  isPrts
+                    ? 'bg-slate-900 border-slate-700 hover:border-cyan-500/60 text-white'
+                    : 'bg-white/80 border-[#5c4033] text-black'
                 }`}
               >
-                <option value="random">🎲 무작위 환경</option>
-                {environments.map(env => (
-                  <option key={env} value={env}>{env}</option>
-                ))}
-              </select>
+                <span className="truncate">{environment === 'random' ? '🎲 무작위 환경' : environment}</span>
+                <ChevronDown className="w-3.5 h-3.5 opacity-70 shrink-0 ml-1" />
+              </button>
+              {openDropdown === 'env' && (
+                <div className={`mt-1.5 p-2 rounded-lg border max-h-48 overflow-y-auto space-y-1 shadow-xl ${
+                  isPrts ? 'bg-[#090d14] border-cyan-500/40' : 'bg-[#f8f1de] border-[#5c4033]'
+                }`}>
+                  <button
+                    type="button"
+                    onClick={() => { setEnvironment('random'); setOpenDropdown(null); }}
+                    className={`w-full text-left px-2.5 py-1.5 rounded text-xs font-bold ${
+                      environment === 'random'
+                        ? isPrts ? 'bg-cyan-500/20 text-cyan-300' : 'bg-[#8b1e1e]/20 text-[#8b1e1e]'
+                        : 'hover:bg-white/5'
+                    }`}
+                  >
+                    🎲 무작위 환경
+                  </button>
+                  {environments.map(env => (
+                    <button
+                      key={env}
+                      type="button"
+                      onClick={() => { setEnvironment(env); setOpenDropdown(null); }}
+                      className={`w-full text-left px-2.5 py-1.5 rounded text-xs ${
+                        environment === env
+                          ? isPrts ? 'bg-cyan-500/20 text-cyan-300 font-bold' : 'bg-[#8b1e1e]/20 text-[#8b1e1e] font-bold'
+                          : 'hover:bg-white/5'
+                      }`}
+                    >
+                      {env}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
           {/* Row 2.5: Life Goal & Destiny Seed */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
+            <div className="relative">
               <label className="text-xs font-bold mb-1 opacity-80 flex items-center space-x-1">
                 <Target className="w-3.5 h-3.5 text-amber-400" />
                 <span>생애 목표 지정 (S등급 핵심 가산점)</span>
               </label>
-              <select
-                value={goalId}
-                onChange={(e) => setGoalId(e.target.value)}
-                className={`w-full px-2.5 py-1.5 rounded-lg border text-xs font-bold ${
-                  isPrts ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white/80 border-[#5c4033] text-black'
+              <button
+                type="button"
+                onClick={() => setOpenDropdown(openDropdown === 'goal' ? null : 'goal')}
+                className={`w-full px-3 py-2 rounded-lg border text-xs font-bold flex items-center justify-between transition-all ${
+                  isPrts
+                    ? 'bg-slate-900 border-slate-700 hover:border-cyan-500/60 text-white'
+                    : 'bg-white/80 border-[#5c4033] text-black'
                 }`}
               >
-                <option value="random">🎲 무작위 생애 서원</option>
-                {LIFE_GOALS.map(g => (
-                  <option key={g.id} value={g.id}>
-                    {g.title} (+{g.bonusPoints}점) — {g.description}
-                  </option>
-                ))}
-              </select>
+                <span className="truncate">
+                  {selectedGoalObj ? `${selectedGoalObj.title} (+${selectedGoalObj.bonusPoints}점)` : '🎲 무작위 생애 서원'}
+                </span>
+                <ChevronDown className="w-3.5 h-3.5 opacity-70 shrink-0 ml-1" />
+              </button>
+              {openDropdown === 'goal' && (
+                <div className={`mt-1.5 p-2 rounded-lg border max-h-48 overflow-y-auto space-y-1 shadow-xl ${
+                  isPrts ? 'bg-[#090d14] border-cyan-500/40' : 'bg-[#f8f1de] border-[#5c4033]'
+                }`}>
+                  <button
+                    type="button"
+                    onClick={() => { setGoalId('random'); setOpenDropdown(null); }}
+                    className={`w-full text-left px-2.5 py-1.5 rounded text-xs font-bold ${
+                      goalId === 'random'
+                        ? isPrts ? 'bg-cyan-500/20 text-cyan-300' : 'bg-[#8b1e1e]/20 text-[#8b1e1e]'
+                        : 'hover:bg-white/5'
+                    }`}
+                  >
+                    🎲 무작위 생애 서원
+                  </button>
+                  {LIFE_GOALS.map(g => (
+                    <button
+                      key={g.id}
+                      type="button"
+                      onClick={() => { setGoalId(g.id); setOpenDropdown(null); }}
+                      className={`w-full text-left px-2.5 py-1.5 rounded text-xs ${
+                        goalId === g.id
+                          ? isPrts ? 'bg-cyan-500/20 text-cyan-300 font-bold' : 'bg-[#8b1e1e]/20 text-[#8b1e1e] font-bold'
+                          : 'hover:bg-white/5'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span>{g.title}</span>
+                        <span className="text-[10px] text-amber-400">+{g.bonusPoints}점</span>
+                      </div>
+                      <p className="text-[10px] opacity-70 truncate mt-0.5">{g.description}</p>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div>

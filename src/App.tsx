@@ -153,6 +153,9 @@ export const App: React.FC = () => {
     const next = !isAutoChoiceEnabled;
     setIsAutoChoiceEnabled(next);
     storage.saveAutoChoice(next);
+    if (next && character.isAlive) {
+      setIsPlaying(true);
+    }
   };
 
   // 사운드 초기 설정
@@ -364,17 +367,14 @@ export const App: React.FC = () => {
         result.triggeredEvent.id.startsWith('career_special_') ||
         result.triggeredEvent.category === 'fateful';
 
-      if (result.triggeredEvent.isMajor || !isAutoChoiceEnabled || (advancedSettings.pauseOnRareEvent && isRareMilestone)) {
-        wasPlayingBeforeEventRef.current = isPlaying;
-        setIsPlaying(false);
-        setMinorTimeoutRemainingSec(null);
-      } else {
-        if (isPlaying && advancedSettings.minorEventAutoTimeout) {
-          const countdown = Math.max(3, Math.floor(10 / Math.sqrt(speed)));
-          setMinorTimeoutRemainingSec(countdown);
-        } else {
+      if (!isAutoChoiceEnabled) {
+        if (result.triggeredEvent.isMajor || !isAutoChoiceEnabled || (advancedSettings.pauseOnRareEvent && isRareMilestone)) {
+          wasPlayingBeforeEventRef.current = isPlaying;
+          setIsPlaying(false);
           setMinorTimeoutRemainingSec(null);
         }
+      } else {
+        setMinorTimeoutRemainingSec(null);
       }
     }
   }, [screenMode, character, currentEvent, battleState, addLog, isAutoChoiceEnabled, advancedSettings, addToast, isAnyModalOpen, isPlaying, speed]);
@@ -426,13 +426,15 @@ export const App: React.FC = () => {
     setCharacter(currentChar);
     if (foundEvent) {
       setCurrentEvent(foundEvent);
-      setIsPlaying(false);
+      if (!isAutoChoiceEnabled) {
+        setIsPlaying(false);
+      }
     }
   }, [screenMode, character, currentEvent, battleState, addLog, isAutoChoiceEnabled, advancedSettings, isAnyModalOpen]);
 
-  // UI 재생/일시정지 토글 버튼 핸들러 (중요 사건 대기 중 우회 차단 가드)
+  // UI 재생/일시정지 토글 버튼 핸들러 (수동 모드 시 중요 사건 대기 중 우회 차단 가드)
   const handleTogglePlay = useCallback(() => {
-    if (currentEvent?.isMajor) {
+    if (currentEvent?.isMajor && !isAutoChoiceEnabled) {
       sound.playBeep(300, 0.08, 'sawtooth');
       addToast({
         type: 'info',
@@ -444,7 +446,7 @@ export const App: React.FC = () => {
       return;
     }
     setIsPlaying(prev => !prev);
-  }, [currentEvent, addToast]);
+  }, [currentEvent, isAutoChoiceEnabled, addToast]);
 
   // 선택지 선택
   const handleSelectChoice = useCallback((choice: EventChoice) => {
@@ -585,17 +587,14 @@ export const App: React.FC = () => {
                   const ev = execResult.triggeredEvent;
                   setCurrentEvent(ev);
                   const isRareMilestone = ev.id.startsWith('career_special_') || ev.category === 'fateful';
-                  if (ev.isMajor || !isAutoChoiceEnabled || (advancedSettings.pauseOnRareEvent && isRareMilestone)) {
-                    wasPlayingBeforeEventRef.current = isPlaying;
-                    setIsPlaying(false);
-                    setMinorTimeoutRemainingSec(null);
-                  } else {
-                    if (isPlaying && advancedSettings.minorEventAutoTimeout) {
-                      const countdown = Math.max(3, Math.floor(10 / Math.sqrt(speed)));
-                      setMinorTimeoutRemainingSec(countdown);
-                    } else {
+                  if (!isAutoChoiceEnabled) {
+                    if (ev.isMajor || !isAutoChoiceEnabled || (advancedSettings.pauseOnRareEvent && isRareMilestone)) {
+                      wasPlayingBeforeEventRef.current = isPlaying;
+                      setIsPlaying(false);
                       setMinorTimeoutRemainingSec(null);
                     }
+                  } else {
+                    setMinorTimeoutRemainingSec(null);
                   }
                 }
               }
@@ -623,21 +622,21 @@ export const App: React.FC = () => {
     advancedSettings
   ]);
 
-  // 자동 진행 시 스토리 사건 자동 선택
+  // 자동 진행 시 스토리 사건 자동 선택 (자동 선택 ON 상태에서는 중대 사건/일시정지 상태에서도 막힘 없이 처리)
   useEffect(() => {
-    if (isPlaying && currentEvent && character.isAlive && isAutoChoiceEnabled) {
+    if (currentEvent && character.isAlive && isAutoChoiceEnabled) {
       const chosen = GameEngine.selectAutoChoice(character, currentEvent, advancedSettings.aiStrategy);
       setAutoChoicePendingId(chosen.id);
 
       const speedDelay: Record<GameSpeed, number> = {
-        1: 2000,
-        2: 1300,
-        4: 900,
-        8: 600,
-        16: 420,
-        32: 300
+        1: 1600,
+        2: 1100,
+        4: 750,
+        8: 500,
+        16: 350,
+        32: 240
       };
-      const delay = speedDelay[speed] || 1000;
+      const delay = speedDelay[speed] || 800;
 
       const eventTimer = setTimeout(() => {
         handleSelectChoice(chosen);
@@ -655,7 +654,7 @@ export const App: React.FC = () => {
 
   // 자동 진행 시 턴제 전투 자동 진행
   useEffect(() => {
-    if (isPlaying && battleState && character.isAlive && isAutoChoiceEnabled) {
+    if (battleState && character.isAlive && isAutoChoiceEnabled) {
       if (battleState.result) {
         const closeTimer = setTimeout(() => {
           setBattleState(undefined);
@@ -716,7 +715,7 @@ export const App: React.FC = () => {
 
       if (e.code === 'Space' || e.key === ' ') {
         e.preventDefault();
-        if (currentEvent?.isMajor) {
+        if (currentEvent?.isMajor && !isAutoChoiceEnabled) {
           sound.playBeep(300, 0.08, 'sawtooth');
           addToast({
             type: 'info',
@@ -727,7 +726,7 @@ export const App: React.FC = () => {
           });
           return;
         }
-        if (character.isAlive && !currentEvent && !battleState?.isActive) {
+        if (character.isAlive && !battleState?.isActive) {
           setIsPlaying(prev => !prev);
         }
       } else if (e.key === 'n' || e.key === 'N') {
@@ -915,7 +914,7 @@ export const App: React.FC = () => {
   }, [character?.nation]);
 
   return (
-    <div data-nation={currentNationId} className="w-full h-screen overflow-hidden">
+    <div data-nation={currentNationId} className="w-full h-dvh min-h-screen flex flex-col overflow-x-hidden overflow-y-auto">
       {screenMode === 'landing' ? (
         <LandingScreen
           onStartLife={handleStartLife}

@@ -123,7 +123,7 @@ export const HistoryTome: React.FC<Props> = ({
   }, [character.focusStance]);
 
   return (
-    <div className="flex flex-col h-screen bg-[#e8dcbe] text-[#1a1412] font-serif select-none overflow-hidden">
+    <div className="flex flex-col h-full min-h-screen md:h-dvh bg-[#e8dcbe] text-[#1a1412] font-serif select-none overflow-x-hidden overflow-y-auto md:overflow-hidden">
       {/* Antique Header */}
       <header className="h-14 border-b-2 border-[#5c4033] bg-[#d9c79f] px-6 flex items-center justify-between shrink-0 shadow-md">
         <div className="flex items-center space-x-3">
@@ -143,8 +143,15 @@ export const HistoryTome: React.FC<Props> = ({
               <NationInsignia nationId={activeNationId} className="w-4 h-4 text-[#8b1e1e]" />
             </div>
             <div className="flex flex-col">
-              <span className="text-xs font-bold text-[#5c4033]">{nationIdentity.nameKo} 연대기</span>
-              <span className="text-[10px] text-[#8c7b75] italic hidden lg:inline max-w-[200px] truncate" title={nationIdentity.motto}>
+              <span className="text-xs font-bold text-[#5c4033]">
+                {nationIdentity.nameKo} 연대기
+                {nationIdentity.eventRefs && nationIdentity.eventRefs[0] && (
+                  <span className="text-[10px] font-normal text-[#8b1e1e] ml-1.5 hidden xl:inline">
+                    · {nationIdentity.eventRefs[0]}
+                  </span>
+                )}
+              </span>
+              <span className="text-[10px] text-[#8c7b75] italic hidden lg:inline max-w-[220px] truncate" title={nationIdentity.motto}>
                 "{nationIdentity.motto}"
               </span>
             </div>
@@ -244,10 +251,10 @@ export const HistoryTome: React.FC<Props> = ({
         </button>
       </div>
 
-      {/* Main Tome Body */}
-      <main className="grow grid grid-cols-1 md:grid-cols-12 overflow-hidden bg-[#f4ebd0]">
-        {/* Left Parchment: Character Bio (4 cols) */}
-        <aside className={`md:col-span-4 border-r-2 border-[#5c4033]/30 bg-[#ebdcb9] p-5 flex-col overflow-y-auto space-y-4 shadow-inner ${
+      {/* Main Tome Body (화면 크기별 유동적 비율 적용) */}
+      <main className="grow min-h-0 grid grid-cols-1 md:grid-cols-12 overflow-hidden bg-[#f4ebd0]">
+        {/* Left Parchment: Character Bio */}
+        <aside className={`md:col-span-5 lg:col-span-4 2xl:col-span-3 min-h-0 border-r-2 border-[#5c4033]/30 bg-[#ebdcb9] p-4 sm:p-5 flex-col overflow-y-auto space-y-4 shadow-inner ${
           mobileTab === 'profile' ? 'flex' : 'hidden md:flex'
         }`}>
           {/* Identity Scroll */}
@@ -272,13 +279,18 @@ export const HistoryTome: React.FC<Props> = ({
               환경: {character.environment}
             </div>
 
-            {/* 고서적 모토 표기 */}
+            {/* 고서적 모토 및 핵심 서사 레퍼런스 표기 */}
             <div 
               className="text-[11px] text-[#5c4033] italic border-l-2 border-[#8b1e1e]/50 pl-2.5 my-1.5 relative z-10 line-clamp-1"
               title={nationIdentity.motto}
             >
               "{nationIdentity.motto}"
             </div>
+            {nationIdentity.eventRefs && nationIdentity.eventRefs.length > 0 && (
+              <div className="text-[10px] text-[#8b1e1e]/90 mb-1 relative z-10 truncate" title={nationIdentity.eventRefs.join(' · ')}>
+                사료 편찬: {nationIdentity.eventRefs.slice(0, 2).join(' · ')}
+              </div>
+            )}
             <div className="text-xs font-bold text-[#8b1e1e] mt-1 flex items-center justify-between">
               <span>직업: {character.career} {character.careerRank && `(${character.careerRank})`}</span>
               <span className="px-1.5 py-0.5 rounded bg-[#8b1e1e]/15 border border-[#8b1e1e]/30 text-[#8b1e1e] text-[10px] font-extrabold">
@@ -551,8 +563,8 @@ export const HistoryTome: React.FC<Props> = ({
           </div>
         </aside>
 
-        {/* Right Page: Journal Chronicles (8 cols) */}
-        <section className={`md:col-span-8 flex-col h-full overflow-hidden bg-[#f4ebd0] ${
+        {/* Right Page: Journal Chronicles */}
+        <section className={`md:col-span-7 lg:col-span-8 2xl:col-span-9 min-h-0 flex-col h-full overflow-hidden bg-[#f4ebd0] ${
           mobileTab === 'log' ? 'flex' : 'hidden md:flex'
         }`}>
           <EventLogPanel

@@ -63,35 +63,35 @@ export const ACHIEVEMENTS_DATA: Achievement[] = [
   {
     id: 'legend_columbia_bank_sovereign',
     title: '대륙 금융의 제왕',
-    description: '보유 자산 100,000 LMD를 돌파하여 대륙 전역의 이동도시 채권을 장악하다.',
+    description: '보유 자산 150,000 LMD를 돌파하여 대륙 전역의 이동도시 채권을 장악하다.',
     loreQuote: '"국가는 무너져도 자본의 장부는 영원하다. 테라의 모든 바퀴는 내 금고를 향해 구른다."',
     tier: 'Legendary',
     points: 1000,
     category: 'survival',
     icon: 'coins',
-    hint: '상업 활동, 현상금 및 지략 투자를 통해 순자산 100,000 LMD 이상을 축적하십시오.'
+    hint: '상업 활동, 현상금 및 지략 투자를 통해 순자산 150,000 LMD 이상을 축적하십시오.'
   },
   {
     id: 'legend_draco_apocalypse',
     title: '태초의 용염',
-    description: '극희귀 고대종 드라코로 아츠 적성 95 이상을 달성하고 전설의 용염을 해방하다.',
+    description: '극희귀 고대종 드라코로 아츠 적성 98 이상을 달성하고 전설의 용염을 해방하다.',
     loreQuote: '"붉은 용의 숨결이 닿는 곳마다, 거짓된 왕들의 관이 잿더미로 화하리라."',
     tier: 'Legendary',
     points: 1000,
     category: 'combat',
     icon: 'flame',
-    hint: '0.5% 확률로 태어나는 고대종 드라코로 수련하여 아츠 적성 95를 돌파하십시오.'
+    hint: '0.5% 확률로 태어나는 고대종 드라코로 수련하여 아츠 적성 98 및 전투력 85 이상을 돌파하십시오.'
   },
   {
     id: 'legend_aslan_empire_conqueror',
     title: '황금 사자의 패왕도',
-    description: '극희귀 고대종 아슬란으로 전투력 95 이상을 달성하고 제국의 기사단을 호령하다.',
+    description: '극희귀 고대종 아슬란으로 전투력 98 이상을 달성하고 제국의 기사단을 호령하다.',
     loreQuote: '"황금 갈기를 휘날리며 포효할 때, 대지의 모든 맹수들이 무릎 꿇었다."',
     tier: 'Legendary',
     points: 1000,
     category: 'combat',
     icon: 'shield',
-    hint: '0.5% 확률로 태어나는 고대종 아슬란으로 수련하여 전투력 95를 돌파하십시오.'
+    hint: '0.5% 확률로 태어나는 고대종 아슬란으로 수련하여 전투력 98 및 지략 85 이상을 돌파하십시오.'
   },
   {
     id: 'legend_priestess_black_box',
@@ -177,13 +177,13 @@ export const ACHIEVEMENTS_DATA: Achievement[] = [
   {
     id: 'unique_lmd_tycoon_max',
     title: '이동도시를 매입한 부호',
-    description: '보유 자산 30,000 LMD를 돌파하여 대륙 금융가를 손아귀에 쥐다.',
+    description: '보유 자산 45,000 LMD를 돌파하여 대륙 금융가를 손아귀에 쥐다.',
     loreQuote: '"돈으로 살 수 없는 것이 테라에 있는가? 최소한 안전과 침묵은 살 수 있다."',
     tier: 'Unique',
     points: 500,
     category: 'survival',
     icon: 'coins',
-    hint: '사업 번창 및 현상금 사냥을 통해 순자산 30,000 LMD 이상을 달성하십시오.'
+    hint: '사업 번창 및 현상금 사냥을 통해 순자산 45,000 LMD 이상을 달성하십시오.'
   },
   {
     id: 'unique_sarkaz_elder_150',
@@ -210,46 +210,46 @@ export const ACHIEVEMENTS_DATA: Achievement[] = [
   {
     id: 'unique_crystallized_will',
     title: '결정화의 저주를 딛고',
-    description: '결정화율 70% 이상의 극심한 말기 광석병 상태에서 10년 이상 생존하며 불굴의 의지를 보이다.',
+    description: '결정화율 78% 이상의 극심한 말기 광석병 상태에서 42세 이상까지 생존하며 불굴의 의지를 보이다.',
     loreQuote: '"온몸이 검은 돌로 굳어가도, 나의 심장은 아직 뜨겁게 박동한다."',
     tier: 'Unique',
     points: 500,
     category: 'survival',
     icon: 'activity',
-    hint: '체세포 결정화율 70% 이상의 말기 상태에 도달한 뒤, 억제제와 생명력으로 10년 이상 버텨내십시오.'
+    hint: '체세포 결정화율 78% 이상의 말기 상태에 도달한 뒤, 억제제와 생명력으로 42세 이상까지 버텨내십시오.'
   },
   {
     id: 'unique_combat_apex',
     title: '일기당천의 무신',
-    description: '물리 전투 숙련도 100(MAX)을 달성하여 인간의 한계를 초월한 무예에 도달하다.',
+    description: '물리 전투 숙련도 105 이상의 초월적 경지를 달성하여 인간의 한계를 넘어선 무예에 도달하다.',
     loreQuote: '"칼끝이 가리키는 곳에 적의 방진은 바람 앞의 낙엽처럼 흩어졌다."',
     tier: 'Unique',
     points: 500,
     category: 'combat',
     icon: 'swords',
-    hint: '훈련과 장비 보정을 통해 전투 숙련도 100을 완성하십시오.'
+    hint: '훈련과 장비 보정, 한계 돌파를 통해 전투 숙련도 105 이상을 완성하십시오.'
   },
   {
     id: 'unique_arts_apex',
     title: '오리지늄 아츠의 절대자',
-    description: '아츠 적성 100(MAX)을 달성하여 자연 법칙을 뒤틀어버리는 고위 마법을 완성하다.',
+    description: '아츠 적성 105 이상의 초월적 경지를 달성하여 자연 법칙을 뒤틀어버리는 고위 마법을 완성하다.',
     loreQuote: '"주문 영창은 더 이상 필요 없다. 생각이 닿는 순간 오리지늄은 곧 현실이 된다."',
     tier: 'Unique',
     points: 500,
     category: 'combat',
     icon: 'wand',
-    hint: '꾸준한 아츠 수련과 영창 강화를 통해 아츠 적성 100을 완성하십시오.'
+    hint: '꾸준한 아츠 수련과 영창 강화를 통해 아츠 적성 105 이상을 완성하십시오.'
   },
   {
     id: 'unique_intellect_apex',
     title: '만고의 지략가',
-    description: '정세 감각 및 지략 100(MAX)을 달성하여 각국 수뇌부의 머리 위에서 장기판을 흔들다.',
+    description: '정세 감각 및 지략 105 이상의 초월적 경지를 달성하여 각국 수뇌부의 머리 위에서 장기판을 흔들다.',
     loreQuote: '"승패는 칼을 뽑기 전에 이미 서재의 지도 위에서 결정되었다."',
     tier: 'Unique',
     points: 500,
     category: 'survival',
     icon: 'brain',
-    hint: '학문 정진과 정계 교류를 통해 지략 스탯 100을 완성하십시오.'
+    hint: '학문 정진과 정계 교류를 통해 지략 스탯 105 이상을 완성하십시오.'
   },
   {
     id: 'unique_slay_emperors_blade',
@@ -298,13 +298,13 @@ export const ACHIEVEMENTS_DATA: Achievement[] = [
   {
     id: 'unique_wealth_50k',
     title: '대륙 제일의 거상',
-    description: '보유 자산 50,000 LMD를 돌파하여 대륙 상업 연합회의 수석 주주가 되다.',
+    description: '보유 자산 75,000 LMD를 돌파하여 대륙 상업 연합회의 수석 주주가 되다.',
     loreQuote: '"황금의 무게가 곧 법의 무게다. 내 허락 없이는 어떠한 화물선도 출항할 수 없다."',
     tier: 'Unique',
     points: 500,
     category: 'survival',
     icon: 'coins',
-    hint: '보유 자산 50,000 LMD 이상을 달성하십시오.'
+    hint: '보유 자산 75,000 LMD 이상을 달성하십시오.'
   },
   {
     id: 'unique_silver_lance',
@@ -345,14 +345,14 @@ export const ACHIEVEMENTS_DATA: Achievement[] = [
   },
   {
     id: 'mystic_yan_high_censor',
-    title: '염국 대리 사법 감찰사',
-    description: '수이의 권속들의 준동을 감시하고 염국 대리의 사법령을 집행하다.',
+    title: '염국 대리사 사법 감찰관',
+    description: '쉐이의 권속들의 준동을 감시하고 염국 대리사의 사법령을 집행하다.',
     loreQuote: '"법은 만물을 비추는 거울이요, 사령관의 붓은 사악함을 베는 칼날이다."',
     tier: 'Mystic',
     points: 300,
     category: 'career',
     icon: 'scroll',
-    hint: '염국에서 사법 감찰사 임명 이벤트의 지략 판정을 통과하십시오.'
+    hint: '염국에서 대리사 사법 감찰관 임명 이벤트의 지략 판정을 통과하십시오.'
   },
   {
     id: 'mystic_siracusa_don',
@@ -401,24 +401,24 @@ export const ACHIEVEMENTS_DATA: Achievement[] = [
   {
     id: 'mystic_longevity_70',
     title: '고희(古稀)의 기적',
-    description: '혹독한 테라의 환경 속에서 70세까지 천수를 누리며 생존하다.',
+    description: '혹독한 테라의 환경 속에서 78세 이상 천수를 누리며 생존하다.',
     loreQuote: '"대다수가 요절하는 대지에서 백발의 노인이 된다는 것은 그 자체로 경이로움이다."',
     tier: 'Mystic',
     points: 300,
     category: 'survival',
     icon: 'sun',
-    hint: '어떤 종족이든 70세까지 천수를 누리며 생존하십시오.'
+    hint: '어떤 종족이든 78세 이상 천수를 누리며 생존하십시오.'
   },
   {
     id: 'mystic_centenarian_100',
     title: '백수(百壽)의 현자',
-    description: '100세의 나이를 돌파하여 한 세기를 온전히 목격한 살아있는 역사서가 되다.',
+    description: '108세의 나이를 돌파하여 한 세기를 온전히 목격한 살아있는 역사서가 되다.',
     loreQuote: '"제국이 흥망성쇠를 거듭하는 동안, 나는 노송처럼 굳건히 이 자리를 지켰다."',
     tier: 'Mystic',
     points: 300,
     category: 'survival',
     icon: 'hourglass',
-    hint: '장수 종족이나 뛰어난 건강 관리로 100세까지 생존하십시오.'
+    hint: '장수 종족이나 뛰어난 건강 관리로 108세까지 생존하십시오.'
   },
   {
     id: 'mystic_sarkaz_blood_surge',
@@ -429,29 +429,29 @@ export const ACHIEVEMENTS_DATA: Achievement[] = [
     points: 300,
     category: 'combat',
     icon: 'flame',
-    hint: '살카즈 종족으로 아츠 적성 85 이상을 달성하고 감염 배율 2.0x 이상으로 각성하십시오.'
+    hint: '살카즈 종족으로 아츠 적성 92 이상, 결정화율 40% 및 감염 배율 2.0x 이상으로 각성하십시오.'
   },
   {
     id: 'mystic_sankta_pure_halo',
     title: '무결의 광륜',
-    description: '산크타 종족으로 동족에 대한 죄를 범하지 않고 이성 95 이상을 유지하다.',
+    description: '산크타 종족으로 동족에 대한 죄를 범하지 않고 45세 이상까지 이성 96 이상을 유지하다.',
     loreQuote: '"광륜의 빛이 한 점의 흐림도 없이 맑게 타오릅니다."',
     tier: 'Mystic',
     points: 300,
     category: 'survival',
     icon: 'sun',
-    hint: '산크타 종족으로 이성 최대치 및 현재치를 95 이상으로 유지하십시오.'
+    hint: '산크타 종족으로 비감염 상태를 유지하며 45세 이상에서 이성 96 이상을 달성하십시오.'
   },
   {
     id: 'mystic_aegir_prime_physique',
     title: '바다의 완벽한 육체',
-    description: '에기르 종족으로 체력 95, 전투력 90 이상을 달성하여 초인적 피지컬을 완성하다.',
+    description: '에기르 종족으로 30세 이상에서 체력 98, 전투력 95 이상을 달성하여 초인적 피지컬을 완성하다.',
     loreQuote: '"해일보다 거세고 암초보다 단단한 육신."',
     tier: 'Mystic',
     points: 300,
     category: 'combat',
     icon: 'heart',
-    hint: '에기르 종족으로 체력 95와 전투력 90을 동시에 달성하십시오.'
+    hint: '에기르 종족으로 30세 이상에서 체력 98과 전투력 95를 동시에 달성하십시오.'
   },
   {
     id: 'mystic_iberian_golden_inquisition',
@@ -517,7 +517,7 @@ export const ACHIEVEMENTS_DATA: Achievement[] = [
     points: 300,
     category: 'career',
     icon: 'mountain',
-    hint: '쉐라그 평판 70 이상을 달성하고 카를란 무역 특별 협정에 서명하십시오.'
+    hint: '쉐라그 평판 85 이상 및 지략 80 이상을 달성하고 카를란 무역 특별 협정에 서명하십시오.'
   },
   {
     id: 'mystic_precursor_archive',
@@ -537,82 +537,82 @@ export const ACHIEVEMENTS_DATA: Achievement[] = [
   {
     id: 'rare_arts_mastery',
     title: '고위 영창술사',
-    description: '아츠 적성 90을 달성하여 복합 원소 오리지늄 주술을 자유자재로 구사하다.',
+    description: '아츠 적성 94 이상을 달성하여 복합 원소 오리지늄 주술을 자유자재로 구사하다.',
     tier: 'Rare',
     points: 150,
     category: 'combat',
     icon: 'sparkle',
-    hint: '아츠 수련을 반복하여 아츠 적성 90 이상을 달성하십시오.'
+    hint: '아츠 수련을 반복하여 아츠 적성 94 이상을 달성하십시오.'
   },
   {
     id: 'rare_iron_warlord',
     title: '백전노장의 무력',
-    description: '물리 전투 숙련도 90을 달성하여 전장에서 홀로 부대를 격파하다.',
+    description: '물리 전투 숙련도 94 이상을 달성하여 전장에서 홀로 부대를 격파하다.',
     tier: 'Rare',
     points: 150,
     category: 'combat',
     icon: 'swords',
-    hint: '백병전 훈련과 결투를 거듭하여 전투 숙련도 90 이상을 달성하십시오.'
+    hint: '백병전 훈련과 결투를 거듭하여 전투 숙련도 94 이상을 달성하십시오.'
   },
   {
     id: 'rare_grand_intellect',
     title: '정세의 책사',
-    description: '지략 스탯 90을 달성하여 각국 수뇌부의 암투를 손바닥 보듯 꿰뚫어보다.',
+    description: '지략 스탯 94 이상을 달성하여 각국 수뇌부의 암투를 손바닥 보듯 꿰뚫어보다.',
     tier: 'Rare',
     points: 150,
     category: 'survival',
     icon: 'brain',
-    hint: '지략 스탯 90 이상을 달성하십시오.'
+    hint: '지략 스탯 94 이상을 달성하십시오.'
   },
   {
     id: 'rare_rhodes_specialist',
     title: '로도스 일등 정예 대원',
-    description: '로도스 아일랜드 평판 60 이상을 달성하고 함선의 핵심 요원으로 인정받다.',
+    description: '로도스 아일랜드 평판 75 이상 및 베테랑 직급을 달성하고 함선의 핵심 요원으로 인정받다.',
     tier: 'Rare',
     points: 150,
     category: 'career',
     icon: 'cross',
-    hint: '로도스 아일랜드 평판을 60 이상으로 끌어올리십시오.'
+    hint: '로도스 아일랜드 평판을 75 이상으로 끌어올리고 Tier 3 이상의 직급을 달성하십시오.'
   },
   {
     id: 'rare_lungmen_captain',
     title: '용문 근위국 경감',
-    description: '용문 평판 50 이상을 달성하고 특별 기동 순찰대를 지휘하다.',
+    description: '용문 평판 65 및 전투력 75 이상을 달성하고 특별 기동 순찰대를 지휘하다.',
     tier: 'Rare',
     points: 150,
     category: 'career',
     icon: 'badge',
-    hint: '용문 근위국 평판을 50 이상으로 높이십시오.'
+    hint: '용문 근위국 평판 65 및 전투력 75 이상으로 높이십시오.'
   },
   {
     id: 'rare_karlan_trust',
     title: '성산의 맹약',
-    description: '쉐라그 평판 50 이상을 달성하고 엔시오데스 실버애쉬의 비밀 신임장을 받다.',
+    description: '쉐라그 평판 65 이상을 달성하고 엔시오데스 실버애쉬의 비밀 신임장을 받다.',
     tier: 'Rare',
     points: 150,
     category: 'career',
     icon: 'mountains',
-    hint: '쉐라그 평판을 50 이상으로 달성하십시오.'
+    hint: '쉐라그 평판을 65 이상으로 달성하십시오.'
   },
   {
     id: 'rare_blacksteel_contract',
     title: '블랙스틸 엘리트 용병',
-    description: '블랙스틸 평판 50 이상을 달성하고 특수전 계약을 성공적으로 수행하다.',
+    description: '블랙스틸 평판 65 및 전투력 75 이상을 달성하고 특수전 계약을 성공적으로 수행하다.',
     tier: 'Rare',
     points: 150,
     category: 'career',
     icon: 'briefcase',
-    hint: '블랙스틸 평판을 50 이상으로 달성하십시오.'
+    hint: '블랙스틸 평판 65 및 전투력 75 이상을 달성하십시오.'
   },
   {
     id: 'rare_survive_50',
     title: '반백의 방랑자',
-    description: '50세까지 생존하여 테라의 산증인이 되다.',
+    description: '55세까지 생존하며 베테랑 직급을 유지하여 테라의 산증인이 되다.',
     tier: 'Rare',
     points: 150,
     category: 'survival',
     icon: 'clock',
-    hint: '50세까지 생존하십시오.'
+    hint: '직급 Tier 3 이상을 달성하고 55세까지 생존하십시오.'
   },
   {
     id: 'rare_kelseit_listener',
@@ -639,13 +639,13 @@ export const ACHIEVEMENTS_DATA: Achievement[] = [
   {
     id: 'rare_pure_blood_60',
     title: '무결의 육신',
-    description: '오리지늄 결정화율 0.0%의 완전한 청정 상태를 유지하며 60세까지 생존하다.',
+    description: '오리지늄 결정화율 0.0%의 완전한 청정 상태를 유지하며 68세까지 생존하다.',
     loreQuote: '"검은 먼지가 대지를 뒤덮었으나, 그 어떤 결정도 그의 피부에 닿지 못했다."',
     tier: 'Rare',
     points: 150,
     category: 'survival',
     icon: 'shield-check',
-    hint: '단 한 번도 광석병에 걸리지 않고 60세까지 생존하십시오.'
+    hint: '단 한 번도 광석병에 걸리지 않고 68세까지 생존하십시오.'
   },
   {
     id: 'rare_youth_warrior_blaze',
@@ -760,34 +760,34 @@ export const ACHIEVEMENTS_DATA: Achievement[] = [
   {
     id: 'rare_destiny_favored',
     title: '행운의 여신의 축복',
-    description: '행운 스탯 90 이상을 달성하여 모든 기적적 확률을 자신의 편으로 만들다.',
+    description: '행운 스탯 94 이상을 달성하여 모든 기적적 확률을 자신의 편으로 만들다.',
     tier: 'Rare',
     points: 150,
     category: 'survival',
     icon: 'sparkles',
-    hint: '행운 스탯 90 이상을 달성하십시오.'
+    hint: '행운 스탯 94 이상을 달성하십시오.'
   },
   {
     id: 'rare_miraculous_misfortune',
     title: '불운을 비웃은 생존자',
-    description: '행운 스탯 15 이하의 지독한 불운 속에서도 40세까지 끈질기게 살아남다.',
+    description: '행운 스탯 12 이하의 지독한 불운 속에서도 48세까지 끈질기게 살아남다.',
     loreQuote: '"벼락이 옆에 떨어져도, 나는 털고 일어나 길을 갈 뿐이다."',
     tier: 'Rare',
     points: 150,
     category: 'survival',
     icon: 'alert-triangle',
-    hint: '행운 스탯 15 이하의 상태에서 40세까지 생존하십시오.'
+    hint: '행운 스탯 12 이하의 상태에서 48세까지 생존하십시오.'
   },
   {
     id: 'rare_ascetic_hermit',
     title: '청빈한 은둔자',
-    description: '보유 자산 200 LMD 이하의 무소유 상태로 50세까지 고결한 삶을 살아가다.',
+    description: '보유 자산 150 LMD 이하의 무소유 상태로 이성 80 이상을 유지하며 58세까지 고결한 삶을 살아가다.',
     loreQuote: '"빈손으로 태어나 빈손으로 돌아가니, 금화의 무게에 짓눌릴 필요가 없다."',
     tier: 'Rare',
     points: 150,
     category: 'survival',
     icon: 'feather',
-    hint: '소지 자금 200 LMD 이하를 유지하며 50세까지 생존하십시오.'
+    hint: '소지 자금 150 LMD 이하 및 이성 80 이상을 유지하며 58세까지 생존하십시오.'
   },
   {
     id: 'rare_flawless_duel',
@@ -882,22 +882,22 @@ export const ACHIEVEMENTS_DATA: Achievement[] = [
   {
     id: 'common_first_breath',
     title: '대지의 첫 숨결',
-    description: '가혹한 테라의 하늘 아래 무사히 첫 울음을 터뜨리다.',
+    description: '가혹한 테라의 하늘 아래 유년기(7세)까지 건강하게 살아남다.',
     tier: 'Common',
     points: 50,
     category: 'survival',
     icon: 'baby',
-    hint: '게임 시작 후 무사히 첫해를 맞이하십시오.'
+    hint: '유년기 7세까지 체력 60 이상으로 건강하게 생존하십시오.'
   },
   {
     id: 'common_coming_of_age',
     title: '성년의 맹세',
-    description: '15세 성인이 되어 자신의 앞길과 진로를 결정하다.',
+    description: '15세 성인이 되어 핵심 역량 42 이상을 갖추고 자신의 진로를 개척하다.',
     tier: 'Common',
     points: 50,
     category: 'survival',
     icon: 'user',
-    hint: '15세 성년에 도달하십시오.'
+    hint: '15세 이상 성년에 도달하고 전투·아츠·지략 중 하나를 42 이상으로 단련하십시오.'
   },
   {
     id: 'common_first_victory',
@@ -922,22 +922,22 @@ export const ACHIEVEMENTS_DATA: Achievement[] = [
   {
     id: 'common_wealth_1k',
     title: '지갑의 두께',
-    description: '보유 자산 1,000 LMD를 모아 기본적인 생계를 보장받다.',
+    description: '성인 이후 자력으로 보유 자산 3,000 LMD를 모아 안정적인 생계를 보장받다.',
     tier: 'Common',
     points: 50,
     category: 'survival',
     icon: 'coin',
-    hint: '소지금 1,000 LMD를 모으십시오.'
+    hint: '15세 성인 이후 소지금 3,000 LMD 이상을 축적하십시오.'
   },
   {
     id: 'common_survive_30',
     title: '이립(而立)의 고개',
-    description: '30세까지 테라의 가혹한 생존 경쟁에서 살아남다.',
+    description: '35세까지 테라의 가혹한 생존 경쟁에서 살아남다.',
     tier: 'Common',
     points: 50,
     category: 'survival',
     icon: 'shield',
-    hint: '30세까지 생존하십시오.'
+    hint: '35세까지 생존하십시오.'
   },
   {
     id: 'common_laterano_apple_pie',

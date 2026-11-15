@@ -22,8 +22,7 @@ export const GAME_EVENTS: GameEvent[] = [
         outcomes: {
           success: {
             text: '어린 시절부터 세상을 향한 호기심과 지혜가 싹텄습니다.',
-            statEffects: { intellect: 5, sanity: 5 },
-            unlockAchievementId: 'common_first_breath'
+            statEffects: { intellect: 5, sanity: 5 }
           }
         }
       },
@@ -34,8 +33,7 @@ export const GAME_EVENTS: GameEvent[] = [
         outcomes: {
           success: {
             text: '튼튼한 폐활량과 끈질긴 생명력을 얻었습니다.',
-            statEffects: { health: 8, combat: 4 },
-            unlockAchievementId: 'common_first_breath'
+            statEffects: { health: 8, combat: 4 }
           }
         }
       }
@@ -282,57 +280,53 @@ export const GAME_EVENTS: GameEvent[] = [
     choices: [
       {
         id: 'c_rhodes_entry',
-        label: '로도스 아일랜드 견습 오퍼레이터에 지원한다',
-        description: '감염자 치료와 인류 구원을 목표로 하는 제약 함선에 승선합니다.',
+        label: '로도스 아일랜드 지부 견습 오퍼레이터에 지원한다',
+        description: '감염자 치료와 인류 구원을 목표로 하는 제약 조직과 계약을 맺습니다.',
         outcomes: {
           success: {
-            text: '로도스 아일랜드의 엄격한 면접과 적성 검사를 통과했습니다! 정기 억제제 보급과 훈련을 받습니다.',
+            text: '로도스 아일랜드 지부의 엄격한 면접과 적성 검사를 통과했습니다! 정기 억제제 보급과 전술 훈련을 받습니다.',
             statEffects: { artsAptitude: 10, sanity: 12, combat: 6 },
             reputationDelta: { '로도스 아일랜드': 35 },
-            gainTitles: ['로도스 견습생'],
-            unlockAchievementId: 'common_coming_of_age'
+            gainTitles: ['로도스 견습생']
           }
         }
       },
       {
         id: 'c_guard_entry',
-        label: '도시 치안대 / 용문 근위국에 입대한다',
-        description: '공권력의 보호와 안정적인 급여 아래 질서를 수호합니다.',
+        label: '이동도시 치안 방위대에 입대한다',
+        description: '공권력의 보호와 안정적인 급여 아래 거주 구역의 질서를 수호합니다.',
         outcomes: {
           success: {
-            text: '정식 제복과 무기를 지급받았습니다. 안정적인 LMD를 벌기 시작합니다.',
+            text: '정식 치안 제복과 제식 무기를 지급받았습니다. 안정적인 급여를 받으며 복무를 시작합니다.',
             statEffects: { combat: 12, wealth: 500, health: 10 },
             reputationDelta: { '용문 근위국': 30 },
-            gainTitles: ['순찰 경관'],
-            unlockAchievementId: 'common_coming_of_age'
+            gainTitles: ['순찰 경관']
           }
         }
       },
       {
         id: 'c_mercenary_entry',
-        label: '카즈델 자유 용병단에 이름을 올린다',
-        description: '오직 돈과 실력만을 믿고 테라의 전장을 떠돕니다.',
+        label: '자유 용병 길드에 이름을 올린다',
+        description: '오직 돈과 실력만을 믿고 황야와 전장의 의뢰를 수행합니다.',
         outcomes: {
           success: {
-            text: '피 묻은 계약서에 서명했습니다. 치열한 전장이 당신의 무력을 끌어올립니다.',
+            text: '용병 계약서에 서명했습니다. 거친 의뢰와 실전이 당신의 무력을 끌어올립니다.',
             statEffects: { combat: 20, wealth: 900, sanity: -10 },
             reputationDelta: { '자유 용병': 35 },
-            gainTitles: ['풋내기 용병'],
-            unlockAchievementId: 'common_coming_of_age'
+            gainTitles: ['풋내기 용병']
           }
         }
       },
       {
         id: 'c_columbia_pioneer',
-        label: '컬럼비아 개척단 및 블랙스틸 인턴 지원',
-        description: '신흥 공화국의 기회와 자본주의 최첨단 장비를 좇습니다.',
+        label: '민간 군사 기업(블랙스틸 지부) 및 개척단에 지원한다',
+        description: '국제 보안 기업의 체계적인 전술 훈련과 첨단 장비를 좇습니다.',
         outcomes: {
           success: {
-            text: '블랙스틸의 기초 전술 사격 과정을 이수했습니다. 현대적인 화기 운용법을 익힙니다.',
+            text: '블랙스틸 파견 교관의 기초 전술 과정을 이수했습니다. 현대적인 장비 운용법을 익힙니다.',
             statEffects: { combat: 10, intellect: 10, wealth: 600 },
             reputationDelta: { '블랙스틸': 30 },
-            gainTitles: ['개척지 계약병'],
-            unlockAchievementId: 'common_coming_of_age'
+            gainTitles: ['개척지 계약병']
           }
         }
       }
@@ -351,13 +345,13 @@ export const GAME_EVENTS: GameEvent[] = [
     maxAge: 45,
     isMajor: true,
     preferredSeason: '봄',
-    conditions: { race: ['에기르'], minCombat: 62 },
+    conditions: { race: ['에기르'], nation: ['이베리아'], minCombat: 68 },
     choices: [
       {
         id: 'c_accept_abyssal_surgery',
         label: '개조 수술을 받아들여 어비설 헌터스로 거듭난다',
         description: '해사의 유전체와 에기르 나노 생체 합성을 견뎌냅니다.',
-        diceCheck: { stat: 'combat', difficulty: 78 },
+        diceCheck: { stat: 'combat', difficulty: 84 },
         outcomes: {
           criticalSuccess: {
             text: '기적적인 생체 적합성! 수술대 위에서 각성하여 순수한 어비설 헌터스로 각성했습니다! 완력과 신체 재생력이 인간의 한계를 초월합니다.',
@@ -402,13 +396,13 @@ export const GAME_EVENTS: GameEvent[] = [
     maxAge: 42,
     isMajor: true,
     preferredSeason: '봄',
-    conditions: { race: ['산크타'], minCombat: 58 },
+    conditions: { race: ['산크타'], nation: ['라테라노'], minCombat: 65 },
     choices: [
       {
         id: 'c_accept_executor',
         label: '교황청 제5청의 집행관 서약을 맹세한다',
         description: '공증소의 제식 흑색 코트와 개조 수호총을 지급받습니다.',
-        diceCheck: { stat: 'intellect', difficulty: 74 },
+        diceCheck: { stat: 'intellect', difficulty: 80 },
         outcomes: {
           success: {
             text: '성스러운 율법의 이름으로! 라테라노 건 익제큐터로 정식 취임했습니다. 오리지늄 수호총 사격술이 극에 달합니다.',
@@ -439,27 +433,27 @@ export const GAME_EVENTS: GameEvent[] = [
   },
   {
     id: 'career_special_yan_censorate',
-    title: '【특수 직군】 염국 대리(司)의 밀령: 암행 사법 감찰사',
-    description: '염국 황제의 직속 사법기관 대리(司)로부터 붉은 밀지가 당도했습니다. "수이(Sui)의 준동을 감시하고, 각 주의 탐관오리를 징벌할 암행 감찰사로 임명하노라."',
+    title: '【특수 직군】 염국 대리사(大理寺)의 밀령: 암행 사법 감찰사',
+    description: '염국 황제의 직속 사법기관 대리사(大理寺)로부터 붉은 밀지가 당도했습니다. "쉐이(Sui)의 준동을 감시하고, 각 주의 탐관오리를 징벌할 암행 감찰사로 임명하노라."',
     category: 'career',
     minAge: 25,
     maxAge: 45,
     isMajor: true,
     preferredSeason: '봄',
-    conditions: { nation: ['염국'], minIntellect: 62 },
+    conditions: { nation: ['염국'], minIntellect: 68 },
     choices: [
       {
         id: 'c_accept_yan_censor',
-        label: '천하의 법도를 바로세우기 위해 대리의 칙령을 받든다',
+        label: '천하의 법도를 바로세우기 위해 대리사의 칙령을 받든다',
         description: '정3품 감찰패와 어사도를 하사받습니다.',
-        diceCheck: { stat: 'intellect', difficulty: 76 },
+        diceCheck: { stat: 'intellect', difficulty: 82 },
         outcomes: {
           success: {
-            text: '황제의 어명을 받들어 염국 대리 사법 감찰관으로 등극했습니다! 수많은 관리들이 당신의 그림자 앞에서도 고개를 숙입니다.',
+            text: '황제의 어명을 받들어 염국 대리사 사법 감찰관으로 등극했습니다! 수많은 관리들이 당신의 그림자 앞에서도 고개를 숙입니다.',
             statEffects: { intellect: 15, combat: 10, wealth: 1800 },
             careerExpDelta: 20,
-            specialCareerGain: { id: 'yan_censor', name: '염국 대리 사법 감찰사', rank: '대리 정3품 감찰관' },
-            gainTitles: ['염국 대리 사경'],
+            specialCareerGain: { id: 'yan_censor', name: '염국 대리사 사법 감찰사', rank: '대리사 정3품 감찰관' },
+            gainTitles: ['염국 대리사 사경'],
             unlockAchievementId: 'mystic_yan_high_censor'
           },
           failure: {
@@ -479,13 +473,13 @@ export const GAME_EVENTS: GameEvent[] = [
     maxAge: 48,
     isMajor: true,
     preferredSeason: '봄',
-    conditions: { nation: ['컬럼비아'], minIntellect: 65 },
+    conditions: { nation: ['컬럼비아'], minIntellect: 70 },
     choices: [
       {
         id: 'c_accept_rhine_director',
         label: '라인 랩의 특수 생체 연구 총괄 디렉터로 부임한다',
         description: '최첨단 연구실과 막대한 연구비를 배정받습니다.',
-        diceCheck: { stat: 'intellect', difficulty: 78 },
+        diceCheck: { stat: 'intellect', difficulty: 84 },
         outcomes: {
           success: {
             text: '크리스틴 라이트 총괄의 승인을 받아 라인 랩 섹션 디렉터로 임명되었습니다! 연구 예산과 특별 특허권이 부여됩니다.',
@@ -512,13 +506,13 @@ export const GAME_EVENTS: GameEvent[] = [
     maxAge: 46,
     isMajor: true,
     preferredSeason: '봄',
-    conditions: { nation: ['빅토리아'], minCombat: 65 },
+    conditions: { nation: ['빅토리아'], minCombat: 70 },
     choices: [
       {
         id: 'c_awaken_steam_knight',
         label: '증기 코어를 점화하고 거병의 조종간을 쥔다',
         description: '고압 증기와 육중한 강철 프레임에 몸을 싣습니다.',
-        diceCheck: { stat: 'combat', difficulty: 80 },
+        diceCheck: { stat: 'combat', difficulty: 86 },
         outcomes: {
           criticalSuccess: {
             text: '굉음과 함께 런디니움의 고대 증기기사가 완벽히 기동했습니다! 당신은 제국의 살아있는 거병이자 증기기사단의 후계자가 되었습니다.',
@@ -545,7 +539,7 @@ export const GAME_EVENTS: GameEvent[] = [
         id: 'c_duel_ancient_steam_knight',
         label: '격납고에서 폭주 중인 고대 증기기사와 실전 결전을 벌인다',
         description: '실전 무투로 증기기사의 인공지능 코어를 굴복시키고 자격을 증명합니다.',
-        diceCheck: { stat: 'combat', difficulty: 78 },
+        diceCheck: { stat: 'combat', difficulty: 84 },
         outcomes: {
           criticalSuccess: {
             text: '고대 거병의 압도적인 돌진을 흘려내고 조종석을 완벽히 장악했습니다! 증기기사가 당신의 명령에 복종합니다.',
@@ -580,13 +574,13 @@ export const GAME_EVENTS: GameEvent[] = [
     maxAge: 46,
     isMajor: true,
     preferredSeason: '봄',
-    conditions: { nation: ['우르수스 제국'], minCombat: 68 },
+    conditions: { nation: ['우르수스 제국', '우르수스'], minCombat: 72 },
     choices: [
       {
         id: 'c_accept_emperors_blade',
         label: '극북의 악마 파편을 품고 황제의 검으로 서약한다 (황제의 검 결투)',
         description: '검은 안개를 다루는 친위 내위의 맹세를 맺습니다.',
-        diceCheck: { stat: 'combat', difficulty: 82 },
+        diceCheck: { stat: 'combat', difficulty: 86 },
         outcomes: {
           success: {
             text: '갑주 틈새로 검은 안개가 피어오릅니다. 당신은 황제 직속 내위 "황제의 검"이 되었습니다. 적들은 당신의 그림자만 보아도 얼어붙습니다.',
@@ -615,13 +609,13 @@ export const GAME_EVENTS: GameEvent[] = [
     maxAge: 55,
     isMajor: true,
     preferredSeason: '가을',
-    conditions: { nation: ['우르수스 제국'] },
+    conditions: { nation: ['우르수스 제국', '우르수스'] },
     choices: [
       {
         id: 'c_fight_emperors_blade_boss',
         label: '검은 안개의 붕괴 영역을 정면 돌파하며 황제의 검과 결전을 벌인다 (보스전)',
         description: '황실 친위대의 검은 안개와 결사 항전을 치릅니다.',
-        diceCheck: { stat: 'combat', difficulty: 82 },
+        diceCheck: { stat: 'combat', difficulty: 86 },
         outcomes: {
           criticalSuccess: {
             text: '검은 안개를 가르고 황제의 검의 갑주를 격파했습니다! 제국의 그림자가 침묵하고 거대한 명성을 얻었습니다.',
@@ -675,12 +669,13 @@ export const GAME_EVENTS: GameEvent[] = [
     maxAge: 35,
     isMajor: true,
     preferredSeason: '겨울',
+    conditions: { nation: ['우르수스 제국', '우르수스', '용문'] },
     choices: [
       {
         id: 'c_act1_cover_rhodes',
         label: '로도스 아일랜드 소대의 퇴각로를 엄호하며 리유니온 돌격대를 요격한다',
         description: '전방에 서서 아미야와 닥터의 탈출로를 확보합니다.',
-        diceCheck: { stat: 'combat', difficulty: 60 },
+        diceCheck: { stat: 'combat', difficulty: 68 },
         outcomes: {
           criticalSuccess: {
             text: '완벽한 사격과 검술로 리유니온 전위대를 섬멸했습니다! 아미야가 깊은 감사를 표하며 당신의 이름을 로도스 핵심 동맹으로 등록했습니다.',
@@ -707,7 +702,7 @@ export const GAME_EVENTS: GameEvent[] = [
         id: 'c_act1_evacuate_slums',
         label: '불타는 슬럼가에서 고립된 감염자 민간인들을 구출한다',
         description: '지략을 발휘하여 하수도를 통한 탈출로를 엽니다.',
-        diceCheck: { stat: 'intellect', difficulty: 58 },
+        diceCheck: { stat: 'intellect', difficulty: 64 },
         outcomes: {
           success: {
             text: '수십 명의 어린아이와 노인들을 안전하게 황야 밖으로 피난시켰습니다! 감염자들 사이에서 당신의 인망이 드높아집니다.',
@@ -732,12 +727,13 @@ export const GAME_EVENTS: GameEvent[] = [
     maxAge: 38,
     isMajor: true,
     preferredSeason: '겨울',
+    conditions: { nation: ['우르수스 제국', '우르수스', '용문'] },
     choices: [
       {
         id: 'c_frostnova_warmth',
         label: '무기를 거두고, 따뜻한 온기와 사탕을 건네며 진심어린 대화를 시도한다',
         description: '적의 대장이 아닌, 대지의 같은 피해자로서 마음을 전합니다.',
-        diceCheck: { stat: 'sanity', difficulty: 68 },
+        diceCheck: { stat: 'sanity', difficulty: 76 },
         outcomes: {
           criticalSuccess: {
             text: '"...당신의 손이, 참 따뜻하네요. 우리는 단지 살아가고 싶었을 뿐인데..." 프로스트노바의 눈가에 눈물이 맺히며 한기가 사그라듭니다. 그녀는 당신에게 작고 투명한 얼음 결정을 선물했습니다.',
@@ -759,7 +755,7 @@ export const GAME_EVENTS: GameEvent[] = [
         id: 'c_frostnova_duel',
         label: '얼음 폭풍을 정면으로 뚫고 아츠 결투를 벌인다',
         description: '극강의 아츠와 무력으로 얼음 장벽을 분쇄합니다.',
-        diceCheck: { stat: 'combat', difficulty: 74 },
+        diceCheck: { stat: 'combat', difficulty: 78 },
         outcomes: {
           success: {
             text: '온몸이 얼어붙는 고통 속에서도 검을 휘둘러 빙벽을 돌파했습니다! 설괴 소대가 경의를 표하며 퇴각합니다.',
@@ -783,12 +779,13 @@ export const GAME_EVENTS: GameEvent[] = [
     maxAge: 40,
     isMajor: true,
     preferredSeason: '가을',
+    conditions: { nation: ['우르수스 제국', '우르수스', '용문'] },
     choices: [
       {
         id: 'c_patriot_respect',
         label: '그의 거룩한 방패 앞에 서서 감염자의 미래와 신념을 떳떳이 밝힌다',
         description: '무력이 아닌 대의와 지혜로 노장군의 인정을 받습니다.',
-        diceCheck: { stat: 'intellect', difficulty: 72 },
+        diceCheck: { stat: 'intellect', difficulty: 80 },
         outcomes: {
           criticalSuccess: {
             text: '"...너의 눈빛에서, 내가 잃어버린 희망을 본다. 나아가라, 대지의 아이여." 노장군 패트리어트가 길을 열어주며 웬디고의 묵직한 축복을 내렸습니다!',
@@ -810,7 +807,7 @@ export const GAME_EVENTS: GameEvent[] = [
         id: 'c_patriot_clash',
         label: '모든 힘을 집중하여 그의 철벽 방패를 시험해본다',
         description: '최강의 전사에게 정면 승부를 신청합니다.',
-        diceCheck: { stat: 'combat', difficulty: 82 },
+        diceCheck: { stat: 'combat', difficulty: 86 },
         outcomes: {
           success: {
             text: '당신의 일격이 패트리어트의 방패에 굉음을 일으키며 흠집을 냈습니다! 노장군이 호탕하게 웃으며 당신의 무력을 칭찬했습니다.',
@@ -843,7 +840,7 @@ export const GAME_EVENTS: GameEvent[] = [
         id: 'c_try_boiling_ramen',
         label: '전설의 닥터식 0초 조리 비법을 따라서 도전해본다',
         description: '끓는 물을 머금고 이성을 시험합니다.',
-        diceCheck: { stat: 'luck', difficulty: 55 },
+        diceCheck: { stat: 'luck', difficulty: 65 },
         outcomes: {
           criticalSuccess: {
             text: '성공! 혀끝의 데임 없이 면발이 완벽한 알덴테로 익어 삼켜졌습니다! 이성이 기적처럼 100% 회복되고 신기한 깨달음을 얻었습니다!',
@@ -888,7 +885,7 @@ export const GAME_EVENTS: GameEvent[] = [
         id: 'c_listen_kaltsit',
         label: '단 한 순간도 졸지 않고 초집중하여 훈화를 경청한다',
         description: '심오한 철학과 테라의 비밀을 흡수합니다.',
-        diceCheck: { stat: 'intellect', difficulty: 72 },
+        diceCheck: { stat: 'intellect', difficulty: 78 },
         outcomes: {
           criticalSuccess: {
             text: '놀랍게도 켈시의 모든 난해한 복합 문장 구조를 완벽히 이해했습니다! 켈시가 희미한 미소를 지으며 특수 정밀 장비를 선물했습니다.',
@@ -917,17 +914,23 @@ export const GAME_EVENTS: GameEvent[] = [
     maxAge: 60,
     isMajor: false,
     preferredSeason: '가을',
+    conditions: { nation: ['라테라노'] },
     choices: [
       {
         id: 'c_eat_pie',
         label: '공중에서 회전하며 날아온 애플파이를 멋지게 받아먹는다',
         description: '라테라노의 명물 디저트를 음미합니다.',
+        diceCheck: { stat: 'luck', difficulty: 56 },
         outcomes: {
           success: {
             text: '바삭한 파이 크러스트와 달콤한 사과 잼이 입안 가득 퍼집니다! 이성이 완전히 치유되었습니다.',
             statEffects: { sanity: 25, health: 10, luck: 5 },
             gainTitles: ['애플파이 애식가'],
             unlockAchievementId: 'common_laterano_apple_pie'
+          },
+          failure: {
+            text: '뜨거운 파이를 놓쳐 바닥에 떨어뜨렸습니다. 아쉬운 냄새만 남았습니다.',
+            statEffects: { sanity: -4 }
           }
         }
       }
@@ -946,12 +949,13 @@ export const GAME_EVENTS: GameEvent[] = [
     maxAge: 45,
     isMajor: true,
     preferredSeason: '가을',
+    conditions: { nation: ['카시미어'] },
     choices: [
       {
         id: 'c_kazimierz_finals',
         label: '황금빛 랜스를 들고 결승 투기장에 올라 영예로운 결투를 벌인다',
         description: '관중들의 환호 속에 챔피언의 자리를 쟁취합니다.',
-        diceCheck: { stat: 'combat', difficulty: 75 },
+        diceCheck: { stat: 'combat', difficulty: 82 },
         outcomes: {
           criticalSuccess: {
             text: '상대 기사의 방패를 일격에 분쇄하고 챔피언에 등극했습니다! 수만 관중이 당신의 이름을 연호하며 우승 상금이 수여됩니다!',
@@ -976,7 +980,7 @@ export const GAME_EVENTS: GameEvent[] = [
         id: 'c_kazimierz_gamble',
         label: '지략을 발휘하여 상업연합회의 배팅 장부를 분석하고 거액을 베팅한다',
         description: '경기 결과에 지략을 걸어 금융 수익을 노립니다.',
-        diceCheck: { stat: 'intellect', difficulty: 74 },
+        diceCheck: { stat: 'intellect', difficulty: 78 },
         outcomes: {
           success: {
             text: '정교한 확률 계산으로 배당금 수익을 거두었습니다!',
@@ -999,12 +1003,13 @@ export const GAME_EVENTS: GameEvent[] = [
     maxAge: 50,
     isMajor: true,
     preferredSeason: '가을',
+    conditions: { nation: ['이베리아'] },
     choices: [
       {
         id: 'c_fight_seaborne_horde',
         label: '심해의 은빛 칼날을 휘두르며 해사의 군체 심장부로 돌진한다',
         description: '신경 오염을 억누르고 바다의 괴수들을 도륙합니다.',
-        diceCheck: { stat: 'combat', difficulty: 80 },
+        diceCheck: { stat: 'combat', difficulty: 85 },
         outcomes: {
           criticalSuccess: {
             text: '칼날이 허공을 가를 때마다 수십 마리의 해사가 산산조각 났습니다! 심해의 속삭임은 당신의 강철 같은 의지 앞에 침묵했습니다.',
@@ -1031,7 +1036,7 @@ export const GAME_EVENTS: GameEvent[] = [
         id: 'c_rekindle_lighthouse',
         label: '재판관의 랜턴을 밝히고 고대 등대의 오리지늄 렌즈를 재점화한다',
         description: '빛으로 바다의 어둠을 몰아내고 해사들을 쫓아냅니다.',
-        diceCheck: { stat: 'artsAptitude', difficulty: 76 },
+        diceCheck: { stat: 'artsAptitude', difficulty: 80 },
         outcomes: {
           success: {
             text: '눈부신 황금빛 등대 광선이 밤바다를 갈랐습니다! 해사들이 비명을 지르며 심해로 도주했습니다.',
@@ -1055,12 +1060,13 @@ export const GAME_EVENTS: GameEvent[] = [
     maxAge: 52,
     isMajor: true,
     preferredSeason: '여름',
+    conditions: { nation: ['컬럼비아'] },
     choices: [
       {
         id: 'c_lone_trail_sky',
         label: '크리스틴의 발사 관제탑을 지키고, 테라 너머의 우주를 함께 관측한다',
         description: '지략과 모든 지식을 동원하여 로켓 발사 궤적을 사수합니다.',
-        diceCheck: { stat: 'intellect', difficulty: 82 },
+        diceCheck: { stat: 'intellect', difficulty: 86 },
         outcomes: {
           criticalSuccess: {
             text: '푸른 천공에 거대한 구멍이 뚫리고... 은하와 수억 개의 별들이 모습을 드러냈습니다! 고대 인류 보존자 트레버 프리스톤의 홀로그램이 당신에게 고대의 비밀을 전송했습니다!',
@@ -1093,12 +1099,13 @@ export const GAME_EVENTS: GameEvent[] = [
     maxAge: 55,
     isMajor: true,
     preferredSeason: '가을',
+    conditions: { nation: ['빅토리아'] },
     choices: [
       {
         id: 'c_londinium_wall_defense',
         label: '아군을 엄호하며 살카즈 군사위원회 백부장과 결전을 벌인다',
         description: '런디니움의 방어선을 끝까지 사수합니다.',
-        diceCheck: { stat: 'combat', difficulty: 78 },
+        diceCheck: { stat: 'combat', difficulty: 84 },
         outcomes: {
           criticalSuccess: {
             text: '살카즈 백부장을 단칼에 베어 넘기고 성벽의 적 기갑선을 격침시켰습니다! 런디니움의 구원자로 칭송받습니다.',
@@ -1126,7 +1133,7 @@ export const GAME_EVENTS: GameEvent[] = [
         id: 'c_londinium_steam_overdrive',
         label: '고대 증기기사의 망치를 풀 파워로 가동하여 적의 비행선을 분쇄한다',
         description: '빅토리아 증기 공학의 정점을 보여줍니다.',
-        diceCheck: { stat: 'combat', difficulty: 84 },
+        diceCheck: { stat: 'combat', difficulty: 86 },
         outcomes: {
           success: {
             text: '고압 증기 폭풍이 전장을 휩쓸며 적 비행선이 화염에 휩싸여 추락했습니다! 제국의 전설이 되었습니다.',
@@ -1145,7 +1152,7 @@ export const GAME_EVENTS: GameEvent[] = [
         id: 'c_londinium_steam_knight_duel',
         label: '전장에 강림한 최후의 증기기사와 격돌하여 명예로운 결전을 벌인다',
         description: '빅토리아의 옛 영광이자 비극적인 거인, 증기기사와의 피할 수 없는 결전입니다.',
-        diceCheck: { stat: 'combat', difficulty: 82 },
+        diceCheck: { stat: 'combat', difficulty: 86 },
         outcomes: {
           criticalSuccess: {
             text: '증기기사의 격렬한 파일 벙커 공격을 쳐내고 가슴팍의 증기 코어를 제압했습니다! 빅토리아의 전설적인 기사 서약이 당신에게 계승되었습니다!',
@@ -1181,12 +1188,13 @@ export const GAME_EVENTS: GameEvent[] = [
     maxAge: 60,
     isMajor: true,
     preferredSeason: '겨울',
+    conditions: { nation: ['사미'] },
     choices: [
       {
         id: 'c_stand_against_collapse',
         label: '아츠와 혼신의 무력으로 결계를 수호하며 붕괴체의 본대를 격퇴한다',
         description: '대륙의 북쪽 국경을 수호합니다.',
-        diceCheck: { stat: 'artsAptitude', difficulty: 80 },
+        diceCheck: { stat: 'artsAptitude', difficulty: 85 },
         outcomes: {
           criticalSuccess: {
             text: '성림의 영령들과 공명하여 거대한 빛의 결계를 완성했습니다! 붕괴체 무리가 정화되어 소멸했습니다. 테라는 구원받았습니다.',
@@ -1228,7 +1236,7 @@ export const GAME_EVENTS: GameEvent[] = [
         id: 'c_shield_people',
         label: '일생의 모든 아츠와 무력을 짜내어 피난민들을 지킨다',
         description: '후세를 위해 장렬하게 전장에 섭니다.',
-        diceCheck: { stat: 'combat', difficulty: 82 },
+        diceCheck: { stat: 'combat', difficulty: 88 },
         outcomes: {
           criticalSuccess: {
             text: '기적과도 같은 활약으로 재앙의 파편들을 전부 쳐내고 사람들을 구했습니다! 온 테라가 당신의 이름을 영원히 기억할 것입니다!',
@@ -1250,11 +1258,11 @@ export const GAME_EVENTS: GameEvent[] = [
       },
       {
         id: 'c_peaceful_retirement',
-        label: '조용히 짐을 싸 쉐라그의 온천 마을로 은퇴한다',
+        label: '조용히 짐을 싸 한적한 산골 온천 마을로 은퇴한다',
         description: '이제 검을 내려놓고 평화로운 여생을 보냅니다.',
         outcomes: {
           success: {
-            text: '설산의 따뜻한 온천과 맑은 공기 속에서 회고록을 집필하며 평화로운 나날을 보냅니다.',
+            text: '따뜻한 온천과 맑은 공기 속에서 회고록을 집필하며 평화로운 나날을 보냅니다.',
             statEffects: { sanity: 30, health: 15 },
             gainTitles: ['은퇴한 거장']
           }
@@ -1277,7 +1285,7 @@ export const GAME_EVENTS: GameEvent[] = [
         id: 'c_accept_sarkaz_awakening',
         label: '마왕의 부름에 화답하여 살카즈 민족의 비원을 가슴에 품는다',
         description: '카즈델의 역사와 마족의 유산을 영혼에 아로새깁니다.',
-        diceCheck: { stat: 'artsAptitude', difficulty: 82 },
+        diceCheck: { stat: 'artsAptitude', difficulty: 88 },
         outcomes: {
           criticalSuccess: {
             text: '흑관의 파편이 공명하며 고대 마왕의 원초적 영창이 영혼에 깃들었습니다! 당신은 바벨의 살아있는 전설이 되었습니다.',
@@ -1312,6 +1320,7 @@ export const GAME_EVENTS: GameEvent[] = [
     maxAge: 999,
     isMajor: false,
     preferredSeason: '겨울',
+    conditions: { nation: ['사미'] },
     choices: [
       {
         id: 'c_eat_sami_mushroom',
@@ -1348,6 +1357,7 @@ export const GAME_EVENTS: GameEvent[] = [
     maxAge: 999,
     isMajor: false,
     preferredSeason: '여름',
+    conditions: { nation: ['시라쿠사'] },
     choices: [
       {
         id: 'c_laugh_at_siracusa_comedy',
@@ -1365,7 +1375,7 @@ export const GAME_EVENTS: GameEvent[] = [
         id: 'c_opera_box_whisper',
         label: '2층 귀빈실에서 패밀리 간부들과 밀담을 나눈다',
         description: '시라쿠사 밤의 권력자들과 정보 거래를 틉니다.',
-        diceCheck: { stat: 'intellect', difficulty: 60 },
+        diceCheck: { stat: 'intellect', difficulty: 64 },
         outcomes: {
           criticalSuccess: {
             text: '화려한 언변으로 패밀리 간부들의 호감을 사며 거액의 스폰서십을 약조받았습니다!',
@@ -1393,6 +1403,7 @@ export const GAME_EVENTS: GameEvent[] = [
     maxAge: 999,
     isMajor: false,
     preferredSeason: '여름',
+    conditions: { nation: ['컬럼비아'] },
     choices: [
       {
         id: 'c_touch_zap_wire',
@@ -1410,7 +1421,7 @@ export const GAME_EVENTS: GameEvent[] = [
         id: 'c_safely_insulate_circuit',
         label: '절연 막대를 들고 메인 차단기를 내린다',
         description: '기민하게 화재를 예방하고 사람들을 구합니다.',
-        diceCheck: { stat: 'intellect', difficulty: 55 },
+        diceCheck: { stat: 'intellect', difficulty: 60 },
         outcomes: {
           success: {
             text: '신속한 판단으로 2차 폭발을 막아내 연구원들의 뜨거운 감사를 받았습니다.',
@@ -1433,6 +1444,7 @@ export const GAME_EVENTS: GameEvent[] = [
     maxAge: 999,
     isMajor: false,
     preferredSeason: '겨울',
+    conditions: { nation: ['우르수스 제국', '우르수스'] },
     choices: [
       {
         id: 'c_drink_nordic_vodka',
@@ -1473,7 +1485,7 @@ export const GAME_EVENTS: GameEvent[] = [
         id: 'c_dodge_lightning',
         label: '아츠 유닛과 무기를 역방향으로 휘두르며 벼락의 낙하 궤적을 쳐낸다',
         description: '경이로운 반사신경으로 벼락을 흘려보냅니다.',
-        diceCheck: { stat: 'combat', difficulty: 75 },
+        diceCheck: { stat: 'combat', difficulty: 82 },
         outcomes: {
           criticalSuccess: {
             text: '기적과도 같은 신기(神技)! 벼락의 전하를 칼끝으로 흩뿌려버리며 한 점의 부상도 없이 대재앙을 비웃었습니다!',
@@ -1514,12 +1526,13 @@ export const GAME_EVENTS: GameEvent[] = [
     maxAge: 999,
     isMajor: false,
     preferredSeason: '가을',
+    conditions: { nation: ['림 빌리톤'] },
     choices: [
       {
         id: 'c_drive_mega_drill',
         label: '조종석에 올라타 굴착기의 회전 토크를 제어한다',
         description: '지하 암반의 진동을 감각으로 읽으며 전진합니다.',
-        diceCheck: { stat: 'intellect', difficulty: 68 },
+        diceCheck: { stat: 'intellect', difficulty: 75 },
         outcomes: {
           criticalSuccess: {
             text: '완벽한 각도 제어로 전설적인 고순도 광맥 코어를 채굴선 도크로 끌어올렸습니다! 광산 감독관이 찬사를 보냅니다!',
@@ -1542,8 +1555,8 @@ export const GAME_EVENTS: GameEvent[] = [
   },
   {
     id: 'minos_athletic_triumph',
-    title: '미노스 전사 제전: 판크라티온 결투',
-    description: '자유와 체육의 나라 미노스. 고대 원형 경기장에서 수천 명의 군중이 환호하는 가운데 최고의 전사를 가리는 제전이 열렸습니다.',
+    title: '대륙 순회 전사 제전: 판크라티온 결투',
+    description: '미노스 전사 길드가 주관하는 대륙 순회 판크라티온 제전이 열렸습니다. 고대 원형 경기장을 본뜬 특설 링에서 수천 명의 군중이 환호하는 가운데 최고의 전사를 가립니다.',
     category: 'combat',
     minAge: 18,
     maxAge: 999,
@@ -1554,7 +1567,7 @@ export const GAME_EVENTS: GameEvent[] = [
         id: 'c_enter_minos_arena',
         label: '투기장에 입장하여 무패의 미노스 챔피언에게 도전한다',
         description: '순수한 완력과 격투 기술로 승부를 겨룹니다.',
-        diceCheck: { stat: 'combat', difficulty: 72 },
+        diceCheck: { stat: 'combat', difficulty: 78 },
         outcomes: {
           criticalSuccess: {
             text: '경기장을 뒤흔드는 깔끔한 메치기로 챔피언을 제압했습니다! 군중들이 당신의 머리 위에 황금 월계관을 씌워줍니다!',
@@ -1589,7 +1602,7 @@ export const GAME_EVENTS: GameEvent[] = [
         id: 'c_decode_priestess_box',
         label: '아츠 연산 유닛을 극대화하여 통신 암호 규약을 복원한다',
         description: '고대 인류의 기록과 프리스티스의 마지막 육성을 재생합니다.',
-        diceCheck: { stat: 'intellect', difficulty: 85 },
+        diceCheck: { stat: 'intellect', difficulty: 90 },
         outcomes: {
           criticalSuccess: {
             text: '기밀 프로토콜이 해제되며 부드럽고 서글픈 여인의 음성이 울려 퍼집니다. "...우리의 눈길이 다시 교차할 때까지, 부디 나를 잊지 말아줘." 테라 이전 인류의 궁극의 비밀을 목도했습니다!',
@@ -1637,8 +1650,8 @@ export const GAME_EVENTS: GameEvent[] = [
   },
   {
     id: 'durin_underground_retreat',
-    title: '지하 두린 대도시의 초대: 달콤한 낮잠',
-    description: '지하 거대 공동에 자리 잡은 두린들의 도시 쩨르노. 지상의 오리지늄 분진과 전쟁의 위협이 전혀 닿지 않는 아늑한 온천 여관에 투숙하게 되었습니다.',
+    title: '지하 두린 교역관의 초대: 달콤한 낮잠',
+    description: '지하 거대 공동과 연결된 두린 교역 사절단의 아늑한 온천 여관에 초대받아 투숙하게 되었습니다. 지상의 오리지늄 분진과 전쟁의 위협이 전혀 닿지 않는 평화로운 공간입니다.',
     category: 'life',
     minAge: 15,
     maxAge: 999,
@@ -1697,7 +1710,7 @@ export const GAME_EVENTS: GameEvent[] = [
         id: 'c_catch_pickpocket',
         label: '반사적으로 소매치기의 손목을 비틀어 쥐어챈다',
         description: '도심 뒷골목의 생존 본능을 발휘합니다.',
-        diceCheck: { stat: 'luck', difficulty: 45 },
+        diceCheck: { stat: 'luck', difficulty: 56 },
         outcomes: {
           success: {
             text: '소매치기의 손목을 붙잡고 지갑을 사수했습니다! 아이는 깜짝 놀라 혀를 내두르며 사과하고 달아났습니다.',
@@ -1721,12 +1734,13 @@ export const GAME_EVENTS: GameEvent[] = [
     maxAge: 999,
     isMajor: false,
     preferredSeason: '가을',
+    conditions: { nation: ['카즈델'] },
     choices: [
       {
         id: 'c_infiltrate_kazdel_court',
         label: '어둠 속에 몸을 숨겨 왕정 위원회의 비밀 군사 배치도를 필사한다',
         description: '발각되면 즉각 참수당하는 극도의 첩보 작전입니다.',
-        diceCheck: { stat: 'intellect', difficulty: 78 },
+        diceCheck: { stat: 'intellect', difficulty: 84 },
         outcomes: {
           criticalSuccess: {
             text: '그림자조차 눈치채지 못하게 왕정의 극비 작전 문서를 완벽히 탈취했습니다! 이 정보는 런디니움과 로도스의 운명을 바꿀 것입니다!',
@@ -1756,12 +1770,13 @@ export const GAME_EVENTS: GameEvent[] = [
     maxAge: 999,
     isMajor: false,
     preferredSeason: '가을',
+    conditions: { nation: ['사르곤'] },
     choices: [
       {
         id: 'c_enter_pharaoh_tomb',
         label: '고대 주술 함정을 해제하고 황금 묘역 중심부로 진입한다',
         description: '전설의 파디샤 옥좌와 보물을 탐색합니다.',
-        diceCheck: { stat: 'intellect', difficulty: 75 },
+        diceCheck: { stat: 'intellect', difficulty: 82 },
         outcomes: {
           criticalSuccess: {
             text: '주술 함정을 완벽히 파훼하고 고대 파디샤의 황금 단검과 5,000 LMD 상당의 보석을 획득했습니다!',
@@ -1948,6 +1963,7 @@ export const GAME_EVENTS: GameEvent[] = [
     maxAge: 999,
     isMajor: true,
     preferredSeason: '가을',
+    conditions: { nation: ['이베리아'] },
     choices: [
       {
         id: 'c_prove_lucid_sanity',
@@ -2339,6 +2355,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 12,
     "isMajor": false,
     "preferredSeason": "가을",
+    "conditions": {
+      "nation": ["라이타니엔"]
+    },
     "choices": [
       {
         "id": "c_leithanien_play",
@@ -2382,6 +2401,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 11,
     "isMajor": false,
     "preferredSeason": "여름",
+    "conditions": {
+      "nation": ["사르곤"]
+    },
     "choices": [
       {
         "id": "c_caravan_help",
@@ -2636,6 +2658,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 13,
     "isMajor": false,
     "preferredSeason": "여름",
+    "conditions": {
+      "nation": ["카시미어"]
+    },
     "choices": [
       {
         "id": "c_wood_duel",
@@ -2679,6 +2704,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 12,
     "isMajor": false,
     "preferredSeason": "봄",
+    "conditions": {
+      "nation": ["염국"]
+    },
     "choices": [
       {
         "id": "c_tea_recite",
@@ -2722,6 +2750,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 14,
     "isMajor": false,
     "preferredSeason": "가을",
+    "conditions": {
+      "nation": ["빅토리아"]
+    },
     "choices": [
       {
         "id": "c_chimney_view",
@@ -2764,6 +2795,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 13,
     "isMajor": false,
     "preferredSeason": "겨울",
+    "conditions": {
+      "nation": ["우르수스 제국", "우르수스"]
+    },
     "choices": [
       {
         "id": "c_ursus_shelter",
@@ -2807,6 +2841,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 12,
     "isMajor": false,
     "preferredSeason": "가을",
+    "conditions": {
+      "nation": ["라테라노"]
+    },
     "choices": [
       {
         "id": "c_pie_bake",
@@ -2850,6 +2887,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 13,
     "isMajor": false,
     "preferredSeason": "겨울",
+    "conditions": {
+      "nation": ["사미"]
+    },
     "choices": [
       {
         "id": "c_sami_amulet_accept",
@@ -2893,6 +2933,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 14,
     "isMajor": false,
     "preferredSeason": "가을",
+    "conditions": {
+      "nation": ["시라쿠사"]
+    },
     "choices": [
       {
         "id": "c_opera_sneak",
@@ -2936,6 +2979,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 14,
     "isMajor": false,
     "preferredSeason": "봄",
+    "conditions": {
+      "nation": ["림 빌리톤"]
+    },
     "choices": [
       {
         "id": "c_drill_pilot",
@@ -2979,6 +3025,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 13,
     "isMajor": false,
     "preferredSeason": "여름",
+    "conditions": {
+      "nation": ["용문"]
+    },
     "choices": [
       {
         "id": "c_ferry_market",
@@ -3022,6 +3071,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 12,
     "isMajor": false,
     "preferredSeason": "봄",
+    "conditions": {
+      "nation": ["쉐라그"]
+    },
     "choices": [
       {
         "id": "c_kjerag_water_drink",
@@ -3065,6 +3117,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 14,
     "isMajor": false,
     "preferredSeason": "겨울",
+    "conditions": {
+      "nation": ["카즈델"]
+    },
     "choices": [
       {
         "id": "c_kazdel_blade_keep",
@@ -3108,6 +3163,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 13,
     "isMajor": false,
     "preferredSeason": "여름",
+    "conditions": {
+      "nation": ["컬럼비아"]
+    },
     "choices": [
       {
         "id": "c_battery_analyze",
@@ -3150,6 +3208,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 13,
     "isMajor": false,
     "preferredSeason": "가을",
+    "conditions": {
+      "nation": ["이베리아"]
+    },
     "choices": [
       {
         "id": "c_iberia_cross_pray",
@@ -3259,6 +3320,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 23,
     "isMajor": true,
     "preferredSeason": "가을",
+    "conditions": {
+      "nation": ["컬럼비아"]
+    },
     "choices": [
       {
         "id": "y_bs_sign",
@@ -3314,6 +3378,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 24,
     "isMajor": true,
     "preferredSeason": "여름",
+    "conditions": {
+      "nation": ["카시미어"]
+    },
     "choices": [
       {
         "id": "y_kaz_duel_rush",
@@ -3321,7 +3388,7 @@ export const GAME_EVENTS: GameEvent[] = [
         "description": "관중의 환호를 이끌어내는 화려한 기사 결투를 펼칩니다.",
         "diceCheck": {
           "stat": "combat",
-          "difficulty": 50
+          "difficulty": 68
         },
         "outcomes": {
           "success": {
@@ -3383,6 +3450,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 24,
     "isMajor": false,
     "preferredSeason": "가을",
+    "conditions": {
+      "nation": ["림 빌리톤"]
+    },
     "choices": [
       {
         "id": "y_rim_reinforce",
@@ -3440,6 +3510,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 24,
     "isMajor": true,
     "preferredSeason": "겨울",
+    "conditions": {
+      "nation": ["시라쿠사"]
+    },
     "choices": [
       {
         "id": "y_siracusa_accept",
@@ -3496,6 +3569,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 22,
     "isMajor": false,
     "preferredSeason": "겨울",
+    "conditions": {
+      "nation": ["사미"]
+    },
     "choices": [
       {
         "id": "y_sami_commune",
@@ -3550,6 +3626,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 23,
     "isMajor": false,
     "preferredSeason": "가을",
+    "conditions": {
+      "nation": ["라이타니엔"]
+    },
     "choices": [
       {
         "id": "y_salon_masterpiece",
@@ -3606,6 +3685,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 24,
     "isMajor": false,
     "preferredSeason": "여름",
+    "conditions": {
+      "nation": ["사르곤"]
+    },
     "choices": [
       {
         "id": "y_sargon_flank",
@@ -3650,17 +3732,20 @@ export const GAME_EVENTS: GameEvent[] = [
     ]
   },
   // ------------------------------------------
-  // youth_yan_imperial_exam (염국 과거 대리 사법관 시험)
+  // youth_yan_imperial_exam (염국 과거 대리사 사법관 시험)
   // ------------------------------------------
   {
     "id": "youth_yan_imperial_exam",
-    "title": "염국 과거 대리 사법관 시험",
+    "title": "염국 과거 대리사 사법관 시험",
     "description": "염국 상경에서 수만 명의 인재가 운집한 가운데 국시(科擧)가 열렸습니다. 법률과 책략을 시험합니다.",
     "category": "career",
     "minAge": 18,
     "maxAge": 24,
     "isMajor": false,
     "preferredSeason": "봄",
+    "conditions": {
+      "nation": ["염국"]
+    },
     "choices": [
       {
         "id": "y_exam_write",
@@ -3672,7 +3757,7 @@ export const GAME_EVENTS: GameEvent[] = [
         },
         "outcomes": {
           "success": {
-            "text": "당신의 답안이 장원급제에 올랐습니다! 대리(司)의 사법 관료로 공식 임명됩니다.",
+            "text": "당신의 답안이 장원급제에 올랐습니다! 대리사(大理寺)의 사법 관료로 공식 임명됩니다.",
             "statEffects": {
               "intellect": 10,
               "wealth": 450,
@@ -3716,6 +3801,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 24,
     "isMajor": false,
     "preferredSeason": "가을",
+    "conditions": {
+      "nation": ["빅토리아"]
+    },
     "choices": [
       {
         "id": "y_academy_tactics",
@@ -3772,6 +3860,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 24,
     "isMajor": false,
     "preferredSeason": "겨울",
+    "conditions": {
+      "nation": ["우르수스 제국", "우르수스"]
+    },
     "choices": [
       {
         "id": "y_ursus_march",
@@ -3828,6 +3919,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 23,
     "isMajor": false,
     "preferredSeason": "봄",
+    "conditions": {
+      "nation": ["라테라노"]
+    },
     "choices": [
       {
         "id": "y_notary_audit",
@@ -3883,6 +3977,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 24,
     "isMajor": false,
     "preferredSeason": "가을",
+    "conditions": {
+      "nation": ["이베리아"]
+    },
     "choices": [
       {
         "id": "y_sentry_lantern",
@@ -3938,6 +4035,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 24,
     "isMajor": false,
     "preferredSeason": "여름",
+    "conditions": {
+      "nation": ["용문"]
+    },
     "choices": [
       {
         "id": "y_finance_arbitrage",
@@ -3993,6 +4093,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 24,
     "isMajor": false,
     "preferredSeason": "겨울",
+    "conditions": {
+      "nation": ["쉐라그"]
+    },
     "choices": [
       {
         "id": "y_kjerag_probe",
@@ -4049,6 +4152,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 24,
     "isMajor": false,
     "preferredSeason": "가을",
+    "conditions": {
+      "nation": ["카즈델"]
+    },
     "choices": [
       {
         "id": "y_kazdel_accept",
@@ -4106,6 +4212,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 24,
     "isMajor": false,
     "preferredSeason": "봄",
+    "conditions": {
+      "nation": ["컬럼비아"]
+    },
     "choices": [
       {
         "id": "y_pioneer_arbitrate",
@@ -4580,7 +4689,7 @@ export const GAME_EVENTS: GameEvent[] = [
         "description": "자신의 목숨을 걸고 잔해 속 민간인들을 구출합니다.",
         "diceCheck": {
           "stat": "combat",
-          "difficulty": 54
+          "difficulty": 68
         },
         "outcomes": {
           "success": {
@@ -4637,12 +4746,15 @@ export const GAME_EVENTS: GameEvent[] = [
   {
     "id": "adult_yan_censor_secret_audit",
     "title": "염국 사서의 은밀한 특별 감사",
-    "description": "염국 대리(司)의 특별 사법 감사관이 파견되어 거대 상단의 오리지늄 밀수와 관료 뇌물 장부를 전수 조사합니다.",
+    "description": "염국 대리사(大理寺)의 특별 사법 감사관이 파견되어 거대 상단의 오리지늄 밀수와 관료 뇌물 장부를 전수 조사합니다.",
     "category": "career",
     "minAge": 28,
     "maxAge": 49,
     "isMajor": true,
     "preferredSeason": "봄",
+    "conditions": {
+      "nation": ["염국"]
+    },
     "choices": [
       {
         "id": "a_yan_audit_firm",
@@ -4698,6 +4810,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 47,
     "isMajor": true,
     "preferredSeason": "겨울",
+    "conditions": {
+      "nation": ["라이타니엔"]
+    },
     "choices": [
       {
         "id": "a_spire_counter_arts",
@@ -4766,6 +4881,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 48,
     "isMajor": true,
     "preferredSeason": "여름",
+    "conditions": {
+      "nation": ["사르곤"]
+    },
     "choices": [
       {
         "id": "a_sargon_lead_rebels",
@@ -4835,6 +4953,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 49,
     "isMajor": true,
     "preferredSeason": "가을",
+    "conditions": {
+      "nation": ["이베리아"]
+    },
     "choices": [
       {
         "id": "a_abyss_cannon",
@@ -4902,6 +5023,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 48,
     "isMajor": false,
     "preferredSeason": "봄",
+    "conditions": {
+      "nation": ["컬럼비아"]
+    },
     "choices": [
       {
         "id": "a_patent_fight",
@@ -4957,6 +5081,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 49,
     "isMajor": false,
     "preferredSeason": "겨울",
+    "conditions": {
+      "nation": ["우르수스 제국", "우르수스"]
+    },
     "choices": [
       {
         "id": "a_camp_liberate",
@@ -5014,6 +5141,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 48,
     "isMajor": false,
     "preferredSeason": "가을",
+    "conditions": {
+      "nation": ["빅토리아"]
+    },
     "choices": [
       {
         "id": "a_duke_join",
@@ -5069,6 +5199,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 49,
     "isMajor": false,
     "preferredSeason": "여름",
+    "conditions": {
+      "nation": ["카시미어"]
+    },
     "choices": [
       {
         "id": "a_buyout_hostile",
@@ -5124,6 +5257,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 48,
     "isMajor": false,
     "preferredSeason": "봄",
+    "conditions": {
+      "nation": ["라테라노"]
+    },
     "choices": [
       {
         "id": "a_heresy_interrogate",
@@ -5179,6 +5315,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 49,
     "isMajor": true,
     "preferredSeason": "겨울",
+    "conditions": {
+      "nation": ["사미"]
+    },
     "choices": [
       {
         "id": "a_daemon_slay",
@@ -5186,7 +5325,7 @@ export const GAME_EVENTS: GameEvent[] = [
         "description": "존재 자체를 위협하는 미지의 공포에 맞서 목숨을 건 혈전을 치릅니다.",
         "diceCheck": {
           "stat": "combat",
-          "difficulty": 58
+          "difficulty": 82
         },
         "outcomes": {
           "success": {
@@ -5250,6 +5389,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 48,
     "isMajor": true,
     "preferredSeason": "가을",
+    "conditions": {
+      "nation": ["시라쿠사"]
+    },
     "choices": [
       {
         "id": "a_siracusa_revenge",
@@ -5318,6 +5460,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 49,
     "isMajor": false,
     "preferredSeason": "여름",
+    "conditions": {
+      "nation": ["림 빌리톤"]
+    },
     "choices": [
       {
         "id": "a_rim_blast",
@@ -5374,6 +5519,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 48,
     "isMajor": false,
     "preferredSeason": "겨울",
+    "conditions": {
+      "nation": ["용문"]
+    },
     "choices": [
       {
         "id": "a_lungmen_chase",
@@ -5430,6 +5578,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 48,
     "isMajor": false,
     "preferredSeason": "가을",
+    "conditions": {
+      "nation": ["카즈델"]
+    },
     "choices": [
       {
         "id": "a_kazdel_clash",
@@ -5498,6 +5649,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 48,
     "isMajor": false,
     "preferredSeason": "겨울",
+    "conditions": {
+      "nation": ["쉐라그"]
+    },
     "choices": [
       {
         "id": "a_kjerag_tunnel_raid",
@@ -5565,6 +5719,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 48,
     "isMajor": false,
     "preferredSeason": "봄",
+    "conditions": {
+      "nation": ["컬럼비아"]
+    },
     "choices": [
       {
         "id": "a_bs_extract",
@@ -5756,7 +5913,7 @@ export const GAME_EVENTS: GameEvent[] = [
         "description": "테라 문명의 잃어버린 진실에 다가섭니다.",
         "diceCheck": {
           "stat": "intellect",
-          "difficulty": 55
+          "difficulty": 76
         },
         "outcomes": {
           "success": {
@@ -5832,7 +5989,7 @@ export const GAME_EVENTS: GameEvent[] = [
       },
       {
         "id": "a_trophy_museum",
-        "label": "기사단의 역사를 존중하여 카시미어 국립 박물관에 기증한다",
+        "label": "기사단의 역사를 존중하여 국립 역사 박물관에 기증한다",
         "description": "명예로운 기증으로 대중의 존경을 받습니다.",
         "outcomes": {
           "success": {
@@ -5966,7 +6123,7 @@ export const GAME_EVENTS: GameEvent[] = [
         "description": "자신의 모든 노하우를 후대에 아낌없이 전수합니다.",
         "diceCheck": {
           "stat": "intellect",
-          "difficulty": 52
+          "difficulty": 72
         },
         "outcomes": {
           "success": {
@@ -6064,7 +6221,7 @@ export const GAME_EVENTS: GameEvent[] = [
         "description": "테라 문명 전체의 궁극적인 비밀을 마주합니다.",
         "diceCheck": {
           "stat": "intellect",
-          "difficulty": 58
+          "difficulty": 78
         },
         "outcomes": {
           "success": {
@@ -6120,7 +6277,7 @@ export const GAME_EVENTS: GameEvent[] = [
         "description": "인생 최후의 혼을 불사르는 영웅적 결전에 나섭니다.",
         "diceCheck": {
           "stat": "artsAptitude",
-          "difficulty": 60
+          "difficulty": 82
         },
         "outcomes": {
           "success": {
@@ -6366,6 +6523,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 999,
     "isMajor": false,
     "preferredSeason": "겨울",
+    "conditions": {
+      "nation": ["사미"]
+    },
     "choices": [
       {
         "id": "e_sami_spirits_listen",
@@ -6404,12 +6564,15 @@ export const GAME_EVENTS: GameEvent[] = [
   {
     "id": "elder_yan_recluse_mountain_tea",
     "title": "구름 위의 정자에서 나눈 신선과의 바둑",
-    "description": "염국의 높은 산봉우리 정자에서, 수이(Sui)의 파편이라 불리는 수수께끼의 도인과 마주 앉아 바둑판을 마주했습니다.",
+    "description": "염국의 높은 산봉우리 정자에서, 쉐이(Sui)의 파편이라 불리는 수수께끼의 도인과 마주 앉아 바둑판을 마주했습니다.",
     "category": "fateful",
     "minAge": 56,
     "maxAge": 999,
     "isMajor": false,
     "preferredSeason": "가을",
+    "conditions": {
+      "nation": ["염국"]
+    },
     "choices": [
       {
         "id": "e_yan_baduk_play",
@@ -6465,6 +6628,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 999,
     "isMajor": false,
     "preferredSeason": "가을",
+    "conditions": {
+      "nation": ["라이타니엔"]
+    },
     "choices": [
       {
         "id": "e_sonata_conduct",
@@ -6521,6 +6687,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 999,
     "isMajor": false,
     "preferredSeason": "겨울",
+    "conditions": {
+      "nation": ["빅토리아"]
+    },
     "choices": [
       {
         "id": "e_club_brandy",
@@ -6564,6 +6733,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 999,
     "isMajor": false,
     "preferredSeason": "가을",
+    "conditions": {
+      "nation": ["라테라노"]
+    },
     "choices": [
       {
         "id": "e_laterano_bell_pray",
@@ -6607,6 +6779,9 @@ export const GAME_EVENTS: GameEvent[] = [
     "maxAge": 999,
     "isMajor": false,
     "preferredSeason": "겨울",
+    "conditions": {
+      "nation": ["카즈델"]
+    },
     "choices": [
       {
         "id": "e_kazdel_peace_bread",
@@ -6644,12 +6819,15 @@ export const GAME_EVENTS: GameEvent[] = [
   {
     "id": "elder_long_lived_race_eternity_sorrow",
     "title": "장수종의 슬픔: 시간의 흐름을 지켜보며",
-    "description": "수백 년을 사는 장수종(엘라피아, 드라코, 살카즈 등)으로서, 평생을 함께했던 필멸자 친구들이 하나둘 세상을 떠나가는 것을 배웅합니다.",
+    "description": "수백 년을 사는 장수종(살카즈, 드라코, 아슬란, 에기르 등)으로서, 평생을 함께했던 필멸자 친구들이 하나둘 세상을 떠나가는 것을 배웅합니다.",
     "category": "fateful",
     "minAge": 70,
     "maxAge": 999,
     "isMajor": false,
     "preferredSeason": "가을",
+    "conditions": {
+      "race": ["살카즈", "드라코", "아슬란", "에기르", "산크타", "두린", "포르테"]
+    },
     "choices": [
       {
         "id": "e_eternity_embrace",
@@ -6657,7 +6835,7 @@ export const GAME_EVENTS: GameEvent[] = [
         "description": "필멸의 덧없음 속에서 영원한 사랑과 기억의 가치를 깨닫습니다.",
         "diceCheck": {
           "stat": "sanity",
-          "difficulty": 55
+          "difficulty": 72
         },
         "outcomes": {
           "success": {

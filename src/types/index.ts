@@ -20,6 +20,94 @@ export interface NationColorPalette {
   scanlineTint: string;
 }
 
+export type NationSurfacePolarity = 'dark' | 'light';
+
+export type NationFontMood =
+  | 'mono'
+  | 'serif_editorial'
+  | 'constructivist'
+  | 'brush_seal'
+  | 'rounded_road'
+  | 'baroque_score'
+  | 'noir_typewriter';
+
+export type NationButtonMetaphor =
+  | 'talisman_seal'
+  | 'pravda_stamp'
+  | 'ordnance_card'
+  | 'vhs_cassette'
+  | 'museum_gem'
+  | 'piano_key'
+  | 'broadcast_tab'
+  | 'voyage_compass'
+  | 'mafia_dossier'
+  | 'postcard_comm'
+  | 'cipher_slab'
+  | 'notarial_halo'
+  | 'acrylic_street'
+  | 'memory_tablet'
+  | 'frost_crystal'
+  | 'prts_tactical';
+
+export type NationProgressStyle =
+  | 'ink_coin'
+  | 'forward_timer'
+  | 'steam_flap'
+  | 'altimeter_tape'
+  | 'hieroglyph_bar'
+  | 'musical_staff'
+  | 'live_ticker'
+  | 'panoramic_voyage'
+  | 'stage_curtain'
+  | 'highway_zero'
+  | 'frost_radar'
+  | 'water_ripple'
+  | 'neon_skyline'
+  | 'babel_ecg'
+  | 'railway_board'
+  | 'prts_sync';
+
+export interface NationApMetaphor {
+  label: string;
+  badgeUnit: string;
+  tooltip: string;
+  iconType:
+    | 'coin'
+    | 'hammer'
+    | 'gear'
+    | 'cassette'
+    | 'gem'
+    | 'gramophone'
+    | 'medal'
+    | 'lantern'
+    | 'lighter'
+    | 'backpack'
+    | 'rune'
+    | 'espresso'
+    | 'shield'
+    | 'flame'
+    | 'bell'
+    | 'sparkles';
+}
+
+export interface NationSubTheme {
+  id: string;
+  nameKo: string;
+  eventSource: string;
+  officialTheme?: string;
+  description: string;
+  polarity: NationSurfacePolarity;
+  autoTrigger: 'default' | 'day' | 'night' | 'crisis';
+  backdropVariant: string;
+  colors: NationColorPalette & {
+    textPrimary: string;
+    textSecondary: string;
+    textMuted: string;
+    panelBg: string;
+    panelBorder: string;
+  };
+}
+
 export type SidebarPosition = 'left' | 'right';
 
 export type SpecialtyWidgetPosition = 'header-ribbon' | 'dossier-crest' | 'chronicle-banner';
@@ -52,6 +140,15 @@ export interface NationVisualIdentity {
     cornerStyle: 'chamfer' | 'round' | 'sharp' | 'filigree';
     glowIntensity: 'subtle' | 'medium' | 'vibrant';
   };
+  eventRefs?: string[];
+  officialThemes?: string[];
+  designSummary?: string;
+  fontMood?: NationFontMood;
+  buttonMetaphor?: NationButtonMetaphor;
+  choiceLabels?: string[];
+  progressStyle?: NationProgressStyle;
+  apMetaphor?: NationApMetaphor;
+  subThemes?: NationSubTheme[];
 }
 
 export type GameSpeed = 1 | 2 | 4 | 8 | 16 | 32;

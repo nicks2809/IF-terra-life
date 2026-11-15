@@ -2,7 +2,7 @@
 import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { LogEntry, GameEvent, EventChoice, Character, ThemeMode, LogFilter, NationThemeId } from '../types';
 import { GameEngine } from '../engine/gameEngine';
-import { resolveNationId, getNationVisualIdentity } from '../utils/themeResolver';
+import { resolveNationId, getNationVisualIdentity, resolveEffectiveNationTheme, EffectiveNationTheme } from '../utils/themeResolver';
 import { Radio, AlertTriangle, Sparkles, Sword, Dices, ChevronRight, Bot, Play, FastForward, Filter, Lock, Clock, Search, ArrowDown } from 'lucide-react';
 
 interface Props {
@@ -10,6 +10,7 @@ interface Props {
   currentEvent?: GameEvent;
   character: Character;
   nationId?: NationThemeId;
+  effectiveTheme?: EffectiveNationTheme;
   onSelectChoice: (choice: EventChoice) => void;
   autoChoicePendingId?: string | null;
   minorTimeoutRemainingSec?: number | null;
@@ -58,6 +59,7 @@ export const EventLogPanel: React.FC<Props> = ({
   currentEvent,
   character,
   nationId,
+  effectiveTheme,
   onSelectChoice,
   autoChoicePendingId,
   minorTimeoutRemainingSec,
@@ -76,18 +78,22 @@ export const EventLogPanel: React.FC<Props> = ({
     return getNationVisualIdentity(activeNationId);
   }, [activeNationId]);
 
+  const resolvedTheme = useMemo(() => {
+    return effectiveTheme || resolveEffectiveNationTheme(activeNationId, 'auto');
+  }, [effectiveTheme, activeNationId]);
+
+  const activeColors = resolvedTheme.colors;
+
   const logContainerRef = useRef<HTMLDivElement>(null);
   const [filter, setFilter] = useState<LogFilter>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isAtBottom, setIsAtBottom] = useState<boolean>(true);
   const isPrts = theme === 'prts';
 
-  // WCAG AA 고명도 텍스트 자동 판정 (저휘도 primary 국가: 이베리아, 시라쿠사, 빅토리아, 염국, 카즈델)
+  // WCAG AA 고명도 텍스트 자동 판정 (표면 및 primary 휘도 기반)
   const isDarkPrimary = useMemo(() => {
     if (!isPrts) return false;
-    const darkNationIds = ['iberia', 'siracusa', 'victoria', 'yan', 'kazdel'];
-    if (darkNationIds.includes(nationIdentity.id)) return true;
-    const hex = (nationIdentity.colors.primary || '').replace('#', '');
+    const hex = (activeColors.primary || '').replace('#', '');
     const r = parseInt(hex.slice(0, 2), 16) || 0;
     const g = parseInt(hex.slice(2, 4), 16) || 0;
     const b = parseInt(hex.slice(4, 6), 16) || 0;
@@ -97,7 +103,7 @@ export const EventLogPanel: React.FC<Props> = ({
     const bL = bs <= 0.03928 ? bs / 12.92 : Math.pow((bs + 0.055) / 1.055, 2.4);
     const lum = 0.2126 * rL + 0.7152 * gL + 0.0722 * bL;
     return (lum + 0.05) / 0.05 < 4.5;
-  }, [isPrts, nationIdentity.id, nationIdentity.colors.primary]);
+  }, [isPrts, activeColors.primary]);
 
   const handleScroll = () => {
     if (!logContainerRef.current) return;
@@ -201,14 +207,67 @@ export const EventLogPanel: React.FC<Props> = ({
       : 'bg-emerald-900/15 text-emerald-900 border-emerald-800/30';
   };
 
+  const metaphor = nationIdentity.buttonMetaphor || 'prts_tactical';
+  const choiceMetaLabels = nationIdentity.choiceLabels || [];
+
+  const getMediaBannerText = (): string | null => {
+    if (!isPrts) return null;
+    switch (activeNationId) {
+      case 'kazimierz':
+        return 'ROSEBUD NEWS // 메이저 생방송 중계 · 박사의 책상 수신';
+      case 'ursus':
+        return 'СВЯТОГОР // 성준보 제국 활판 통신 · 정방향 전진 기록';
+      case 'siracusa':
+        return 'VOLSINII STAGE // 볼시니 목각 인형극장 · 패밀리 기밀 서류철';
+      case 'rim_billiton':
+        return 'HIGHWAY 0 // 0번 국도 우체통 · 가족 원격 통신 채널';
+      case 'kjerag':
+        return 'SILVERHEART // 은심호 열차 대합실 행선지 안내판';
+      case 'lungmen':
+        return 'L.G.D. SDU // 다크 아크릴 치안망 · 야시장 등롱가';
+      case 'columbia':
+        return resolvedTheme.activeSubTheme?.id === 'rankwood_noir'
+          ? 'RANKWOOD STUDIO // 필름 느와르 뷰파인더 기록'
+          : 'TRIMONT VHS // 카세트 텔레메트리 기록 테이프';
+      default:
+        return null;
+    }
+  };
+
+  const mediaBanner = getMediaBannerText();
+
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="flex flex-col h-full min-h-0 overflow-hidden relative z-10">
+      {/* 국가별 미디어/전보 상단 스트립 (카시미어 로즈버드 뉴스, 우르수스 성준보, 은심호 안내판 등) */}
+      {mediaBanner && (
+        <div
+          className="px-3 sm:px-4 py-1 border-b text-[10px] font-mono flex items-center justify-between gap-2 shrink-0"
+          style={{
+            backgroundColor: activeColors.badgeBg,
+            borderColor: activeColors.panelBorder,
+            color: activeColors.badgeText
+          }}
+        >
+          <span className="font-extrabold tracking-wider truncate">▸ {mediaBanner}</span>
+          <span className="opacity-80 shrink-0 hidden sm:inline">
+            {resolvedTheme.activeSubTheme?.nameKo || nationIdentity.nameKo}
+          </span>
+        </div>
+      )}
+
       {/* Top Filter Bar */}
-      <div className={`px-3 sm:px-4 py-2 border-b flex flex-wrap items-center justify-between gap-2 shrink-0 ${
-        isPrts ? 'bg-[#0e121a] border-cyan-500/20' : 'bg-[#e8dcbe] border-[#5c4033]/30'
-      }`}>
+      <div
+        className={`px-3 sm:px-4 py-2 border-b flex flex-wrap items-center justify-between gap-2 shrink-0 ${
+          isPrts ? '' : 'bg-[#e8dcbe] border-[#5c4033]/30'
+        }`}
+        style={
+          isPrts
+            ? { backgroundColor: activeColors.card, borderColor: activeColors.panelBorder }
+            : undefined
+        }
+      >
         <div className="flex items-center space-x-1.5 text-[11px] shrink-0">
-          <Filter className={`w-3.5 h-3.5 ${isPrts ? 'text-cyan-400' : 'text-[#8b1e1e]'}`} />
+          <Filter className={`w-3.5 h-3.5 ${isPrts ? '' : 'text-[#8b1e1e]'}`} style={isPrts ? { color: activeColors.primary } : undefined} />
           <span className="font-bold opacity-75 hidden sm:inline">일지 필터:</span>
         </div>
         <div className="flex items-center space-x-1 shrink-0 overflow-x-auto py-0.5">
@@ -225,9 +284,9 @@ export const EventLogPanel: React.FC<Props> = ({
               style={
                 filter === tab.id && isPrts
                   ? { 
-                      backgroundColor: nationIdentity.colors.primary, 
+                      backgroundColor: activeColors.primary, 
                       color: isDarkPrimary ? '#ffffff' : '#000000',
-                      boxShadow: `0 0 10px ${nationIdentity.colors.primaryGlow}` 
+                      boxShadow: `0 0 10px ${activeColors.primaryGlow}` 
                     }
                   : undefined
               }
@@ -246,7 +305,7 @@ export const EventLogPanel: React.FC<Props> = ({
           ))}
         </div>
         <div className="relative flex items-center shrink-0">
-          <Search className={`w-3 h-3 absolute left-2 ${isPrts ? 'text-cyan-400' : 'text-[#8b1e1e]'}`} />
+          <Search className={`w-3 h-3 absolute left-2 ${isPrts ? '' : 'text-[#8b1e1e]'}`} style={isPrts ? { color: activeColors.primary } : undefined} />
           <input
             type="text"
             value={searchQuery}
@@ -255,9 +314,10 @@ export const EventLogPanel: React.FC<Props> = ({
             aria-label="로그 검색"
             className={`text-[11px] pl-6 pr-2 py-0.5 rounded border outline-none transition-all w-28 sm:w-36 ${
               isPrts
-                ? 'bg-slate-900/80 border-cyan-500/30 text-cyan-200 placeholder-slate-500 focus:border-cyan-400'
+                ? 'bg-slate-900/80 text-slate-200 placeholder-slate-500'
                 : 'bg-[#fbf7ed] border-[#5c4033]/40 text-[#1a1412] placeholder-[#8c7b75] focus:border-[#8b1e1e]'
             }`}
+            style={isPrts ? { borderColor: activeColors.panelBorder } : undefined}
           />
         </div>
       </div>
@@ -281,9 +341,14 @@ export const EventLogPanel: React.FC<Props> = ({
                   <div 
                     className={`my-3 py-2 px-3.5 rounded-lg border flex items-center justify-between text-xs transition-all ${
                       isPrts
-                        ? 'bg-gradient-to-r from-slate-900 via-slate-800/90 to-slate-900 border-cyan-500/40 text-cyan-200 shadow-sm'
+                        ? 'bg-slate-900/80 shadow-sm'
                         : 'bg-gradient-to-r from-[#ebdcb9] via-[#f5e8cc] to-[#ebdcb9] border-[#5c4033]/40 text-[#422006] shadow-sm'
                     }`}
+                    style={
+                      isPrts
+                        ? { borderColor: activeColors.panelBorder, color: activeColors.badgeText }
+                        : undefined
+                    }
                   >
                     <div className="flex flex-col">
                       <span className="font-bold tracking-wider text-xs sm:text-[13px]">{chapter.title}</span>
@@ -301,9 +366,9 @@ export const EventLogPanel: React.FC<Props> = ({
                 <div
                   style={
                     isRoutine
-                      ? { borderLeftColor: isPrts ? nationIdentity.colors.primary : '#8b1e1e', borderLeftWidth: '3px' }
+                      ? { borderLeftColor: isPrts ? activeColors.primary : '#8b1e1e', borderLeftWidth: '3px' }
                       : isPrts && (character?.nation && entry.title?.includes(character.nation))
-                      ? { borderLeftColor: nationIdentity.colors.primary, borderLeftWidth: '3px' }
+                      ? { borderLeftColor: activeColors.primary, borderLeftWidth: '3px' }
                       : undefined
                   }
                   className={`p-3.5 rounded-lg border text-[13.5px] sm:text-sm leading-relaxed transition-all ${
@@ -328,7 +393,7 @@ export const EventLogPanel: React.FC<Props> = ({
                     <div className="flex items-center space-x-2 flex-wrap">
                       <span 
                         className="text-[10px] sm:text-[11px] font-bold opacity-90"
-                        style={{ color: isPrts ? nationIdentity.colors.badgeText : '#8b1e1e' }}
+                        style={{ color: isPrts ? activeColors.badgeText : '#8b1e1e' }}
                       >
                         [{entry.year}년{entry.season ? ` ${entry.season}` : ''} · {entry.age}세]
                       </span>
@@ -378,9 +443,14 @@ export const EventLogPanel: React.FC<Props> = ({
         {!isAtBottom && (
           <button
             onClick={scrollToBottom}
+            style={
+              isPrts
+                ? { backgroundColor: activeColors.primary, color: isDarkPrimary ? '#ffffff' : '#000000' }
+                : undefined
+            }
             className={`absolute bottom-3 right-5 z-20 px-3 py-1.5 rounded-full text-xs font-bold shadow-2xl flex items-center space-x-1.5 transition-all duration-200 animate-bounce ${
               isPrts
-                ? 'bg-cyan-500 hover:bg-cyan-400 text-black shadow-cyan-500/30'
+                ? ''
                 : 'bg-[#8b1e1e] hover:bg-[#a32828] text-white shadow-stone-800/40'
             }`}
           >
@@ -390,36 +460,60 @@ export const EventLogPanel: React.FC<Props> = ({
         )}
       </div>
 
-      {/* Current Active Choice Decision Panel */}
+      {/* Current Active Choice Decision Panel (내부 세로 스크롤 + 15개국 전용 카드/버튼 은유 적용) */}
       {currentEvent && character.isAlive && (
-        <div className={`shrink-0 p-4 border-t shadow-2xl transition-all ${
-          isPrts
-            ? 'bg-[#0d1017] border-cyan-500/30 text-slate-100 font-mono'
-            : 'bg-[#ebdcb9] border-[#5c4033] text-[#1a1412] font-serif'
-        }`}>
+        <div
+          className={`shrink-0 max-h-[48vh] overflow-y-auto p-3.5 sm:p-4 border-t shadow-2xl transition-all relative ${
+            isPrts
+              ? `text-slate-100 font-mono ${metaphor === 'mafia_dossier' ? 'nation-suit-stitch' : metaphor === 'frost_crystal' ? 'nation-brushed-silver' : ''}`
+              : 'bg-[#ebdcb9] border-[#5c4033] text-[#1a1412] font-serif'
+          }`}
+          style={
+            isPrts
+              ? {
+                  backgroundColor: activeColors.card,
+                  borderColor: metaphor === 'talisman_seal' ? '#eab308' : metaphor === 'postcard_comm' ? '#a3e635' : activeColors.panelBorder
+                }
+              : undefined
+          }
+        >
+          {/* 컬럼비아 론 트레일 3색 스트라이프 / 라이타니엔 피아노 건반 상단 라인 */}
+          {isPrts && activeNationId === 'columbia' && resolvedTheme.activeSubTheme?.id === 'lone_trail' && (
+            <div className="h-1 w-full mb-2.5 rounded-sm columbia-tri-stripe" />
+          )}
+          {isPrts && activeNationId === 'leithanien' && (
+            <div className="h-1.5 w-full mb-2.5 rounded-sm leithanien-piano-strip" />
+          )}
+
           <div className="flex items-center justify-between gap-2 mb-2">
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 min-w-0">
               <span 
-                className="w-2 h-2 rounded-full animate-ping"
-                style={{ backgroundColor: isPrts ? nationIdentity.colors.primary : '#8b1e1e' }}
+                className="w-2 h-2 rounded-full animate-ping shrink-0"
+                style={{ backgroundColor: isPrts ? activeColors.primary : '#8b1e1e' }}
               />
               <span 
-                className={`text-xs font-bold tracking-widest ${isPrts ? '' : 'text-[#8b1e1e]'}`}
-                style={isPrts ? { color: nationIdentity.colors.badgeText } : undefined}
+                className={`text-xs font-bold tracking-widest truncate ${isPrts ? '' : 'text-[#8b1e1e]'}`}
+                style={isPrts ? { color: activeColors.badgeText } : undefined}
               >
-                【운명의 갈림길】 {currentEvent.title}
+                {metaphor === 'talisman_seal' && isPrts ? '【황부(黃符) 고시】 ' :
+                 metaphor === 'pravda_stamp' && isPrts ? '【성준보 결재안】 ' :
+                 metaphor === 'postcard_comm' && isPrts ? '【원격 통신 수신】 ' :
+                 metaphor === 'cipher_slab' && isPrts ? '【밀문(密文) 예감】 ' :
+                 '【운명의 갈림길】 '}
+                {currentEvent.title}
               </span>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 shrink-0">
               {!currentEvent.isMajor && onFlowThroughEvent && (
                 <button
                   type="button"
                   onClick={onFlowThroughEvent}
                   className={`px-2.5 py-1 rounded text-[11px] font-bold border transition-all ${
                     isPrts
-                      ? 'bg-slate-800/90 hover:bg-slate-700 border-cyan-500/50 text-cyan-300 shadow-sm'
+                      ? 'bg-slate-800/90 hover:bg-slate-700 text-slate-200 shadow-sm'
                       : 'bg-[#f4ebd0] hover:bg-[#faeed2] border-[#5c4033] text-[#2c1810]'
                   }`}
+                  style={isPrts ? { borderColor: activeColors.panelBorder } : undefined}
                   title="생존/안정 지향 선택지로 신속하게 흘려보내기 (단축키: 0)"
                 >
                   <span>[0] 흘려보내기</span>
@@ -442,12 +536,23 @@ export const EventLogPanel: React.FC<Props> = ({
             {currentEvent.description}
           </p>
 
-          {/* Choices Deck */}
+          {/* Choices Deck (15개국 고유 버튼 은유 반영) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-            {currentEvent.choices.map((choice) => {
+            {currentEvent.choices.map((choice, cIdx) => {
               const isAutoPending = choice.id === autoChoicePendingId;
               const reqCheck = GameEngine.checkChoiceRequirements(character, choice);
               const isDisabled = !reqCheck.allowed;
+              const diegeticTag = isPrts && choiceMetaLabels.length > 0
+                ? choiceMetaLabels[cIdx % choiceMetaLabels.length]
+                : null;
+
+              const shapeClass = !isPrts
+                ? 'rounded-lg'
+                : metaphor === 'pravda_stamp' || metaphor === 'mafia_dossier' || metaphor === 'memory_tablet'
+                  ? 'rounded-none'
+                  : metaphor === 'postcard_comm' || metaphor === 'notarial_halo'
+                    ? 'rounded-xl'
+                    : 'rounded-md';
 
               return (
                 <button
@@ -455,14 +560,24 @@ export const EventLogPanel: React.FC<Props> = ({
                   disabled={isDisabled}
                   onClick={() => !isDisabled && onSelectChoice(choice)}
                   style={
-                    !isDisabled && isAutoPending && isPrts
-                      ? {
-                          borderColor: nationIdentity.colors.primary,
-                          boxShadow: `0 0 15px ${nationIdentity.colors.primaryGlow}`
-                        }
+                    isPrts && !isDisabled
+                      ? isAutoPending
+                        ? {
+                            borderColor: activeColors.primary,
+                            boxShadow: `0 0 15px ${activeColors.primaryGlow}`
+                          }
+                        : metaphor === 'talisman_seal'
+                          ? { borderLeftWidth: '4px', borderLeftColor: '#eab308', borderColor: activeColors.panelBorder }
+                          : metaphor === 'pravda_stamp'
+                            ? { borderLeftWidth: '4px', borderLeftColor: '#dc2626', borderColor: activeColors.panelBorder }
+                            : metaphor === 'postcard_comm'
+                              ? { borderLeftWidth: '4px', borderLeftColor: '#a3e635', borderColor: activeColors.panelBorder }
+                              : metaphor === 'piano_key'
+                                ? { borderLeftWidth: '6px', borderLeftColor: cIdx % 2 === 0 ? '#fde68a' : '#18181b', borderColor: activeColors.panelBorder }
+                                : { borderColor: activeColors.panelBorder }
                       : undefined
                   }
-                  className={`p-3 rounded-lg border text-left transition-all group flex flex-col justify-between relative ${
+                  className={`p-3 ${shapeClass} border text-left transition-all group flex flex-col justify-between relative overflow-hidden ${
                     isDisabled
                       ? isPrts
                         ? 'bg-slate-950/60 border-slate-800/70 text-slate-500 cursor-not-allowed opacity-65'
@@ -472,14 +587,30 @@ export const EventLogPanel: React.FC<Props> = ({
                           ? 'bg-cyan-950/80 ring-2 ring-cyan-400/50 animate-pulse'
                           : 'bg-[#faecd0] border-[#8b1e1e] ring-2 ring-[#8b1e1e]/40 shadow-[0_0_12px_rgba(139,30,30,0.3)]'
                         : isPrts
-                          ? 'bg-slate-900/80 border-slate-700 hover:border-nation-primary hover:shadow-nation-glow hover:bg-slate-800'
+                          ? 'bg-slate-900/80 hover:bg-slate-800/90'
                           : 'bg-[#f4ebd0] border-[#5c4033]/40 hover:border-[#8b1e1e] hover:bg-[#faeed2]'
                   }`}
                 >
                   <div>
+                    {/* 국가별 고유 다이어제틱 은유 분류 태그 (서류철/연회메뉴/초대장, 황부 부적, 밀문판, 성준보 스탬프 등) */}
+                    {diegeticTag && (
+                      <div className="flex items-center justify-between text-[9px] font-mono mb-1 opacity-80">
+                        <span
+                          className="px-1.5 py-0.2 rounded-sm font-bold tracking-wider uppercase"
+                          style={{
+                            backgroundColor: activeColors.badgeBg,
+                            color: activeColors.badgeText
+                          }}
+                        >
+                          {diegeticTag}
+                        </span>
+                        <span className="opacity-65">[{cIdx + 1}]</span>
+                      </div>
+                    )}
+
                     <div className="flex items-center justify-between mb-1">
                       <span className={`font-bold text-xs transition-colors flex items-center flex-wrap gap-1.5 ${
-                        !isDisabled ? (isPrts ? 'group-hover:text-nation-badge-text' : 'group-hover:text-[#8b1e1e]') : ''
+                        !isDisabled ? (isPrts ? '' : 'group-hover:text-[#8b1e1e]') : ''
                       }`}>
                         <span>{choice.label}</span>
                         {isAutoPending && (
@@ -490,7 +621,7 @@ export const EventLogPanel: React.FC<Props> = ({
                             style={
                               isPrts 
                                 ? { 
-                                    backgroundColor: nationIdentity.colors.primary,
+                                    backgroundColor: activeColors.primary,
                                     color: isDarkPrimary ? '#ffffff' : '#000000'
                                   } 
                                 : undefined
@@ -503,6 +634,18 @@ export const EventLogPanel: React.FC<Props> = ({
                       </span>
                       {isDisabled ? (
                         <Lock className="w-3.5 h-3.5 shrink-0 opacity-60" />
+                      ) : isPrts && metaphor === 'frost_crystal' ? (
+                        <span className="text-sky-300 text-xs shrink-0 opacity-70 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" title="설산 얼음 결정 표식">
+                          ◆
+                        </span>
+                      ) : isPrts && metaphor === 'talisman_seal' ? (
+                        <span className="text-amber-300 text-[10px] font-serif font-bold border border-amber-400/60 px-1 shrink-0 opacity-75 group-hover:opacity-100">
+                          印
+                        </span>
+                      ) : isPrts && metaphor === 'pravda_stamp' ? (
+                        <span className="text-red-400 text-[9px] font-black border border-red-500/60 px-1 shrink-0 opacity-75 group-hover:opacity-100">
+                          인가
+                        </span>
                       ) : (
                         <ChevronRight className="w-4 h-4 shrink-0 opacity-50 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
                       )}

@@ -3,12 +3,16 @@
 @tailwind utilities;
 
 @layer base {
-  body {
+  html,
+  body,
+  #root {
     margin: 0;
     padding: 0;
+    min-height: 100%;
+    height: 100%;
     background-color: #0b0d11;
     color: #e2e8f0;
-    overflow: hidden;
+    overflow-x: hidden;
   }
 }
 
@@ -269,4 +273,182 @@
   --nation-badge-bg: rgba(0, 229, 255, 0.15);
   --nation-badge-text: #00e5ff;
   --nation-scanline: rgba(0, 229, 255, 0.05);
+}
+
+/* ========================================================================== */
+/* 15개국 전용 서체 무드 · 질감 마감 · 주간(Light Polarity) 고대비 방어 체계 */
+/* ========================================================================== */
+
+.nation-font-editorial h1,
+.nation-font-editorial h2,
+.nation-font-editorial .nation-header-title {
+  font-family: "Didot", "Bodoni MT", "Playfair Display", Georgia, "Batang", serif;
+  letter-spacing: 0.06em;
+}
+
+.nation-font-constructivist .nation-header-title {
+  font-family: "Impact", "Arial Black", "Malgun Gothic", sans-serif;
+  letter-spacing: 0.08em;
+}
+
+.nation-font-brush .nation-header-title {
+  font-family: "Batang", "Nanum Myeongjo", Georgia, serif;
+  letter-spacing: 0.08em;
+}
+
+.nation-font-rounded {
+  font-family: "Trebuchet MS", "Segoe UI", "Malgun Gothic", sans-serif;
+}
+
+.nation-font-baroque .nation-header-title {
+  font-family: "Palatino Linotype", "Book Antiqua", Georgia, serif;
+  letter-spacing: 0.07em;
+}
+
+.nation-font-noir .nation-header-title {
+  font-family: "Courier New", Consolas, "Batang", monospace;
+}
+
+/* 시라쿠사 수제 양복 원단 스티치 테두리 마감 */
+.nation-suit-stitch {
+  box-shadow: inset 0 0 0 3px rgba(9, 9, 11, 0.85), inset 0 0 0 4px rgba(220, 38, 38, 0.38);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(255, 255, 255, 0.015) 0px,
+    rgba(255, 255, 255, 0.015) 2px,
+    transparent 2px,
+    transparent 6px
+  );
+}
+
+/* 쉐라그 브러시드 실버 메탈 헤어라인 질감 */
+.nation-brushed-silver {
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgba(226, 232, 240, 0.04) 0px,
+    rgba(226, 232, 240, 0.01) 1px,
+    transparent 1px,
+    transparent 4px
+  );
+}
+
+/* 컬럼비아 론 트레일 적·황·청 3색 스트라이프 리본 */
+.columbia-tri-stripe {
+  background: linear-gradient(
+    90deg,
+    #ef4444 0%,
+    #ef4444 33.33%,
+    #f59e0b 33.33%,
+    #f59e0b 66.66%,
+    #3b82f6 66.66%,
+    #3b82f6 100%
+  );
+}
+
+/* 라이타니엔 흑금 피아노 건반 패턴 바 */
+.leithanien-piano-strip {
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgba(234, 179, 8, 0.25) 0px,
+    rgba(234, 179, 8, 0.25) 10px,
+    #09080d 10px,
+    #09080d 16px,
+    rgba(234, 179, 8, 0.16) 16px,
+    rgba(234, 179, 8, 0.16) 26px,
+    #09080d 26px,
+    #09080d 30px
+  );
+}
+
+/* 주간 순백 서브테마 (카즈델 『바벨』, 이베리아 『창백한 바다』) 가독성 자동 반전 */
+.nation-polarity-light {
+  color: #0f172a !important;
+}
+
+.nation-polarity-light .text-slate-100,
+.nation-polarity-light .text-slate-200,
+.nation-polarity-light .text-white {
+  color: #0f172a !important;
+}
+
+.nation-polarity-light .text-slate-300 {
+  color: #1e293b !important;
+}
+
+.nation-polarity-light .text-slate-400,
+.nation-polarity-light .text-slate-500 {
+  color: #475569 !important;
+}
+
+.nation-polarity-light .text-cyan-200,
+.nation-polarity-light .text-cyan-300,
+.nation-polarity-light .text-cyan-400 {
+  color: #0369a1 !important;
+}
+
+.nation-polarity-light .text-amber-200,
+.nation-polarity-light .text-amber-300,
+.nation-polarity-light .text-amber-400,
+.nation-polarity-light .text-yellow-300 {
+  color: #92400e !important;
+}
+
+.nation-polarity-light .text-emerald-300,
+.nation-polarity-light .text-emerald-400 {
+  color: #065f46 !important;
+}
+
+.nation-polarity-light .text-rose-200,
+.nation-polarity-light .text-rose-300,
+.nation-polarity-light .text-red-200,
+.nation-polarity-light .text-red-300,
+.nation-polarity-light .text-red-400 {
+  color: #991b1b !important;
+}
+
+.nation-polarity-light .text-purple-200,
+.nation-polarity-light .text-purple-300,
+.nation-polarity-light .text-purple-400,
+.nation-polarity-light .text-indigo-300 {
+  color: #5b21b6 !important;
+}
+
+.nation-polarity-light .bg-slate-950,
+.nation-polarity-light .bg-slate-950\/60,
+.nation-polarity-light .bg-slate-950\/70,
+.nation-polarity-light .bg-slate-950\/80,
+.nation-polarity-light .bg-slate-900,
+.nation-polarity-light .bg-slate-900\/30,
+.nation-polarity-light .bg-slate-900\/40,
+.nation-polarity-light .bg-slate-900\/50,
+.nation-polarity-light .bg-slate-900\/60,
+.nation-polarity-light .bg-slate-900\/80,
+.nation-polarity-light .bg-slate-900\/90,
+.nation-polarity-light .bg-slate-800,
+.nation-polarity-light .bg-slate-800\/80,
+.nation-polarity-light .bg-slate-800\/90,
+.nation-polarity-light .bg-black\/40,
+.nation-polarity-light .bg-\[\#0e121a\],
+.nation-polarity-light .bg-\[\#0d1017\],
+.nation-polarity-light .bg-\[\#0d1017\]\/95,
+.nation-polarity-light .bg-\[\#0b0f17\],
+.nation-polarity-light .bg-\[\#0f131a\] {
+  background-color: rgba(255, 255, 255, 0.84) !important;
+}
+
+.nation-polarity-light .border-slate-800,
+.nation-polarity-light .border-slate-800\/60,
+.nation-polarity-light .border-slate-800\/70,
+.nation-polarity-light .border-slate-800\/80,
+.nation-polarity-light .border-slate-700,
+.nation-polarity-light .border-white\/5,
+.nation-polarity-light .border-white\/10 {
+  border-color: rgba(15, 23, 42, 0.16) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nation-ambient-motion {
+    animation: none !important;
+    transition: none !important;
+  }
 }

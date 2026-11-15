@@ -45,12 +45,97 @@ import {
 import { storage } from '../services/storage';
 import { sound } from '../services/sound';
 
-const FIRST_NAMES = [
+const NATION_NAME_POOLS: Record<string, string[]> = {
+  yan: [
+    '웨이옌', '무에나', '린위샤', '청웨', '링', '시', '니엔', '슈', '주오러', '바이디',
+    '원조우', '소운', '진악', '문월', '설랑', '창홍', '운기', '적하', '명월', '추상',
+    '연화', '백로', '천성', '현무', '자미', '묵연', '화운', '청죽', '단풍', '서하'
+  ],
+  lungmen: [
+    '첸', '호시구마', '스와이어', '차이우', '린', '와이푸', '제이', '아', '훔', '쇼',
+    '페이', '유키', '레이화', '진페이', ' 메이링', '지아하오', '샤오잉', '하오란', '카이청', '쯔위',
+    '링펑', '이판', '량천', '소만', '관우', '성진', '보아', '가온', '태화', '서진'
+  ].map(n => n.trim()),
+  ursus: [
+    '타찬카', '지마', '이스티나', '굼', '로사', '레토', '압생트', '헬라그', '수수로', '비헌터',
+    '보리스', '이반', '스베틀라나', '미하일', '나탈리아', '세르게이', '드미트리', '카테리나', '알렉세이', '올가',
+    '니콜라이', '안나', '블라디미르', '예카테리나', '파벨', '타티아나', '안톤', '마리야', '율리아', '유리'
+  ],
+  victoria: [
+    '백파이프', '혼', '시즈', '인드라', '다그다', '모건', '델핀', '벤델라', '가드', '해럴드',
+    '골딩', '에블린', '아서', '기네비어', '에드워드', '샬럿', '헨리', '엘리자베스', '조지', '비올라',
+    '제임스', '클라라', '윌리엄', '아멜리아', '토머스', '일레인', '찰스', '그레이스', '알프레드', '헤이즈'
+  ],
+  columbia: [
+    '사리아', '사일런스', '이프리트', '프틸롭시스', '메이어', '마젤란', '뮤엘시스', '도로시', '아스테시아', '아스트젠',
+    '파인콘', '마운틴', '카프카', '로빈', '맨필드', '미즈키', '로건', '메이슨', '클로이', '이든',
+    '하퍼', '매디슨', '스펜서', '블레이크', '쿠퍼', '모건', '스텔라', '도노반', '레이첼', '테일러'
+  ],
+  kazimierz: [
+    '니어', '블레미샤인', '조피아', '플래티넘', '그라벨', '파르투스', '애쉬락', '파투스', '와일드메인', '플레임테일',
+    '정의기사', '비비아나', '톨라', '체스와프', '야쿠프', '마르친', '카타지나', '아그니에슈카', '피오트르', '모니카',
+    '파베우', '마그달레나', '토마시', '조안나', '미하우', '알렉산드라', '크쉬슈토프', '바르바라', '마테우시', '실비아'
+  ],
+  laterano: [
+    '엑시아', '모스티마', '피아메타', '이그제큐터', '엠브리엘', '아드나키엘', '아렌', '안도아인', '세실리아', '오렌',
+    '스피리아', '인사이더', '벨라', '라파엘', '미카엘', '우리엘', '사리엘', '카마엘', '레미엘', '라구엘',
+    '아즈라엘', '자드키엘', '요피엘', '하미엘', '산달폰', '메타트론', '루체', '세라피나', '앙헬', '클라리사'
+  ],
+  siracusa: [
+    '텍사스', '라플란드', '페넌스', '비질', '루나컵', '크루아상', '소라', '지오바나', '아제니르', '베르나르도',
+    '데미트리', '알베르토', '루비오', '발레리오', '다비데', '마테오', '프란체스카', '줄리아', '알레산드로', '키아라',
+    '레오나르도', '발렌티나', '리카르도', '베아트리체', '스테파노', '페데리카', '마르코', '실바나', '비토리오', '비앙카'
+  ],
+  leithanien: [
+    '에이야퍄들라', '어스스피릿', '에벤홀츠', '체르니', '비비아나', '아르투리아', '프리드리히', '레싱', '게르트루드', '프란츠',
+    '크라이데', '힐데가르트', '요한', '클라라', '하인리히', '마틸다', '루트비히', '엘리제', '볼프강', '마리아',
+    '리하르트', '소피아', '카를', '아말리아', '빌헬름', '기젤라', '오토', '로렐라이', '구스타프', '아델하이트'
+  ],
+  sargon: [
+    '가비알', '유넥티스', '토미미', '플린트', '케오베', '패신저', '카넬리안', '비즈왁스', '페페', '나란투야',
+    '맨티코어', '투예', '세이아', '주바이르', '다우드', '야스민', '타리크', '자흐라', '칼리드', '아미나',
+    '하산', '라일라', '파리드', '사미라', '라시드', '나디아', '오마르', '소라야', '자이드', '파티마'
+  ],
+  iberia: [
+    '스펙터', '스카디', '글라디아', '울피아누스', '아이린', '루멘', '쏜즈', '엘리시움', '위디', '인디고',
+    '블루포이즌', '안드레아나', '다리오', '카르멘', '호르헤', '이네스', '알폰소', '에스텔라', '페르난도', '마리아나',
+    '로드리고', '이사벨라', '세바스티안', '루시아', '산티아고', '발레리아', '디에고', '카탈리나', '알바르', '아드리아나'
+  ],
+  kjerag: [
+    '실버애쉬', '프라마닉스', '클리프하트', '노시스', '오로라', '데겐브레허', '마터호른', '쿠리어', '라테', '유카리',
+    '아크토즈', '라타토스크', '이네스', '울란', '보르주', '소르카', '타르칸', '아르슬란', '아이샤', '바투',
+    '카야', '테무진', '알탄', '세렌', '바얀', '나란', '자르갈', '사르나이', '차강', '체체그'
+  ],
+  sami: [
+    '티폰', '산탈라', '발라크빈', '기타노', '바이비크', '버블', '카니팔라트', '세네카', '아이노', '타피오',
+    '미코', '사리', '유하', '도이니', '페카', '마르야', '티모', '일마리', '헤이키', '라우라',
+    '안티', '인케리', '토이보', '살라', '온니', '헬미', '베사', '일로나', '칼레비', '수비'
+  ],
+  kazdel: [
+    '더블유', '머드락', '수르트', '샤이닝', '나이팅게일', '로고스', '아스카론', '민트', '파프리카', '비르투오사',
+    '맨프레드', '호에더러', '이네스', '외드레르', '보카', '아자젤', '벨리알', '발라크', '아스타로트', '네비로스',
+    '말파스', '할파스', '라움', '포르네우스', '바르바토스', '파이몬', '가미긴', '마르바스', '발레포르', '아몬'
+  ],
+  rim_billiton: [
+    '아미야', '새비지', '레온하르트', '에이어스카르페', '에이프릴', '로프', '그라니', '크루스', '팽', '비글',
+    '안셀', '블랙나이트', '알라나', '웜우드', '잭슨', '리암', '올리비아', '노아', '루비', '윌리엄',
+    '에바', '토마스', '미아', '루카스', '릴리', '이슬라', '메이슨', '소피', '해리', '그레이스'
+  ]
+};
+
+const BASE_FIRST_NAMES = [
   '발터', '체이서', '아스트라', '카이사르', '아이린', '실반', '에단', '에리스',
   '레오', '카밀라', '베라', '마커스', '단테', '클로에', '루카스', '미라',
   '노아', '엘레나', '펠릭스', '세레나', '빅터', '로웬', '헬레나', '가브리엘',
   '레이드', '세실리아', '아델', '크로이츠', '비비안', '율리우스', '글라디아', '로렌조'
 ];
+
+const FIRST_NAMES = Array.from(
+  new Set([
+    ...BASE_FIRST_NAMES,
+    ...Object.values(NATION_NAME_POOLS).flat()
+  ])
+);
 
 const ONE_TIME_EVENT_PREFIXES = [
   'child_01_',
@@ -105,8 +190,42 @@ const STAT_LABELS: Record<keyof CharacterStats, string> = {
 };
 
 export class GameEngine {
-  public static getRandomName(rng: () => number = Math.random): string {
-    return FIRST_NAMES[Math.floor(rng() * FIRST_NAMES.length)];
+  private static recentGeneratedNames: string[] = [];
+
+  private static recordRecentName(name: string): void {
+    if (!name) return;
+    const idx = this.recentGeneratedNames.indexOf(name);
+    if (idx !== -1) {
+      this.recentGeneratedNames.splice(idx, 1);
+    }
+    this.recentGeneratedNames.push(name);
+    if (this.recentGeneratedNames.length > 220) {
+      this.recentGeneratedNames.shift();
+    }
+  }
+
+  public static getRandomName(
+    rng: () => number = Math.random,
+    nationId?: string,
+    _gender?: string
+  ): string {
+    // 결정론적 시드 RNG가 전달되고 별도 국가 풀이 지정되지 않은 경우: 정확히 1회 rng() 소비
+    if (rng !== Math.random && !nationId) {
+      return FIRST_NAMES[Math.floor(rng() * FIRST_NAMES.length)];
+    }
+
+    const nationPool = nationId && nationId !== 'random' && NATION_NAME_POOLS[nationId]
+      ? NATION_NAME_POOLS[nationId]
+      : undefined;
+    const candidatePool = nationPool
+      ? Array.from(new Set([...nationPool, ...FIRST_NAMES]))
+      : FIRST_NAMES;
+
+    const freshCandidates = candidatePool.filter(n => !this.recentGeneratedNames.includes(n));
+    const activePool = freshCandidates.length > 0 ? freshCandidates : candidatePool;
+    const picked = activePool[Math.floor(rng() * activePool.length)];
+    this.recordRecentName(picked);
+    return picked;
   }
 
   public static hasTrait(char: Character, traitId: string): boolean {
@@ -743,12 +862,32 @@ export class GameEngine {
 
     const subRace = race.subRaces ? race.subRaces[Math.floor(rng() * race.subRaces.length)] : undefined;
     const gender = config?.gender || (rng() < 0.5 ? '남성' : '여성');
-    const name = config?.name?.trim() ? config.name.trim() : this.getRandomName(rng);
+    const rawRandomName = this.getRandomName(rng);
 
     // 2. 국가 결정 (인구통계 고증 가중치 적용)
     let nation = this.pickWeightedNation(rng);
     if (config?.nationId && config.nationId !== 'random') {
       nation = NATIONS_DATA.find(n => n.id === config.nationId) || nation;
+    }
+
+    let name = config?.name?.trim() ? config.name.trim() : rawRandomName;
+    if (!config?.name?.trim() && !(config?.useFixedSeed && config?.seed?.trim())) {
+      // 고정 시드가 아닌 일반 생성 시: 국가 고유 이름 풀 및 최근 생성 이름 중복 방지 적용 (rng 추가 소비 없음)
+      const nationPool = NATION_NAME_POOLS[nation.id];
+      const pool = nationPool && nationPool.length > 0
+        ? Array.from(new Set([...nationPool, ...FIRST_NAMES]))
+        : FIRST_NAMES;
+      if (this.recentGeneratedNames.includes(name) || (nationPool && !nationPool.includes(name))) {
+        const hashSeed = rawRandomName.charCodeAt(0) + (rawRandomName.charCodeAt(1) || 0) * 17 + this.recentGeneratedNames.length * 31;
+        for (let i = 0; i < pool.length; i++) {
+          const candidate = pool[(hashSeed + i) % pool.length];
+          if (!this.recentGeneratedNames.includes(candidate)) {
+            name = candidate;
+            break;
+          }
+        }
+      }
+      this.recordRecentName(name);
     }
 
     // 3. 성장 환경 결정
@@ -1029,7 +1168,7 @@ export class GameEngine {
       this.applyStatGain(char, 'intellect', 2);
       this.recordMilestone(char, `${char.age}세: [${char.career}] ${char.careerRank}(Tier ${char.careerTier}) 승급 심사 합격`);
 
-      if (char.careerTier >= 2) {
+      if (char.careerTier >= 3) {
         this.triggerAchievement(char, 'common_steady_worker', addLog);
       }
       this.checkAndUpdateLifeGoal(char, addLog);
@@ -1574,13 +1713,15 @@ export class GameEngine {
       });
     }
 
-    // --- 나이 및 생존 마일스톤 업적 ---
-    if (char.age >= 1) this.triggerAchievement(char, 'common_first_breath', addLog);
-    if (char.age >= 15) this.triggerAchievement(char, 'common_coming_of_age', addLog);
-    if (char.age >= 30) this.triggerAchievement(char, 'common_survive_30', addLog);
-    if (char.age >= 50) this.triggerAchievement(char, 'rare_survive_50', addLog);
-    if (char.age >= 70) this.triggerAchievement(char, 'mystic_longevity_70', addLog);
-    if (char.age >= 100) this.triggerAchievement(char, 'mystic_centenarian_100', addLog);
+    // --- 나이 및 생존 마일스톤 업적 (난이도 상향 반영) ---
+    if (char.age >= 7 && char.stats.health >= 60) this.triggerAchievement(char, 'common_first_breath', addLog);
+    if (char.age >= 15 && Math.max(char.stats.combat, char.stats.artsAptitude, char.stats.intellect) >= 42) {
+      this.triggerAchievement(char, 'common_coming_of_age', addLog);
+    }
+    if (char.age >= 35) this.triggerAchievement(char, 'common_survive_30', addLog);
+    if (char.age >= 55 && (char.careerTier || 0) >= 3) this.triggerAchievement(char, 'rare_survive_50', addLog);
+    if (char.age >= 78) this.triggerAchievement(char, 'mystic_longevity_70', addLog);
+    if (char.age >= 108) this.triggerAchievement(char, 'mystic_centenarian_100', addLog);
 
     if (char.race.includes('살카즈') && char.age >= 150) {
       this.triggerAchievement(char, 'unique_sarkaz_elder_150', addLog);
@@ -1592,60 +1733,73 @@ export class GameEngine {
       this.triggerAchievement(char, 'unique_aegir_deep_longevity', addLog);
     }
 
-    if (!char.oripathy.isInfected && char.age >= 60) {
+    if (!char.oripathy.isInfected && char.age >= 68) {
       this.triggerAchievement(char, 'rare_pure_blood_60', addLog);
     }
 
-    if (char.oripathy.isInfected && char.oripathy.crystallizationRate >= 70 && char.age >= 35) {
+    if (char.oripathy.isInfected && char.oripathy.crystallizationRate >= 78 && char.age >= 42) {
       this.triggerAchievement(char, 'unique_crystallized_will', addLog);
     }
 
-    if (char.age >= 50 && char.stats.wealth <= 200) {
+    if (char.age >= 58 && char.stats.wealth <= 150 && char.stats.sanity >= 80) {
       this.triggerAchievement(char, 'rare_ascetic_hermit', addLog);
     }
 
-    if (char.stats.luck <= 15 && char.age >= 40) {
+    if (char.stats.luck <= 12 && char.age >= 48) {
       this.triggerAchievement(char, 'rare_miraculous_misfortune', addLog);
     }
 
-    // --- 자산 마일스톤 ---
-    if (char.stats.wealth >= 1000) this.triggerAchievement(char, 'common_wealth_1k', addLog);
-    if (char.stats.wealth >= 30000) this.triggerAchievement(char, 'unique_lmd_tycoon_max', addLog);
-    if (char.stats.wealth >= 50000) this.triggerAchievement(char, 'unique_wealth_50k', addLog);
-    if (char.stats.wealth >= 100000) this.triggerAchievement(char, 'legend_columbia_bank_sovereign', addLog);
+    // --- 자산 마일스톤 (난이도 상향 반영) ---
+    if (char.age >= 15 && char.stats.wealth >= 3000) this.triggerAchievement(char, 'common_wealth_1k', addLog);
+    if (char.stats.wealth >= 45000) this.triggerAchievement(char, 'unique_lmd_tycoon_max', addLog);
+    if (char.stats.wealth >= 75000) this.triggerAchievement(char, 'unique_wealth_50k', addLog);
+    if (char.stats.wealth >= 150000) this.triggerAchievement(char, 'legend_columbia_bank_sovereign', addLog);
 
-    // --- 스탯 극대화 마일스톤 ---
-    if (char.stats.artsAptitude >= 90) this.triggerAchievement(char, 'rare_arts_mastery', addLog);
-    if (char.stats.combat >= 90) this.triggerAchievement(char, 'rare_iron_warlord', addLog);
-    if (char.stats.intellect >= 90) this.triggerAchievement(char, 'rare_grand_intellect', addLog);
-    if (char.stats.luck >= 90) this.triggerAchievement(char, 'rare_destiny_favored', addLog);
+    // --- 스탯 극대화 마일스톤 (난이도 상향 반영) ---
+    if (char.stats.artsAptitude >= 94) this.triggerAchievement(char, 'rare_arts_mastery', addLog);
+    if (char.stats.combat >= 94) this.triggerAchievement(char, 'rare_iron_warlord', addLog);
+    if (char.stats.intellect >= 94) this.triggerAchievement(char, 'rare_grand_intellect', addLog);
+    if (char.stats.luck >= 94) this.triggerAchievement(char, 'rare_destiny_favored', addLog);
 
-    if (char.stats.combat >= 100) this.triggerAchievement(char, 'unique_combat_apex', addLog);
-    if (char.stats.artsAptitude >= 100) this.triggerAchievement(char, 'unique_arts_apex', addLog);
-    if (char.stats.intellect >= 100) this.triggerAchievement(char, 'unique_intellect_apex', addLog);
+    if (char.stats.combat >= 105) this.triggerAchievement(char, 'unique_combat_apex', addLog);
+    if (char.stats.artsAptitude >= 105) this.triggerAchievement(char, 'unique_arts_apex', addLog);
+    if (char.stats.intellect >= 105) this.triggerAchievement(char, 'unique_intellect_apex', addLog);
 
-    if (char.race.includes('드라코') && char.stats.artsAptitude >= 95) {
+    if (char.race.includes('드라코') && char.stats.artsAptitude >= 98 && char.stats.combat >= 85) {
       this.triggerAchievement(char, 'legend_draco_apocalypse', addLog);
     }
-    if (char.race.includes('아슬란') && char.stats.combat >= 95) {
+    if (char.race.includes('아슬란') && char.stats.combat >= 98 && char.stats.intellect >= 85) {
       this.triggerAchievement(char, 'legend_aslan_empire_conqueror', addLog);
     }
-    if (char.race.includes('살카즈') && char.stats.artsAptitude >= 85 && char.oripathy.activeArtsMultiplier >= 2.0) {
+    if (
+      char.race.includes('살카즈') &&
+      char.stats.artsAptitude >= 92 &&
+      char.oripathy.activeArtsMultiplier >= 2.0 &&
+      char.oripathy.crystallizationRate >= 40
+    ) {
       this.triggerAchievement(char, 'mystic_sarkaz_blood_surge', addLog);
     }
-    if (char.race.includes('산크타') && char.stats.sanity >= 95) {
+    if (char.race.includes('산크타') && char.age >= 45 && !char.oripathy.isInfected && char.stats.sanity >= 96) {
       this.triggerAchievement(char, 'mystic_sankta_pure_halo', addLog);
     }
-    if (char.race.includes('에기르') && char.stats.health >= 95 && char.stats.combat >= 90) {
+    if (char.race.includes('에기르') && char.age >= 30 && char.stats.health >= 98 && char.stats.combat >= 95) {
       this.triggerAchievement(char, 'mystic_aegir_prime_physique', addLog);
     }
 
-    // --- 진영 평판 마일스톤 ---
-    if ((char.factions['로도스 아일랜드'] || 0) >= 60) this.triggerAchievement(char, 'rare_rhodes_specialist', addLog);
-    if ((char.factions['용문 근위국'] || 0) >= 50) this.triggerAchievement(char, 'rare_lungmen_captain', addLog);
-    if ((char.factions['블랙스틸'] || 0) >= 50) this.triggerAchievement(char, 'rare_blacksteel_contract', addLog);
-    if ((char.factions['쉐라그'] || 0) >= 50) this.triggerAchievement(char, 'rare_karlan_trust', addLog);
-    if ((char.factions['쉐라그'] || 0) >= 70) this.triggerAchievement(char, 'mystic_silverash_confidant', addLog);
+    // --- 진영 평판 마일스톤 (난이도 상향 반영) ---
+    if ((char.factions['로도스 아일랜드'] || 0) >= 75 && (char.careerTier || 0) >= 3) {
+      this.triggerAchievement(char, 'rare_rhodes_specialist', addLog);
+    }
+    if ((char.factions['용문 근위국'] || 0) >= 65 && char.stats.combat >= 75) {
+      this.triggerAchievement(char, 'rare_lungmen_captain', addLog);
+    }
+    if ((char.factions['블랙스틸'] || 0) >= 65 && char.stats.combat >= 75) {
+      this.triggerAchievement(char, 'rare_blacksteel_contract', addLog);
+    }
+    if ((char.factions['쉐라그'] || 0) >= 65) this.triggerAchievement(char, 'rare_karlan_trust', addLog);
+    if ((char.factions['쉐라그'] || 0) >= 85 && char.stats.intellect >= 80) {
+      this.triggerAchievement(char, 'mystic_silverash_confidant', addLog);
+    }
 
     // 1. 테라 대사건 타임라인 속보 체크 (공짜 시크릿 엔딩 플래그 부여 제거)
     const worldNewsList = WORLD_TIMELINE.filter(t => t.year === char.year);
@@ -2373,7 +2527,11 @@ export class GameEngine {
       };
     }
     const allowedChoices = allChoices.filter(c => this.checkChoiceRequirements(character, c).allowed);
-    const pool = allowedChoices.length > 0 ? allowedChoices : [allChoices[allChoices.length - 1]];
+    if (allowedChoices.length === 0) {
+      const fallback = allChoices[allChoices.length - 1];
+      return { ...fallback, requirements: undefined };
+    }
+    const pool = allowedChoices;
     if (pool.length === 1) return pool[0];
 
     const scored = pool.map(choice => {

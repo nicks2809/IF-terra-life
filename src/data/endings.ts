@@ -161,8 +161,8 @@ export const ENDINGS_DATA: EndingDefinition[] = [
   {
     id: 'ending_yan_red_scroll',
     title: '사법관의 붉은 두루마리',
-    subtitle: '염국 대리 대사경',
-    description: '천하의 질서와 법도를 바로세우고 수이의 분열을 감시하여 염국의 만년 태평성대를 지켜낸 명신.',
+    subtitle: '염국 대리사 대사경',
+    description: '천하의 질서와 법도를 바로세우고 쉐이의 분열을 감시하여 염국의 만년 태평성대를 지켜낸 명신.',
     epitaph: '천하의 안녕을 위해 붓을 들고 칼을 갈았으니, 사서(史書)에 부끄러움 한 점 남기지 않았다.',
     rarity: 'Rare',
     scoreBonus: 500,

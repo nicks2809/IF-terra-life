@@ -4,12 +4,19 @@ import { GameEngine } from '../engine/gameEngine';
 import { evaluateLifeGoal, FOCUS_STANCES } from '../data/traits';
 import { EventLogPanel } from './EventLogPanel';
 import { NationInsignia } from './NationInsignia';
-import { resolveNationId, getNationVisualIdentity } from '../utils/themeResolver';
+import { NationBackdrop } from './NationBackdrop';
+import { NationApIcon, NationSeasonProgressBar, NationSidebarWidget } from './NationSpecialtyHUD';
+import {
+  resolveNationId,
+  getNationVisualIdentity,
+  resolveEffectiveNationTheme,
+  loadNationSubThemePref,
+  cycleNationSubThemePref
+} from '../utils/themeResolver';
 import {
   Heart,
   Brain,
   Coins,
-  Sparkles,
   Play,
   Pause,
   FastForward,
@@ -28,7 +35,8 @@ import {
   Zap,
   Users,
   Copy,
-  Check
+  Check,
+  Layers
 } from 'lucide-react';
 
 interface Props {
@@ -85,7 +93,7 @@ export const evaluateSpecialtyMetric = (
       const balance = Math.round((char.stats.sanity * 0.5) + (char.stats.intellect * 0.5));
       return {
         value: `陰陽調和 ${balance}%`,
-        hint: balance >= 75 ? '大吉 (천기 순풍)' : balance >= 45 ? '平 (음양 화평)' : '大凶 (수이 요동)',
+        hint: balance >= 75 ? '大吉 (천기 순풍)' : balance >= 45 ? '平 (음양 화평)' : '大凶 (쉐이 요동)',
         tone: balance >= 75 ? 'text-emerald-400' : balance >= 45 ? 'text-amber-400' : 'text-rose-400'
       };
     }
@@ -308,6 +316,33 @@ export const PRTSTerminal: React.FC<Props> = ({
     return getNationVisualIdentity(activeNationId);
   }, [activeNationId]);
 
+  const [subThemePref, setSubThemePref] = useState<string>(() => loadNationSubThemePref(activeNationId));
+
+  useEffect(() => {
+    setSubThemePref(loadNationSubThemePref(activeNationId));
+  }, [activeNationId]);
+
+  const sanityRatio = useMemo(() => {
+    const maxSan = Math.max(1, character?.stats?.maxSanity || 100);
+    return Math.max(0, Math.min(1, (character?.stats?.sanity ?? 100) / maxSan));
+  }, [character?.stats?.sanity, character?.stats?.maxSanity]);
+
+  const effectiveTheme = useMemo(() => {
+    return resolveEffectiveNationTheme(activeNationId, subThemePref, {
+      season: currentSeason,
+      sanityRatio,
+      crystallizationRate: character?.oripathy?.crystallizationRate ?? 0
+    });
+  }, [activeNationId, subThemePref, currentSeason, sanityRatio, character?.oripathy?.crystallizationRate]);
+
+  const effectiveColors = effectiveTheme.colors;
+  const isLightPolarity = effectiveTheme.polarity === 'light';
+
+  const handleCycleSubTheme = () => {
+    const next = cycleNationSubThemePref(activeNationId, subThemePref);
+    setSubThemePref(next);
+  };
+
   const isRightSidebar = nationIdentity.sidebarPosition === 'right';
 
   const cornerClass = useMemo(() => {
@@ -328,7 +363,7 @@ export const PRTSTerminal: React.FC<Props> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [seedCopied, setSeedCopied] = useState(false);
 
-  // 심전도(ECG) 펄스 애니메이션
+  // 국가별 생체 파형 / 음향 스펙트럼 / 바벨 심전도 단일 캔버스 렌더러
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -341,27 +376,45 @@ export const PRTSTerminal: React.FC<Props> = ({
     const height = canvas.height;
 
     const render = () => {
-      ctx.fillStyle = 'rgba(11, 13, 17, 0.2)';
+      ctx.fillStyle = isLightPolarity ? 'rgba(241, 245, 249, 0.25)' : 'rgba(11, 13, 17, 0.22)';
       ctx.fillRect(0, 0, width, height);
 
-      ctx.lineWidth = 1.5;
       const isLowHp = character.stats.health < 30;
-      ctx.strokeStyle = isLowHp ? '#ef4444' : nationIdentity.colors.primary;
-      ctx.shadowBlur = 4;
-      ctx.shadowColor = isLowHp ? '#ef4444' : nationIdentity.colors.primaryGlow;
+      const stroke = isLowHp ? '#ef4444' : effectiveColors.primary;
+      ctx.strokeStyle = stroke;
+      ctx.fillStyle = stroke;
+      ctx.shadowBlur = isLightPolarity ? 1 : 4;
+      ctx.shadowColor = isLowHp ? '#ef4444' : effectiveColors.primaryGlow;
 
-      ctx.beginPath();
-      const x = step % width;
-      let y = height / 2;
+      if (activeNationId === 'leithanien') {
+        // 라이타니엔: 평행 오디오 스펙트럼 파형
+        ctx.clearRect(0, 0, width, height);
+        const barCount = 16;
+        const barW = Math.floor(width / barCount) - 2;
+        for (let i = 0; i < barCount; i++) {
+          const amp = character.isAlive
+            ? Math.abs(Math.sin((step * 0.08) + i * 0.65)) * (height * 0.78) + 3
+            : 2;
+          ctx.fillStyle = i % 2 === 0 ? effectiveColors.primary : effectiveColors.accent;
+          ctx.fillRect(i * (barW + 2), (height - amp) / 2, barW, amp);
+        }
+      } else {
+        // 카즈델 『바벨』 주간 테마 시 점점 멎어가는 저진폭 심전도, 그 외 표준 생체 파형
+        ctx.lineWidth = isLightPolarity ? 1.3 : 1.5;
+        ctx.beginPath();
+        const x = step % width;
+        let y = height / 2;
+        const cycle = step % 80;
+        const damp = activeNationId === 'kazdel' && isLightPolarity ? 0.45 : 1;
 
-      const cycle = step % 80;
-      if (cycle === 10) y -= 12;
-      else if (cycle === 14) y += 18;
-      else if (cycle === 18) y -= 6;
+        if (cycle === 10) y -= 12 * damp;
+        else if (cycle === 14) y += 18 * damp;
+        else if (cycle === 18) y -= 6 * damp;
 
-      ctx.moveTo(x - 2, height / 2);
-      ctx.lineTo(x, y);
-      ctx.stroke();
+        ctx.moveTo(Math.max(0, x - 2), height / 2);
+        ctx.lineTo(x, y);
+        ctx.stroke();
+      }
 
       step += character.isAlive ? 2 : 0;
       animationId = requestAnimationFrame(render);
@@ -369,7 +422,7 @@ export const PRTSTerminal: React.FC<Props> = ({
 
     render();
     return () => cancelAnimationFrame(animationId);
-  }, [character.stats.health, character.isAlive, nationIdentity.colors.primary, nationIdentity.colors.primaryGlow]);
+  }, [character.stats.health, character.isAlive, activeNationId, effectiveColors.primary, effectiveColors.accent, effectiveColors.primaryGlow, isLightPolarity]);
 
   const [mobileTab, setMobileTab] = useState<'profile' | 'log'>('log');
 
@@ -404,60 +457,68 @@ export const PRTSTerminal: React.FC<Props> = ({
     Crystallized: { label: '결정화 파열 (CRITICAL)', color: 'bg-rose-900 text-rose-200 border-rose-500' },
   }[character.oripathy.stage];
 
+  const apMeta = nationIdentity.apMetaphor || {
+    label: '활동·승급',
+    badgeUnit: 'AP',
+    tooltip: '연간 활동 포인트',
+    iconType: 'sparkles' as const
+  };
+
   return (
     <div 
-      className="flex flex-col h-screen bg-[#0b0d11] text-slate-100 font-mono select-none overflow-hidden relative"
-      style={{ backgroundColor: nationIdentity.colors.surface }}
+      className={`flex flex-col h-full min-h-screen md:h-dvh text-slate-100 select-none overflow-x-hidden overflow-y-auto md:overflow-hidden relative ${
+        effectiveTheme.fontMoodClass
+      } ${isLightPolarity ? 'nation-polarity-light' : ''}`}
+      style={{ backgroundColor: effectiveColors.surface }}
     >
-      {/* Subtle CRT Scanline Overlay */}
-      {crtEffect && (
-        <div
-          className="pointer-events-none fixed inset-0 z-40 opacity-[0.04]"
-          style={{
-            backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, #00e5ff 3px)'
-          }}
-        />
-      )}
+      {/* 15개국 전용 절차적 배경/질감 오버레이 */}
+      <NationBackdrop
+        effectiveTheme={effectiveTheme}
+        crtEffect={crtEffect}
+        sanityRatio={sanityRatio}
+      />
 
       {/* Top Bar Header */}
       <header 
-        className="h-12 border-b px-3 sm:px-4 flex items-center justify-between shrink-0 transition-colors"
+        className={`h-12 border-b px-3 sm:px-4 flex items-center justify-between shrink-0 transition-colors relative z-10 ${
+          activeNationId === 'kjerag' ? 'nation-brushed-silver' : ''
+        }`}
         style={{ 
-          backgroundColor: nationIdentity.colors.card, 
-          borderColor: nationIdentity.colors.border 
+          backgroundColor: effectiveColors.card, 
+          borderColor: effectiveColors.panelBorder 
         }}
       >
         <div className="flex items-center space-x-2 sm:space-x-2.5 min-w-0">
           <div 
             className="w-2.5 h-2.5 rounded-full animate-pulse shrink-0"
-            style={{ backgroundColor: nationIdentity.colors.primary }}
+            style={{ backgroundColor: effectiveColors.primary }}
           />
           <span 
-            className="text-xs font-bold tracking-widest uppercase shrink-0"
-            style={{ color: nationIdentity.colors.primary }}
+            className="nation-header-title text-xs font-bold tracking-widest uppercase shrink-0 truncate max-w-[165px] sm:max-w-none"
+            style={{ color: effectiveColors.primary }}
             title={nationIdentity.terminalHeader ? `${nationIdentity.terminalHeader.subtitle} (${nationIdentity.terminalHeader.inspiration})` : undefined}
           >
             {nationIdentity.terminalHeader?.title || nationIdentity.interfaceTitle || 'PRTS VITAL // TERRA OS'}
           </span>
-          <span className="text-[11px] text-slate-300 hidden sm:inline shrink-0">
+          <span className="text-[11px] text-slate-300 hidden lg:inline shrink-0">
             [테라력 {character.year}년 {currentSeason} · {character.age}세]
           </span>
 
-          {/* 헤더 인시그니아 및 모토 반응형 노출 터치포인트 */}
-          <div className="flex items-center space-x-1.5 pl-2 border-l border-white/10 shrink-0 min-w-0">
+          {/* 헤더 인시그니아 및 국가/서브테마 표시 */}
+          <div className="hidden sm:flex items-center space-x-1.5 pl-2 border-l border-white/10 shrink-0 min-w-0">
             <NationInsignia 
               nationId={activeNationId} 
               className="w-4 h-4 shrink-0" 
-              style={{ color: nationIdentity.colors.primary }} 
+              style={{ color: effectiveColors.primary }} 
             />
             <span 
               className="text-xs font-bold tracking-wide shrink-0"
-              style={{ color: nationIdentity.colors.badgeText }}
+              style={{ color: effectiveColors.badgeText }}
             >
               {nationIdentity.nameKo}
             </span>
             <span 
-              className="hidden xl:inline text-[10px] text-slate-400 italic max-w-[200px] 2xl:max-w-[280px] truncate" 
+              className="hidden 2xl:inline text-[10px] text-slate-400 italic max-w-[220px] truncate" 
               title={nationIdentity.motto}
             >
               "{nationIdentity.motto}"
@@ -465,8 +526,28 @@ export const PRTSTerminal: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* Global Action Icons */}
-        <div className="flex items-center space-x-1.5 sm:space-x-2">
+        {/* Global Action Icons + 다중 서브테마/주야간 전환 토글 */}
+        <div className="flex items-center space-x-1 sm:space-x-1.5 shrink-0">
+          {nationIdentity.subThemes && nationIdentity.subThemes.length > 0 && (
+            <button
+              onClick={handleCycleSubTheme}
+              className="flex items-center space-x-1 px-2 py-1 rounded text-[11px] font-bold border transition-all"
+              style={{
+                backgroundColor: effectiveColors.badgeBg,
+                borderColor: effectiveColors.panelBorder,
+                color: effectiveColors.badgeText
+              }}
+              title={`테마 모티브 전환 (클릭 시 자동 주야/위기 ↔ 서브테마 고정 순환)\n현재: ${
+                effectiveTheme.activeSubTheme?.nameKo || '표준'
+              } — ${effectiveTheme.activeSubTheme?.eventSource || ''}`}
+            >
+              <Layers className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden md:inline max-w-[135px] truncate">
+                {effectiveTheme.isAutoMode ? '자동·' : ''}{effectiveTheme.activeSubTheme?.nameKo || '테마'}
+              </span>
+            </button>
+          )}
+
           <button
             onClick={onToggleMute}
             className="p-1.5 rounded hover:bg-white/10 text-slate-300 hover:text-cyan-400 transition-colors"
@@ -533,19 +614,22 @@ export const PRTSTerminal: React.FC<Props> = ({
         </div>
       </header>
 
-      {/* Vital & Medical Status Ribbon */}
+      {/* Vital & Medical Status Ribbon (화면 크기별 유동적 반응형 그리드) */}
       <section 
-        className={`h-16 border-b px-4 py-2 grid grid-cols-2 ${
-          nationIdentity.specialtyWidget?.position === 'header-ribbon' ? 'md:grid-cols-6' : 'md:grid-cols-5'
-        } gap-3 shrink-0 items-center transition-colors`}
+        className={`min-h-[3.75rem] border-b px-3 sm:px-4 py-2 grid grid-cols-2 sm:grid-cols-3 ${
+          nationIdentity.specialtyWidget?.position === 'header-ribbon' ? 'lg:grid-cols-6' : 'lg:grid-cols-5'
+        } gap-2.5 sm:gap-3 shrink-0 items-center transition-colors relative z-10`}
         style={{ 
-          backgroundColor: nationIdentity.colors.card, 
-          borderColor: nationIdentity.colors.border 
+          backgroundColor: effectiveColors.card, 
+          borderColor: effectiveColors.panelBorder 
         }}
       >
-        {/* ECG Canvas */}
-        <div className="hidden md:flex items-center space-x-2 col-span-1 bg-black/40 rounded px-2 py-1 border border-cyan-500/20">
-          <Activity className="w-4 h-4 text-cyan-400 shrink-0" />
+        {/* ECG / Audio Spectrum Canvas */}
+        <div
+          className="hidden lg:flex items-center space-x-2 col-span-1 bg-black/35 rounded px-2 py-1 border"
+          style={{ borderColor: effectiveColors.panelBorder }}
+        >
+          <Activity className="w-4 h-4 shrink-0" style={{ color: effectiveColors.primary }} />
           <canvas ref={canvasRef} width={120} height={32} className="w-full h-8" />
         </div>
 
@@ -584,13 +668,13 @@ export const PRTSTerminal: React.FC<Props> = ({
         </div>
 
         {/* LMD & Upkeep */}
-        <div className="hidden md:flex items-center space-x-2 text-xs" title="용문폐(LMD): 보유 화폐 및 연간 생계비">
+        <div className="flex items-center space-x-2 text-xs" title="용문폐(LMD): 보유 화폐 및 연간 생계비">
           <Coins className="w-4 h-4 text-yellow-400 shrink-0" />
-          <div>
-            <div className="text-[10px] text-slate-400">
-              보유 자산 {character.age >= 15 && <span className="text-slate-500">(세금 -{GameEngine.getAnnualLivingExpense(character)}/년)</span>}
+          <div className="min-w-0">
+            <div className="text-[10px] text-slate-400 truncate">
+              보유 자산 {character.age >= 15 && <span className="text-slate-500 hidden sm:inline">(세금 -{GameEngine.getAnnualLivingExpense(character)}/년)</span>}
             </div>
-            <div className="font-bold text-yellow-300">{character.stats.wealth.toLocaleString()} LMD</div>
+            <div className="font-bold text-yellow-300 truncate">{character.stats.wealth.toLocaleString()} LMD</div>
           </div>
         </div>
 
@@ -617,12 +701,12 @@ export const PRTSTerminal: React.FC<Props> = ({
           <div 
             className="hidden md:flex flex-col justify-center px-2.5 py-1 rounded border text-xs shrink-0"
             style={{ 
-              borderColor: nationIdentity.colors.border, 
-              backgroundColor: nationIdentity.colors.surface 
+              borderColor: effectiveColors.panelBorder, 
+              backgroundColor: effectiveColors.surface 
             }}
           >
             <div className="flex items-center justify-between gap-1">
-              <span className="text-[9px] uppercase tracking-wider font-bold truncate" style={{ color: nationIdentity.colors.badgeText }}>
+              <span className="text-[9px] uppercase tracking-wider font-bold truncate" style={{ color: effectiveColors.badgeText }}>
                 {nationIdentity.specialtyWidget.title}
               </span>
               <span className="text-[9px] text-slate-400 shrink-0">({specialtyMetric.hint})</span>
@@ -635,14 +719,18 @@ export const PRTSTerminal: React.FC<Props> = ({
       </section>
 
       {/* Mobile Screen Tab Switcher */}
-      <div className="md:hidden flex border-b border-cyan-500/20 bg-[#0e121a] text-xs font-bold shrink-0">
+      <div
+        className="md:hidden flex border-b text-xs font-bold shrink-0 relative z-10"
+        style={{ backgroundColor: effectiveColors.card, borderColor: effectiveColors.panelBorder }}
+      >
         <button
           onClick={() => setMobileTab('log')}
           className={`flex-1 py-2.5 text-center border-b-2 transition-all flex items-center justify-center space-x-1.5 ${
             mobileTab === 'log'
-              ? 'border-cyan-400 text-cyan-300 bg-cyan-950/40'
+              ? 'text-cyan-300 bg-cyan-950/30'
               : 'border-transparent text-slate-400 hover:text-slate-200'
           }`}
+          style={mobileTab === 'log' ? { borderColor: effectiveColors.primary, color: effectiveColors.badgeText } : undefined}
         >
           <span>사건 일지 & 선택</span>
           {currentEvent && (
@@ -653,54 +741,57 @@ export const PRTSTerminal: React.FC<Props> = ({
           onClick={() => setMobileTab('profile')}
           className={`flex-1 py-2.5 text-center border-b-2 transition-all flex items-center justify-center space-x-1.5 ${
             mobileTab === 'profile'
-              ? 'border-cyan-400 text-cyan-300 bg-cyan-950/40'
+              ? 'text-cyan-300 bg-cyan-950/30'
               : 'border-transparent text-slate-400 hover:text-slate-200'
           }`}
+          style={mobileTab === 'profile' ? { borderColor: effectiveColors.primary, color: effectiveColors.badgeText } : undefined}
         >
-          <span>신상 · 목표 · 태세</span>
+          <span>신상 · 계기판 · 태세</span>
         </button>
       </div>
 
-      {/* Main Grid: Left Profile & Right Logs */}
-      <main className="grow grid grid-cols-1 md:grid-cols-12 overflow-hidden">
-        {/* Character Sheet (4 cols) */}
-        <aside className={`md:col-span-4 ${
+      {/* Main Grid: Left Profile & Right Logs (화면 크기별 유동적 비율 적용: 태블릿 5:7, 데스크톱 4:8, 와이드 3:9) */}
+      <main className="grow min-h-0 grid grid-cols-1 md:grid-cols-12 overflow-hidden relative z-10">
+        {/* Character Sheet */}
+        <aside className={`md:col-span-5 lg:col-span-4 2xl:col-span-3 min-h-0 ${
           isRightSidebar ? 'md:order-2 md:border-l' : 'md:order-1 md:border-r'
-        } border-cyan-500/20 bg-[#0e1219] p-3.5 flex-col overflow-y-auto space-y-3 ${
+        } p-3.5 flex-col overflow-y-auto space-y-3 ${
           mobileTab === 'profile' ? 'flex' : 'hidden md:flex'
         }`}
         style={{ 
-          backgroundColor: nationIdentity.colors.surface, 
-          borderColor: nationIdentity.colors.border 
+          backgroundColor: effectiveColors.surface, 
+          borderColor: effectiveColors.panelBorder 
         }}>
           {/* Identity Box */}
           <div 
-            className={`p-3.5 ${cornerClass} border bg-slate-900/60 relative overflow-hidden transition-colors`}
+            className={`p-3.5 ${cornerClass} border bg-slate-900/60 relative overflow-hidden transition-colors ${
+              activeNationId === 'siracusa' ? 'nation-suit-stitch' : ''
+            }`}
             style={{ 
-              borderColor: nationIdentity.colors.border,
-              boxShadow: `0 0 14px ${nationIdentity.colors.scanlineTint}`
+              borderColor: effectiveColors.panelBorder,
+              boxShadow: `0 0 14px ${effectiveColors.scanlineTint}`
             }}
           >
             {/* 아크나이츠풍 배경 인시그니아 워터마크 */}
-            <div className="absolute right-0 bottom-0 pointer-events-none opacity-[0.08] translate-x-3 translate-y-3">
+            <div className="absolute right-0 bottom-0 pointer-events-none opacity-[0.09] translate-x-3 translate-y-3">
               <NationInsignia 
                 nationId={activeNationId} 
                 className="w-28 h-28" 
-                style={{ color: nationIdentity.colors.primary }} 
+                style={{ color: effectiveColors.primary }} 
               />
             </div>
 
             <div className="flex items-center justify-between mb-1 gap-2 relative z-10">
               <span 
-                className="text-[10px] font-bold uppercase tracking-wider"
-                style={{ color: nationIdentity.colors.badgeText }}
+                className="text-[10px] font-bold uppercase tracking-wider truncate"
+                style={{ color: effectiveColors.badgeText }}
               >
-                SUBJECT DOSSIER
+                {effectiveTheme.activeSubTheme?.eventSource || 'SUBJECT DOSSIER'}
               </span>
               {character.seed && (
                 <button
                   onClick={handleCopySeed}
-                  className="inline-flex items-center space-x-1 px-1.5 py-0.5 rounded bg-slate-950/80 border border-slate-700 hover:border-cyan-400 text-[10px] text-slate-300 transition-colors"
+                  className="inline-flex items-center space-x-1 px-1.5 py-0.5 rounded bg-slate-950/80 border border-slate-700 hover:border-cyan-400 text-[10px] text-slate-300 transition-colors shrink-0"
                   title="운명 시드 코드 복사 (환생 설계에서 동일 운명 재현 가능)"
                 >
                   <span>{character.seed}</span>
@@ -724,7 +815,7 @@ export const PRTSTerminal: React.FC<Props> = ({
                 <span>소속:</span>
                 <span 
                   className="font-bold flex items-center space-x-1"
-                  style={{ color: nationIdentity.colors.badgeText }}
+                  style={{ color: effectiveColors.badgeText }}
                 >
                   <NationInsignia nationId={activeNationId} className="w-3.5 h-3.5 inline" />
                   <span>{character.nation}</span>
@@ -736,7 +827,7 @@ export const PRTSTerminal: React.FC<Props> = ({
             {/* 공식 국가 모토 */}
             <div 
               className="text-[10px] text-slate-400 italic pl-2 my-1.5 line-clamp-1 border-l-2 relative z-10"
-              style={{ borderColor: nationIdentity.colors.primary }}
+              style={{ borderColor: effectiveColors.primary }}
               title={nationIdentity.motto}
             >
               "{nationIdentity.motto}"
@@ -818,11 +909,11 @@ export const PRTSTerminal: React.FC<Props> = ({
             {nationIdentity.specialtyWidget?.position === 'dossier-crest' && specialtyMetric && (
               <div 
                 className="mt-2 pt-2 border-t text-xs flex items-center justify-between relative z-10"
-                style={{ borderColor: nationIdentity.colors.border }}
+                style={{ borderColor: effectiveColors.panelBorder }}
               >
                 <div className="flex items-center space-x-1.5 min-w-0">
-                  <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: nationIdentity.colors.primary }} />
-                  <span className="text-[10px] font-bold truncate" style={{ color: nationIdentity.colors.badgeText }}>
+                  <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: effectiveColors.primary }} />
+                  <span className="text-[10px] font-bold truncate" style={{ color: effectiveColors.badgeText }}>
                     {nationIdentity.specialtyWidget.title}
                   </span>
                 </div>
@@ -833,6 +924,13 @@ export const PRTSTerminal: React.FC<Props> = ({
               </div>
             )}
           </div>
+
+          {/* 15개국 전용 문화/계기판 다이어제틱 HUD 위젯 */}
+          <NationSidebarWidget
+            character={character}
+            effectiveTheme={effectiveTheme}
+            metric={specialtyMetric}
+          />
 
           {/* Life Goal (/goal) & Focus Boost (/boost) Clean Panel */}
           <div className="p-3 rounded-lg border border-cyan-500/25 bg-slate-900/50 space-y-2.5 text-xs">
@@ -898,32 +996,52 @@ export const PRTSTerminal: React.FC<Props> = ({
             </div>
           </div>
 
-          {/* Stats Sheet */}
-          <div className="p-3 rounded-lg border border-slate-800 bg-slate-900/40 space-y-1.5 text-xs">
+          {/* Stats Sheet (전술 게이지 바 적용) */}
+          <div className="p-3 rounded-lg border border-slate-800 bg-slate-900/40 space-y-2 text-xs">
             <div className="flex items-center justify-between text-slate-400 text-[11px] border-b border-white/5 pb-1">
               <span>핵심 역량 (한계 체감 적용)</span>
               <span>수치</span>
             </div>
-            <div className="flex justify-between" title="전투력 (ATK): 신체 단련 및 물리 전투력 지표 (전투 피해량 및 무예 판정)">
-              <span className="text-slate-400">전투력 (ATK)</span>
-              <span className="font-bold text-amber-400">{character.stats.combat}</span>
+            <div className="space-y-1" title="전투력 (ATK): 신체 단련 및 물리 전투력 지표 (전투 피해량 및 무예 판정)">
+              <div className="flex justify-between">
+                <span className="text-slate-400">전투력 (ATK)</span>
+                <span className="font-bold text-amber-400">{character.stats.combat}</span>
+              </div>
+              <div className="w-full h-1.5 bg-slate-950 rounded-full overflow-hidden border border-slate-800">
+                <div className="h-full bg-amber-500 transition-all duration-300" style={{ width: `${Math.min(100, character.stats.combat)}%` }} />
+              </div>
             </div>
-            <div className="flex justify-between" title="아츠 적성 (ARTS): 오리지늄 아츠 영창 및 조율 능력 (주술 공격력 및 결정화율 연동)">
-              <span className="text-slate-400">아츠 적성 (ARTS)</span>
-              <span className="font-bold text-cyan-400">
-                {character.stats.artsAptitude}
-                {character.oripathy.isInfected && (
-                  <span className="text-[10px] text-red-400 ml-1">({character.oripathy.activeArtsMultiplier}x)</span>
-                )}
-              </span>
+            <div className="space-y-1" title="아츠 적성 (ARTS): 오리지늄 아츠 영창 및 조율 능력 (주술 공격력 및 결정화율 연동)">
+              <div className="flex justify-between">
+                <span className="text-slate-400">아츠 적성 (ARTS)</span>
+                <span className="font-bold text-cyan-400">
+                  {character.stats.artsAptitude}
+                  {character.oripathy.isInfected && (
+                    <span className="text-[10px] text-red-400 ml-1">({character.oripathy.activeArtsMultiplier}x)</span>
+                  )}
+                </span>
+              </div>
+              <div className="w-full h-1.5 bg-slate-950 rounded-full overflow-hidden border border-slate-800">
+                <div className="h-full bg-cyan-400 transition-all duration-300" style={{ width: `${Math.min(100, character.stats.artsAptitude)}%` }} />
+              </div>
             </div>
-            <div className="flex justify-between" title="정세 감각 (INTEL): 외교 정세 분석, 협상력 및 학술 자문 역량">
-              <span className="text-slate-400">정세 감각 (INTEL)</span>
-              <span className="font-bold text-purple-400">{character.stats.intellect}</span>
+            <div className="space-y-1" title="정세 감각 (INTEL): 외교 정세 분석, 협상력 및 학술 자문 역량">
+              <div className="flex justify-between">
+                <span className="text-slate-400">정세 감각 (INTEL)</span>
+                <span className="font-bold text-purple-400">{character.stats.intellect}</span>
+              </div>
+              <div className="w-full h-1.5 bg-slate-950 rounded-full overflow-hidden border border-slate-800">
+                <div className="h-full bg-purple-400 transition-all duration-300" style={{ width: `${Math.min(100, character.stats.intellect)}%` }} />
+              </div>
             </div>
-            <div className="flex justify-between" title="행운 (LUCK): 돌발 재앙 회피 및 운명의 갈림길 성공률 판정 보정">
-              <span className="text-slate-400">행운 (LUCK)</span>
-              <span className="font-bold text-emerald-400">{character.stats.luck}</span>
+            <div className="space-y-1" title="행운 (LUCK): 돌발 재앙 회피 및 운명의 갈림길 성공률 판정 보정">
+              <div className="flex justify-between">
+                <span className="text-slate-400">행운 (LUCK)</span>
+                <span className="font-bold text-emerald-400">{character.stats.luck}</span>
+              </div>
+              <div className="w-full h-1.5 bg-slate-950 rounded-full overflow-hidden border border-slate-800">
+                <div className="h-full bg-emerald-400 transition-all duration-300" style={{ width: `${Math.min(100, character.stats.luck)}%` }} />
+              </div>
             </div>
           </div>
 
@@ -1005,26 +1123,26 @@ export const PRTSTerminal: React.FC<Props> = ({
           </div>
         </aside>
 
-        {/* Event Log Stream (8 cols) */}
+        {/* Event Log Stream */}
         <section 
-          className={`md:col-span-8 ${
+          className={`md:col-span-7 lg:col-span-8 2xl:col-span-9 min-h-0 ${
             isRightSidebar ? 'md:order-1' : 'md:order-2'
-          } flex-col h-full overflow-hidden bg-[#0b0d11] ${
+          } flex-col h-full overflow-hidden ${
             mobileTab === 'log' ? 'flex' : 'hidden md:flex'
           }`}
-          style={{ backgroundColor: nationIdentity.colors.surface }}
+          style={{ backgroundColor: effectiveColors.surface }}
         >
           {/* Regional Specialty Widget: Chronicle Banner */}
           {nationIdentity.specialtyWidget?.position === 'chronicle-banner' && specialtyMetric && (
             <div 
               className="px-3 py-1.5 border-b text-xs flex items-center justify-between shrink-0"
               style={{ 
-                borderColor: nationIdentity.colors.border, 
-                backgroundColor: nationIdentity.colors.card 
+                borderColor: effectiveColors.panelBorder, 
+                backgroundColor: effectiveColors.card 
               }}
             >
               <div className="flex items-center space-x-1.5 min-w-0">
-                <span className="text-[10px] font-bold uppercase tracking-wider truncate" style={{ color: nationIdentity.colors.badgeText }}>
+                <span className="text-[10px] font-bold uppercase tracking-wider truncate" style={{ color: effectiveColors.badgeText }}>
                   {nationIdentity.specialtyWidget.title}
                 </span>
                 <span className="text-slate-400 text-[10px] shrink-0">· {specialtyMetric.hint}</span>
@@ -1038,6 +1156,7 @@ export const PRTSTerminal: React.FC<Props> = ({
             currentEvent={currentEvent}
             character={character}
             nationId={activeNationId}
+            effectiveTheme={effectiveTheme}
             onSelectChoice={onSelectChoice}
             autoChoicePendingId={autoChoicePendingId}
             minorTimeoutRemainingSec={minorTimeoutRemainingSec}
@@ -1051,52 +1170,47 @@ export const PRTSTerminal: React.FC<Props> = ({
         </section>
       </main>
 
-      {/* Four-Season Smooth Time Progression Ribbon */}
-      <div
-        className="season-indicator h-6 bg-[#0b0f17] border-t border-cyan-500/20 px-3 sm:px-4 flex items-center justify-between gap-3 shrink-0 text-[10px]"
-        data-season={currentSeason}
-      >
-        <div className="flex items-center space-x-2 shrink-0">
-          <span className="text-cyan-400 font-bold">
-            {character.year}년 · {currentSeason}
-          </span>
-          <div className="hidden sm:flex items-center space-x-1 text-slate-500">
-            {(['봄', '여름', '가을', '겨울'] as Season[]).map(s => (
-              <span
-                key={s}
-                className={`px-1 rounded ${
-                  currentSeason === s ? 'bg-cyan-500/20 text-cyan-300 font-bold' : ''
-                }`}
-              >
-                {s}
-              </span>
-            ))}
-          </div>
-        </div>
-        <div className="grow bg-slate-900/90 h-1.5 rounded-full overflow-hidden border border-cyan-950">
-          <div
-            className="h-full bg-gradient-to-r from-cyan-500 via-teal-400 to-amber-300 transition-[width] duration-75"
-            style={{ width: `${Math.max(0, Math.min(100, yearProgress))}%` }}
-          />
-        </div>
-        <span className="text-slate-400 shrink-0 font-bold">
-          {isPlaying && !currentEvent ? `${speed}x 진행 중` : currentEvent ? '선택 대기' : '정지'}
-        </span>
-      </div>
+      {/* 15개국 전용 계절/항해/악장/노선 진행 리본 */}
+      <NationSeasonProgressBar
+        effectiveTheme={effectiveTheme}
+        year={character.year}
+        currentSeason={currentSeason}
+        yearProgress={yearProgress}
+        isPlaying={isPlaying}
+        hasEvent={!!currentEvent}
+        speed={speed}
+      />
 
       {/* Bottom Control Deck */}
-      <footer className="h-14 border-t border-cyan-500/30 bg-[#0f131a] px-3 sm:px-4 flex items-center justify-between shrink-0 gap-2 overflow-x-auto">
+      <footer
+        className="h-14 border-t px-3 sm:px-4 flex items-center justify-between shrink-0 gap-2 overflow-x-auto relative z-10"
+        style={{
+          backgroundColor: effectiveColors.card,
+          borderColor: effectiveColors.panelBorder
+        }}
+      >
         {/* Action Points & Auto Choice Options */}
         <div className="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
           <button
             onClick={onOpenActions}
-            className="flex items-center space-x-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-cyan-600/30 hover:bg-cyan-500/40 border border-cyan-400/50 text-cyan-300 transition-all font-bold text-xs"
-            title="연간 활동 포인트 (연간 기본 1 AP, T2 이상 2 AP, T4 이상 3 AP 회복)"
+            className="flex items-center space-x-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg border transition-all font-bold text-xs hover:brightness-110"
+            style={{
+              backgroundColor: effectiveColors.badgeBg,
+              borderColor: effectiveColors.panelBorder,
+              color: effectiveColors.badgeText
+            }}
+            title={`${apMeta.tooltip} — 연간 활동 포인트 (연간 기본 1 AP, T2 이상 2 AP, T4 이상 3 AP 회복)`}
           >
-            <Sparkles className="w-4 h-4 text-cyan-400 shrink-0" />
-            <span className="hidden xs:inline">활동·승급</span>
-            <span className="px-1.5 py-0.2 bg-cyan-400 text-black text-[10px] rounded font-black">
-              {character.actionPoints} AP
+            <NationApIcon iconType={apMeta.iconType} className="w-4 h-4 shrink-0" />
+            <span className="hidden xs:inline">{apMeta.label}</span>
+            <span
+              className="px-1.5 py-0.2 text-[10px] rounded font-black"
+              style={{
+                backgroundColor: effectiveColors.primary,
+                color: isLightPolarity ? '#ffffff' : '#020617'
+              }}
+            >
+              {character.actionPoints} {apMeta.badgeUnit}
             </span>
           </button>
 
@@ -1141,16 +1255,27 @@ export const PRTSTerminal: React.FC<Props> = ({
           </button>
 
           {/* Speed Buttons (1x, 2x, 4x, 8x, 16x, 32x) */}
-          <div className="flex items-center bg-black/40 rounded-lg p-0.5 border border-cyan-500/20">
+          <div
+            className="flex items-center bg-black/35 rounded-lg p-0.5 border"
+            style={{ borderColor: effectiveColors.panelBorder }}
+          >
             {([1, 2, 4, 8, 16, 32] as GameSpeed[]).map((s, idx) => (
               <button
                 key={s}
                 onClick={() => onChangeSpeed(s)}
                 className={`px-1.5 sm:px-2 py-0.5 rounded text-[11px] font-bold transition-all ${
                   speed === s
-                    ? 'bg-cyan-500 text-black shadow font-extrabold'
+                    ? 'shadow font-extrabold'
                     : 'text-slate-400 hover:text-white'
                 }`}
+                style={
+                  speed === s
+                    ? {
+                        backgroundColor: effectiveColors.primary,
+                        color: isLightPolarity ? '#ffffff' : '#020617'
+                      }
+                    : undefined
+                }
                 title={`배속 설정: ${s}배속 (단축키: ${idx + 1} 또는 [ / ])`}
               >
                 {s}x
